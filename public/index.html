@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Chapters — Strangers pass. Conversations stay.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=Montserrat:wght@200;300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet"/>
+<script src="/socket.io/socket.io.js"></script>
+<script>(function(){const t=localStorage.getItem('chapters_token');if(!t){window.location.href='/auth.html';}})();</script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0c0b09;--bg2:#111009;--surface:#181610;--surface2:#201d14;--surface3:#28231a;
+  --border:#2c2818;--border2:#3a3420;
+  --gold:#c4973e;--gold2:#e2b95a;--gold-dim:#6b5020;--gold-glow:rgba(196,151,62,0.1);
+  --cream:#f0e8d5;--cream2:#c8b898;--muted:#7a6a50;--muted2:#4a3e2a;
+  --you:#4a7a68;--you2:#3a6050;--stranger:#c4973e;
+  --red:#a04030;--green:#4a8060;
+}
+html,body{height:100%;background:var(--bg);color:var(--cream);font-family:'Crimson Pro',Georgia,serif;overflow:hidden;}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+
+/* ── App shell ── */
+#app{height:100vh;display:flex;flex-direction:column;position:relative;}
+
+/* ── Topbar ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(12,11,9,0.92);backdrop-filter:blur(10px);position:relative;z-index:20;}
+.logo{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--cream);cursor:pointer;letter-spacing:-0.3px;transition:color 0.2s;}
+.logo:hover{color:var(--gold);}
+.logo em{font-style:italic;color:var(--gold);}
+.topbar-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.online-badge{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
+.online-dot{width:5px;height:5px;border-radius:50%;background:var(--gold-dim);animation:glow-pulse 3s ease-in-out infinite;}
+@keyframes glow-pulse{0%,100%{opacity:0.4;}50%{opacity:1;box-shadow:0 0 6px var(--gold);}}
+.nav-btn{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);background:none;border:1px solid var(--border);padding:6px 14px;border-radius:4px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;transition:all 0.2s;white-space:nowrap;}
+.nav-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+.nav-btn.accent{border-color:var(--gold-dim);color:var(--gold);}
+.username-tag{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--gold-dim);letter-spacing:1.5px;}
+/* mobile topbar handled in unified media block below */
+
+/* ── Views ── */
+.view{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;transition:opacity 0.4s ease,transform 0.4s ease;z-index:1;}
+.view.hidden{opacity:0;pointer-events:none;transform:translateY(6px);}
+
+/* ── Landing ── */
+#view-landing{justify-content:center;align-items:center;padding:24px;position:relative;}
+#view-landing::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(196,151,62,0.05) 0%,transparent 70%);pointer-events:none;}
+.landing-inner{max-width:480px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:28px;position:relative;z-index:1;}
+.landing-kicker{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--gold-dim);letter-spacing:4px;text-transform:uppercase;display:flex;align-items:center;gap:12px;}
+.landing-kicker::before,.landing-kicker::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border2));}
+.landing-kicker::after{background:linear-gradient(90deg,var(--border2),transparent);}
+.landing-title{font-family:'Cormorant Garamond',serif;font-size:clamp(44px,8vw,68px);font-weight:300;line-height:1.1;letter-spacing:-1px;color:var(--cream);}
+.landing-title em{font-style:italic;color:var(--gold);display:block;}
+.landing-tagline{font-size:17px;color:var(--cream2);font-style:italic;line-height:1.7;max-width:360px;}
+.landing-rules{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px;padding:20px 24px;background:var(--surface);border:1px solid var(--border);border-radius:8px;}
+.rule{display:flex;align-items:center;gap:12px;font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);letter-spacing:0.5px;}
+.rule-icon{color:var(--gold-dim);}
+.btn-find{padding:17px 56px;background:transparent;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:20px;font-style:italic;border-radius:6px;cursor:pointer;transition:all 0.3s;letter-spacing:0.5px;position:relative;overflow:hidden;}
+.btn-find::before{content:'';position:absolute;inset:0;background:var(--gold-glow);opacity:0;transition:opacity 0.3s;}
+.btn-find:hover{border-color:var(--gold);box-shadow:0 0 50px rgba(196,151,62,0.18);}
+.btn-find:hover::before{opacity:1;}
+
+/* ── Waiting ── */
+#view-waiting{justify-content:center;align-items:center;gap:28px;}
+.wait-orb{width:90px;height:90px;border-radius:50%;border:1px solid var(--border2);position:relative;}
+.wait-orb::before{content:'';position:absolute;inset:8px;border-radius:50%;border:1px solid var(--gold-dim);border-top-color:var(--gold);animation:spin 2s linear infinite;}
+.wait-orb::after{content:'◆';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;color:var(--gold-dim);animation:spin 2s linear infinite reverse;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.wait-orb-wrap{position:relative;animation:spin 6s linear infinite;}
+.wait-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--cream2);}
+.wait-dots span{animation:dblink 1.4s ease-in-out infinite;opacity:0;}
+.wait-dots span:nth-child(2){animation-delay:0.2s;}
+.wait-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes dblink{0%,80%,100%{opacity:0;}40%{opacity:1;}}
+.wait-sub{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.btn-cancel{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:10px 24px;border-radius:4px;cursor:pointer;transition:all 0.2s;letter-spacing:1.5px;text-transform:uppercase;}
+.btn-cancel:hover{border-color:var(--border2);color:var(--cream2);}
+
+/* ── Chat ── */
+#view-chat{overflow:hidden;}
+.chat-header{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg);}
+.chapter-badge{display:flex;align-items:center;gap:12px;}
+.chapter-label{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--gold-dim);letter-spacing:2.5px;text-transform:uppercase;}
+.chapter-num{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);}
+.chat-live{display:flex;align-items:center;gap:8px;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:glow-pulse 2s ease-in-out infinite;}
+.btn-leave{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);background:none;border:1px solid var(--border);padding:6px 16px;border-radius:4px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;text-transform:uppercase;}
+.btn-leave:hover{border-color:var(--red);color:var(--red);}
+.messages{flex:1;overflow-y:auto;padding:28px 28px;display:flex;flex-direction:column;gap:18px;max-width:740px;width:100%;margin:0 auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.messages::-webkit-scrollbar{width:3px;}
+.messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.msg-system{text-align:center;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:12px;animation:fadeup 0.3s ease;}
+.msg-system::before,.msg-system::after{content:'';flex:1;height:1px;background:var(--border);}
+@keyframes fadeup{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.msg{display:flex;flex-direction:column;gap:4px;max-width:68%;animation:fadeup 0.3s ease;}
+.msg.you{align-self:flex-end;align-items:flex-end;}
+.msg.stranger{align-self:flex-start;align-items:flex-start;}
+.msg-who{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:0 4px;}
+.msg.you .msg-who{color:var(--you2);}
+.msg.stranger .msg-who{color:var(--gold-dim);}
+.msg-bubble{padding:12px 16px;border-radius:12px;font-size:15px;line-height:1.6;word-break:break-word;}
+.msg.you .msg-bubble{background:var(--you);border:1px solid rgba(74,120,104,0.4);color:var(--cream);border-radius:12px 12px 3px 12px;}
+.msg.stranger .msg-bubble{background:var(--surface2);border:1px solid var(--border2);color:var(--cream);border-radius:12px 12px 12px 3px;}
+.msg-time{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);padding:0 4px;}
+.typing-bubble{display:flex;gap:5px;align-items:center;padding:12px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:12px 12px 12px 3px;align-self:flex-start;animation:fadeup 0.3s ease;}
+.typing-dot{width:5px;height:5px;border-radius:50%;background:var(--gold-dim);animation:tbounce 1.3s ease-in-out infinite;}
+.typing-dot:nth-child(2){animation-delay:0.15s;}
+.typing-dot:nth-child(3){animation-delay:0.3s;}
+@keyframes tbounce{0%,60%,100%{opacity:0.3;transform:scale(1);}30%{opacity:1;transform:scale(1.2);}}
+.chat-input-area{border-top:1px solid var(--border);padding:18px 28px;background:var(--bg);flex-shrink:0;}
+.input-row{display:flex;gap:10px;align-items:flex-end;max-width:740px;margin:0 auto;}
+.input-wrap{flex:1;position:relative;}
+textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px 56px 13px 16px;color:var(--cream);font-family:'Crimson Pro',serif;font-size:16px;resize:none;outline:none;min-height:50px;max-height:120px;line-height:1.5;transition:border-color 0.2s;}
+textarea:focus{border-color:var(--gold-dim);}
+textarea::placeholder{color:var(--muted2);font-style:italic;}
+.word-badge{position:absolute;right:12px;bottom:13px;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);pointer-events:none;transition:color 0.2s;letter-spacing:0.5px;}
+.word-badge.warn{color:#c08030;}
+.word-badge.over{color:var(--red);}
+.btn-send{width:50px;height:50px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--gold);font-size:18px;cursor:pointer;transition:all 0.2s;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.btn-send:hover{background:var(--surface3);border-color:var(--gold-dim);box-shadow:0 0 20px var(--gold-glow);}
+.btn-send:disabled{opacity:0.3;cursor:not-allowed;box-shadow:none;}
+.input-hint{text-align:center;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);margin-top:10px;letter-spacing:0.5px;}
+.stranger-left-overlay{position:absolute;inset:0;background:rgba(12,11,9,0.92);backdrop-filter:blur(12px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;z-index:50;padding:32px;}
+.stranger-left-overlay.show{display:flex;}
+.left-icon{font-size:36px;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.left-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-style:italic;color:var(--cream);}
+.left-sub{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.left-actions{display:flex;gap:12px;margin-top:8px;}
+
+/* ── History ── */
+#view-history{overflow:hidden;}
+.view-header{padding:24px 28px 18px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:flex-end;justify-content:space-between;}
+.view-header-left .label{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--gold-dim);letter-spacing:3px;text-transform:uppercase;margin-bottom:5px;}
+.view-header-left .title{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:400;color:var(--cream);}
+.btn-back{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);background:none;border:none;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:color 0.2s;}
+.btn-back:hover{color:var(--gold);}
+.scroll-list{flex:1;overflow-y:auto;padding:20px 28px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;max-width:740px;width:100%;margin:0 auto;}
+.empty-state{text-align:center;padding:60px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+.empty-icon{font-size:32px;color:var(--muted2);}
+.empty-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-style:italic;color:var(--muted);}
+.empty-sub{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;}
+.chapter-card{display:flex;gap:18px;padding:18px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all 0.2s;align-items:flex-start;animation:fadeup 0.3s ease;}
+.chapter-card:last-child{border-bottom:none;}
+.chapter-card:hover .c-inner{opacity:0.8;}
+.chapter-card:hover .c-arrow{color:var(--gold);opacity:1;}
+.c-num{flex-shrink:0;width:52px;text-align:right;}
+.c-roman{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--gold-dim);line-height:1;}
+.c-inner{flex:1;transition:opacity 0.2s;}
+.c-date{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);letter-spacing:0.5px;margin-bottom:5px;}
+.c-preview{font-size:15px;color:var(--cream2);line-height:1.5;font-style:italic;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.c-meta{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:0.3px;}
+.c-arrow{flex-shrink:0;font-size:14px;color:var(--muted2);opacity:0.4;transition:all 0.2s;padding-top:5px;}
+
+/* ── Chapter Reader ── */
+#view-chapter{overflow:hidden;}
+.reader-messages{flex:1;overflow-y:auto;padding:32px 28px;max-width:740px;width:100%;margin:0 auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;display:flex;flex-direction:column;gap:18px;}
+.reader-end{text-align:center;padding:28px 0 16px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.reader-end-line{width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);}
+.reader-end-text{font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--muted);}
+
+/* ── Confession Wall ── */
+#view-confessions{overflow:hidden;}
+.confession-header-area{padding:20px 28px 0;border-bottom:1px solid var(--border);flex-shrink:0;}
+.confession-tabs{display:flex;gap:0;margin-top:16px;}
+.conf-tab{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;padding:10px 20px 10px 0;margin-right:8px;transition:all 0.2s;}
+.conf-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.conf-search-bar{display:flex;gap:10px;margin:16px 28px;max-width:740px;margin-left:auto;margin-right:auto;}
+.conf-search-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:11px 16px;color:var(--cream);font-family:'Crimson Pro',serif;font-size:16px;outline:none;transition:border-color 0.2s;}
+.conf-search-input:focus{border-color:var(--gold-dim);}
+.conf-search-input::placeholder{color:var(--muted2);font-style:italic;}
+.btn-search{padding:11px 20px;background:transparent;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;border-radius:6px;cursor:pointer;transition:all 0.2s;}
+.btn-search:hover{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow);}
+.confessions-list{flex:1;overflow-y:auto;padding:8px 28px 24px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.confession-card{border:1px solid var(--border);border-radius:10px;padding:24px 26px;margin-bottom:14px;background:var(--surface);transition:border-color 0.2s;animation:fadeup 0.4s ease;position:relative;overflow:hidden;max-width:740px;margin-left:auto;margin-right:auto;margin-bottom:14px;}
+.confession-card:hover{border-color:var(--border2);}
+.confession-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--gold-dim),transparent);}
+.conf-from-to{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.conf-from{font-family:'Montserrat',sans-serif;font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;}
+.conf-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--cream2);}
+.conf-arrow{font-size:12px;color:var(--gold-dim);}
+.conf-to-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--gold);}
+.conf-text{font-family:'Crimson Pro',serif;font-size:16px;line-height:1.7;color:var(--cream);margin-bottom:14px;font-style:italic;}
+.conf-song{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:100px;text-decoration:none;transition:all 0.2s;cursor:pointer;}
+.conf-song:hover{border-color:var(--gold-dim);background:var(--surface3);}
+.conf-song-icon{font-size:16px;}
+.conf-song-info{display:flex;flex-direction:column;gap:1px;}
+.conf-song-title{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--cream2);letter-spacing:0.5px;}
+.conf-song-artist{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);letter-spacing:0.3px;}
+.conf-date{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:0.5px;margin-top:12px;}
+
+/* ── Write Confession ── */
+#view-write{overflow:hidden;}
+.write-inner{flex:1;overflow-y:auto;padding:28px;max-width:600px;width:100%;margin:0 auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.write-heading{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--cream);margin-bottom:4px;}
+.write-sub{font-size:15px;color:var(--muted);font-style:italic;margin-bottom:32px;}
+.wfield{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.wlabel{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-dim);}
+.winput{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:13px 16px;color:var(--cream);font-family:'Crimson Pro',serif;font-size:17px;outline:none;transition:border-color 0.2s;width:100%;}
+.winput:focus{border-color:var(--gold-dim);}
+.winput::placeholder{color:var(--muted2);font-style:italic;}
+.wtextarea{resize:none;min-height:120px;line-height:1.6;}
+.char-count{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);text-align:right;letter-spacing:0.5px;}
+.char-count.warn{color:#c08030;}
+.char-count.over{color:var(--red);}
+
+/* Song search */
+.song-search-wrap{display:flex;flex-direction:column;gap:10px;}
+.song-search-row{display:flex;gap:8px;}
+.song-results{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--surface2);scrollbar-width:thin;}
+.song-result{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);}
+.song-result:last-child{border-bottom:none;}
+.song-result:hover{background:var(--surface3);}
+.song-result-info{flex:1;}
+.song-result-title{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--cream2);letter-spacing:0.3px;}
+.song-result-artist{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);}
+.song-result-check{color:var(--green);font-size:14px;display:none;}
+.song-selected{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;}
+.song-selected-info{flex:1;}
+.song-selected-title{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--cream2);}
+.song-selected-artist{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);}
+.btn-clear-song{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;transition:color 0.2s;}
+.btn-clear-song:hover{color:var(--red);}
+
+.write-error{background:rgba(160,64,48,0.1);border:1px solid rgba(160,64,48,0.25);border-radius:6px;padding:12px 16px;font-family:'Montserrat',sans-serif;font-size:11px;color:#c07060;letter-spacing:0.3px;display:none;margin-bottom:16px;}
+.write-error.show{display:block;}
+.btn-post{width:100%;padding:15px;background:transparent;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:20px;font-style:italic;border-radius:6px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;}
+.btn-post::before{content:'';position:absolute;inset:0;background:var(--gold-glow);opacity:0;transition:opacity 0.3s;}
+.btn-post:hover:not(:disabled){border-color:var(--gold);box-shadow:0 0 40px var(--gold-glow);}
+.btn-post:hover::before{opacity:1;}
+.btn-post:disabled{opacity:0.3;cursor:not-allowed;}
+
+/* ── Pair Intro Overlay ── */
+.pair-intro{position:absolute;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:32px;opacity:0;pointer-events:none;transition:opacity 0.5s;}
+.pair-intro.show{opacity:1;pointer-events:all;}
+.pair-intro-kicker{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--gold-dim);letter-spacing:4px;text-transform:uppercase;margin-bottom:40px;opacity:0;transition:opacity 0.4s;}
+.pair-intro-kicker.vis{opacity:1;}
+.pair-intro-row{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:80px;}
+.pair-intro-label{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted2);}
+.pair-intro-name{font-family:'Cormorant Garamond',serif;font-size:clamp(42px,9vw,72px);font-weight:300;font-style:italic;line-height:1;min-height:72px;}
+.pair-intro-name.you-name{color:var(--cream);}
+.pair-intro-name.their-name{color:var(--gold);}
+.pair-intro-vs{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted2);letter-spacing:4px;text-transform:uppercase;margin:16px 0;opacity:0;transition:opacity 0.4s;}
+.pair-intro-vs.vis{opacity:1;}
+.pair-intro-ref{font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--muted);margin-top:32px;opacity:0;transition:opacity 0.6s;text-align:center;}
+.pair-intro-ref.vis{opacity:1;}
+.pair-intro-ref em{color:var(--gold-dim);}
+.pair-intro-bar{width:200px;height:1px;background:var(--border);margin:20px auto 0;overflow:hidden;opacity:0;transition:opacity 0.3s;}
+.pair-intro-bar.vis{opacity:1;}
+.pair-intro-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));transition:width linear;}
+.pair-intro-hint{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase;margin-top:12px;opacity:0;transition:opacity 0.4s;}
+.pair-intro-hint.vis{opacity:1;}
+
+/* ── Pair Reveal Screen ── */
+#view-reveal{justify-content:center;align-items:center;background:var(--bg);z-index:50;}
+.reveal-inner{max-width:520px;width:100%;padding:32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0;}
+.reveal-kicker{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--gold-dim);letter-spacing:4px;text-transform:uppercase;margin-bottom:32px;opacity:0;animation:rfade 0.6s ease 0.2s forwards;}
+.reveal-from{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:300;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;opacity:0;animation:rfade 0.5s ease 0.5s forwards;}
+.reveal-name-you{font-family:'Cormorant Garamond',serif;font-size:clamp(52px,10vw,80px);font-weight:300;color:var(--cream);line-height:1;letter-spacing:-1px;min-height:90px;}
+.reveal-vs{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted2);letter-spacing:4px;text-transform:uppercase;margin:18px 0;opacity:0;}
+.reveal-from2{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:300;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;opacity:0;}
+.reveal-name-them{font-family:'Cormorant Garamond',serif;font-size:clamp(52px,10vw,80px);font-weight:300;color:var(--gold);line-height:1;letter-spacing:-1px;min-height:90px;}
+.reveal-ref{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--gold-dim);letter-spacing:2px;text-transform:uppercase;margin-top:24px;opacity:0;display:flex;align-items:center;gap:10px;}
+.reveal-ref::before,.reveal-ref::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);}
+.reveal-bond{font-family:'Crimson Pro',serif;font-size:17px;font-style:italic;color:var(--cream2);line-height:1.7;margin-top:18px;max-width:380px;opacity:0;min-height:52px;}
+.reveal-hint{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase;margin-top:32px;opacity:0;animation:blink 2s ease-in-out infinite;}
+@keyframes rfade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
+.cursor{display:inline-block;width:2px;height:0.85em;background:currentColor;margin-left:2px;vertical-align:middle;animation:cur 0.7s step-end infinite;}
+@keyframes cur{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* ── Name plates ── */
+.name-plates{display:flex;align-items:center;gap:8px;padding:10px 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
+.name-plate{font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;display:flex;align-items:center;gap:7px;}
+.name-plate-dot{width:7px;height:7px;border-radius:50%;}
+.name-plate.you .name-plate-dot{background:var(--you);}
+.name-plate.stranger .name-plate-dot{background:var(--gold);}
+.name-plate.you{color:var(--cream2);}
+.name-plate.stranger{color:var(--gold);}
+.name-plate-vs{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:1px;}
+
+/* ── Report modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:32px;max-width:400px;width:100%;position:relative;animation:fadeup 0.3s ease;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;color:var(--cream);margin-bottom:6px;}
+.modal-sub{font-size:14px;color:var(--muted);font-style:italic;margin-bottom:24px;line-height:1.6;}
+.report-reasons{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.reason-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:11px 16px;color:var(--cream2);font-family:'Montserrat',sans-serif;font-size:10px;letter-spacing:1px;text-align:left;cursor:pointer;transition:all 0.2s;}
+.reason-btn:hover,.reason-btn.selected{border-color:var(--gold-dim);color:var(--gold);background:var(--surface3);}
+.modal-actions{display:flex;gap:10px;margin-top:8px;}
+.btn-report-submit{flex:1;padding:12px;background:transparent;border:1px solid var(--red);color:var(--red);font-family:'Montserrat',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;border-radius:6px;cursor:pointer;transition:all 0.2s;}
+.btn-report-submit:hover:not(:disabled){background:rgba(160,64,48,0.1);}
+.btn-report-submit:disabled{opacity:0.35;cursor:not-allowed;}
+.btn-report-cancel{flex:1;padding:12px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Montserrat',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;border-radius:6px;cursor:pointer;transition:all 0.2s;}
+.btn-report-cancel:hover{border-color:var(--border2);color:var(--cream2);}
+.report-success{text-align:center;padding:12px 0;}
+.report-success-icon{font-size:28px;margin-bottom:8px;}
+.report-success-text{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--cream2);}
+.report-success-sub{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:6px;}
+.btn-primary{padding:13px 36px;background:transparent;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;border-radius:6px;cursor:pointer;transition:all 0.2s;}
+.btn-primary:hover{border-color:var(--gold);box-shadow:0 0 30px var(--gold-glow);}
+.btn-secondary{padding:13px 36px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Montserrat',sans-serif;font-size:11px;border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;text-transform:uppercase;}
+.btn-secondary:hover{border-color:var(--border2);color:var(--cream2);}
+
+@media(max-width:600px){
+  /* layout padding */
+  .messages,.chat-input-area,.scroll-list,.reader-messages,.confessions-list,.write-inner,.conf-search-bar{padding-left:16px;padding-right:16px;}
+  .chat-header,.view-header,.confession-header-area{padding-left:16px;padding-right:16px;}
+  .msg{max-width:90%;}
+  .confession-card{padding:18px 16px;}
+  .conf-search-bar{margin:12px 16px;}
+  /* player bottom clearance */
+  .scroll-list,.reader-messages,.confessions-list,.write-inner,.messages{padding-bottom:72px;}
+  /* topbar */
+  .topbar{padding:10px 14px;}
+  .topbar-right{gap:6px;flex-wrap:nowrap;}
+  .online-badge{display:none;}
+  .username-tag{display:none;}
+  .nav-btn{padding:6px 10px;font-size:8px;letter-spacing:0.8px;}
+  .mp-toggle-btn{padding:6px 10px;font-size:9px;}
+  .btn-label{display:none;}
+}
+@media(max-width:380px){
+  .nav-btn-signout{display:none;}
+  .topbar-right{gap:4px;}
+}
+
+/* ── Music Player ── */
+#musicPlayer{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(10,9,8,0.97);
+  border-top:1px solid var(--border2);
+  backdrop-filter:blur(20px);
+  z-index:300;
+  transform:translateY(100%);
+  transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  font-family:'Montserrat',sans-serif;
+}
+#musicPlayer.open{transform:translateY(0);}
+#musicPlayer.mini{transform:translateY(calc(100% - 56px));}
+
+.mp-bar{
+  display:flex;align-items:center;gap:14px;
+  padding:0 20px;height:56px;cursor:pointer;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+.mp-bar-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.mp-icon{font-size:15px;color:var(--gold-dim);flex-shrink:0;}
+.mp-now-playing{display:flex;flex-direction:column;min-width:0;flex:1;}
+.mp-track-name{font-size:10px;color:var(--cream2);letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mp-track-artist{font-size:9px;color:var(--muted);letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mp-idle{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.mp-bar-controls{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.mp-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;transition:color 0.15s;line-height:1;}
+.mp-btn:hover{color:var(--gold);}
+.mp-btn.playing{color:var(--gold);}
+.mp-chevron{font-size:11px;color:var(--muted2);transition:transform 0.3s;margin-left:4px;}
+#musicPlayer.open .mp-chevron{transform:rotate(180deg);}
+#musicPlayer.mini .mp-chevron{transform:rotate(0deg);}
+
+/* Progress bar */
+.mp-progress{height:2px;background:var(--border);position:relative;cursor:pointer;}
+.mp-progress-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));width:0%;transition:width 0.5s linear;pointer-events:none;}
+
+/* Expanded panel */
+.mp-panel{padding:16px 20px 20px;display:flex;flex-direction:column;gap:14px;}
+
+.mp-search-row{display:flex;gap:8px;}
+.mp-search-input{
+  flex:1;background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;padding:9px 14px;color:var(--cream);
+  font-family:'Montserrat',sans-serif;font-size:11px;outline:none;
+  transition:border-color 0.2s;
+}
+.mp-search-input:focus{border-color:var(--gold-dim);}
+.mp-search-input::placeholder{color:var(--muted2);}
+.mp-search-btn{
+  padding:9px 16px;background:none;border:1px solid var(--gold-dim);
+  color:var(--gold);font-family:'Montserrat',sans-serif;font-size:9px;
+  letter-spacing:1.5px;text-transform:uppercase;border-radius:6px;
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;flex-shrink:0;
+}
+.mp-search-btn:hover{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow);}
+
+.mp-results{
+  display:flex;flex-direction:column;gap:0;
+  max-height:180px;overflow-y:auto;
+  border:1px solid var(--border);border-radius:6px;
+  background:var(--surface);
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+.mp-result{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px;cursor:pointer;transition:background 0.15s;
+  border-bottom:1px solid var(--border);
+}
+.mp-result:last-child{border-bottom:none;}
+.mp-result:hover{background:var(--surface2);}
+.mp-result.active{background:var(--surface2);border-left:2px solid var(--gold);}
+.mp-result-info{flex:1;min-width:0;}
+.mp-result-title{font-size:11px;color:var(--cream2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mp-result-artist{font-size:9px;color:var(--muted);margin-top:2px;}
+.mp-result-dur{font-size:9px;color:var(--muted2);flex-shrink:0;}
+.mp-play-icon{font-size:12px;color:var(--gold-dim);flex-shrink:0;width:16px;text-align:center;}
+
+.mp-vol-row{display:flex;align-items:center;gap:10px;}
+.mp-vol-label{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;}
+input[type=range].mp-vol{
+  -webkit-appearance:none;appearance:none;
+  flex:1;height:2px;background:var(--border);border-radius:1px;outline:none;cursor:pointer;
+}
+input[type=range].mp-vol::-webkit-slider-thumb{
+  -webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+  background:var(--gold);cursor:pointer;
+}
+input[type=range].mp-vol::-moz-range-thumb{
+  width:12px;height:12px;border-radius:50%;background:var(--gold);cursor:pointer;border:none;
+}
+.mp-vol-val{font-size:9px;color:var(--muted2);width:24px;text-align:right;flex-shrink:0;}
+.mp-note{font-size:9px;color:var(--muted2);letter-spacing:0.3px;text-align:center;}
+
+/* Toggle button in topbar */
+.mp-toggle-btn{
+  font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);
+  background:none;border:1px solid var(--border);padding:6px 12px;
+  border-radius:4px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;
+  transition:all 0.2s;display:flex;align-items:center;gap:5px;
+}
+.mp-toggle-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+.mp-toggle-btn.active{border-color:var(--gold-dim);color:var(--gold);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Topbar -->
+  <div class="topbar" id="topbar" style="top:0;position:relative;z-index:20;">
+    <div class="logo" onclick="goHome()">Chap<em>ters</em></div>
+    <div class="topbar-right">
+      <div class="online-badge"><div class="online-dot"></div><span id="onlineCount">—</span> online</div>
+      <button class="mp-toggle-btn" id="mpToggleBtn" onclick="togglePlayer()" title="Play music">♪<span class="btn-label"> Music</span></button>
+      <button class="nav-btn accent" onclick="showView('confessions')"><span class="btn-label">Confessions</span></button>
+      <button class="nav-btn" onclick="showHistory()"><span class="btn-label">My Chapters</span></button>
+      <span class="username-tag" id="usernameTag"></span>
+      <button class="nav-btn nav-btn-signout" onclick="logout()" style="color:var(--muted2);"><span class="btn-label">Sign out</span></button>
+    </div>
+  </div>
+
+  <!-- Landing -->
+  <div class="view" id="view-landing">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:1;">
+      <div class="landing-inner">
+        <div class="landing-kicker">anthology of strangers</div>
+        <div class="landing-title">Strangers pass.<em>Conversations stay.</em></div>
+        <p class="landing-tagline">You meet someone. You talk. They leave. But every conversation is saved as a chapter — yours forever.</p>
+        <div class="landing-rules">
+          <div class="rule"><span class="rule-icon">◆</span> Anonymous. No names, no traces.</div>
+          <div class="rule"><span class="rule-icon">◆</span> 4000-character limit per message.</div>
+          <div class="rule"><span class="rule-icon">◆</span> Every chat saved as a chapter.</div>
+          <div class="rule"><span class="rule-icon">◆</span> Leave anytime. The words remain.</div>
+        </div>
+        <button class="btn-find" onclick="findStranger()">Find a stranger</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Waiting -->
+  <div class="view hidden" id="view-waiting">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;position:relative;z-index:1;">
+      <div class="wait-orb-wrap"><div class="wait-orb"></div></div>
+      <div class="wait-title">Looking for someone<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span></div>
+      <div class="wait-sub">Searching for a stranger</div>
+      <button class="btn-cancel" onclick="cancelSearch()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Pair Reveal -->
+  <div class="view hidden" id="view-reveal">
+    <div class="reveal-inner">
+      <div class="reveal-kicker">Your names for this chapter</div>
+      <div class="reveal-from">You are</div>
+      <div class="reveal-name-you" id="revealNameYou"><span class="cursor"></span></div>
+      <div class="reveal-vs" id="revealVs">&amp;</div>
+      <div class="reveal-from2" id="revealFrom2">Your stranger is</div>
+      <div class="reveal-name-them" id="revealNameThem"></div>
+      <div class="reveal-ref" id="revealRef"></div>
+      <div class="reveal-bond" id="revealBond"></div>
+      <div class="reveal-hint" id="revealHint">Beginning your chapter...</div>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="view hidden" id="view-chat" style="position:relative;">
+    <div class="chat-header">
+      <div class="chapter-badge">
+        <div class="chapter-label">Chapter</div>
+        <div class="chapter-num" id="chatChapterNum">—</div>
+      </div>
+      <div class="chat-live"><div class="live-dot"></div>Connected</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-leave" style="color:var(--muted2);border-color:var(--border);" onclick="openReport()">⚑ Report</button>
+        <button class="btn-leave" onclick="leaveChat()">Leave</button>
+      </div>
+    </div>
+    <div class="name-plates">
+      <div class="name-plate you"><div class="name-plate-dot"></div><span id="myNamePlate">—</span></div>
+      <div class="name-plate-vs">vs</div>
+      <div class="name-plate stranger"><div class="name-plate-dot"></div><span id="theirNamePlate">—</span></div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="chat-input-area">
+      <div class="input-row">
+        <div class="input-wrap">
+          <textarea id="msgInput" placeholder="Write something..." rows="1" oninput="onInput()" onkeydown="onKeydown(event)"></textarea>
+          <span class="word-badge" id="wordBadge">0 / 4000</span>
+        </div>
+        <button class="btn-send" id="sendBtn" onclick="sendMessage()" disabled>→</button>
+      </div>
+      <div class="input-hint">Enter to send · Shift+Enter for new line · 4000 characters per message</div>
+    </div>
+    <div class="stranger-left-overlay" id="strangerLeft">
+      <div class="left-icon">◆</div>
+      <div class="left-title">The stranger has gone.</div>
+      <div class="left-sub">This chapter has been saved.</div>
+      <div class="left-actions">
+        <button class="btn-secondary" onclick="goHome()">Go home</button>
+        <button class="btn-primary" onclick="findStranger()">Find another</button>
+      </div>
+    </div>
+
+    <!-- Pair Intro Overlay -->
+    <div class="pair-intro" id="pairIntro">
+      <div class="pair-intro-kicker" id="piKicker">your story begins</div>
+      <div class="pair-intro-row">
+        <div class="pair-intro-label">You are</div>
+        <div class="pair-intro-name you-name" id="piMyName"></div>
+      </div>
+      <div class="pair-intro-vs" id="piVs">&</div>
+      <div class="pair-intro-row">
+        <div class="pair-intro-label">Your stranger is</div>
+        <div class="pair-intro-name their-name" id="piTheirName"></div>
+      </div>
+      <div class="pair-intro-ref" id="piRef"></div>
+      <div class="pair-intro-bar" id="piBar"><div class="pair-intro-bar-fill" id="piBarFill"></div></div>
+      <div class="pair-intro-hint" id="piHint">chat begins shortly</div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="view hidden" id="view-history">
+    <div class="view-header">
+      <div class="view-header-left"><div class="label">Your anthology</div><div class="title">My Chapters</div></div>
+      <button class="btn-back" onclick="goHome()">← Back</button>
+    </div>
+    <div class="scroll-list" id="historyList"></div>
+  </div>
+
+  <!-- Chapter Reader -->
+  <div class="view hidden" id="view-chapter">
+    <div class="view-header">
+      <div class="view-header-left">
+        <div class="label">Chapter</div>
+        <div class="title" id="readerNum">—</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);letter-spacing:0.5px;" id="readerMeta">—</div>
+        <button class="btn-back" style="margin-top:4px;" onclick="showHistory()">← My Chapters</button>
+      </div>
+    </div>
+    <div class="reader-messages" id="readerMessages"></div>
+  </div>
+
+  <!-- Confession Wall -->
+  <div class="view hidden" id="view-confessions">
+    <div class="confession-header-area">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+        <div class="view-header-left"><div class="label">Public Wall</div><div class="title">Confessions</div></div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn-back" onclick="goHome()">← Back</button>
+          <button class="btn-primary" style="padding:8px 18px;font-size:14px;" onclick="showView('write')">Write one →</button>
+        </div>
+      </div>
+      <div class="confession-tabs">
+        <button class="conf-tab active" id="confTab-all" onclick="switchConfTab('all')">All</button>
+        <button class="conf-tab" id="confTab-search" onclick="switchConfTab('search')">Search by name</button>
+      </div>
+    </div>
+    <div class="conf-search-bar" id="confSearchBar" style="display:none;">
+      <input type="text" class="conf-search-input" id="confSearchInput" placeholder="Type a name or metaphor..." onkeydown="if(event.key==='Enter')searchConfessions()"/>
+      <button class="btn-search" onclick="searchConfessions()">Search</button>
+    </div>
+    <div class="confessions-list" id="confessionsList"></div>
+  </div>
+
+  <!-- Write Confession -->
+  <div class="view hidden" id="view-write">
+    <div class="view-header">
+      <div class="view-header-left"><div class="label">New</div><div class="title">Write a Confession</div></div>
+      <button class="btn-back" onclick="showView('confessions')">← Wall</button>
+    </div>
+    <div class="write-inner">
+      <p class="write-sub">Say what you've been holding. No one will know it's you — unless you tell them.</p>
+
+      <div class="wfield">
+        <label class="wlabel">From (your name or a metaphor)</label>
+        <input type="text" class="winput" id="wFrom" placeholder="e.g. A girl from the third floor, Someone from June..." maxlength="60"/>
+      </div>
+
+      <div class="wfield">
+        <label class="wlabel">To (their name or a metaphor)</label>
+        <input type="text" class="winput" id="wTo" placeholder="e.g. R., The boy who never called back..." maxlength="60"/>
+      </div>
+
+      <div class="wfield">
+        <label class="wlabel">The confession</label>
+        <textarea class="winput wtextarea" id="wContent" placeholder="Write what you've been meaning to say..." maxlength="500" oninput="updateConfCount()"></textarea>
+        <div class="char-count" id="confCount">0 / 500</div>
+      </div>
+
+      <div class="wfield">
+        <label class="wlabel">Dedicate a song (optional)</label>
+        <div class="song-search-wrap">
+          <div id="songSelectedWrap" style="display:none;">
+            <div class="song-selected">
+              <span style="font-size:18px;">🎵</span>
+              <div class="song-selected-info">
+                <div class="song-selected-title" id="songSelTitle"></div>
+                <div class="song-selected-artist" id="songSelArtist"></div>
+              </div>
+              <button class="btn-clear-song" onclick="clearSong()" title="Remove">×</button>
+            </div>
+          </div>
+          <div id="songSearchWrap">
+            <div class="song-search-row">
+              <input type="text" class="winput" id="songSearchInput" placeholder="Search for a song..." onkeydown="if(event.key==='Enter')searchSongs()" style="font-size:15px;"/>
+              <button class="btn-search" onclick="searchSongs()">Find</button>
+            </div>
+            <div class="song-results" id="songResults" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="write-error" id="writeErr"></div>
+      <button class="btn-post" id="postBtn" onclick="postConfession()">Post confession</button>
+      <p style="text-align:center;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:0.5px;margin-top:14px;">Once posted, confessions cannot be deleted.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Report Modal -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal">
+    <div id="reportForm">
+      <div class="modal-title">Report this conversation</div>
+      <div class="modal-sub">Select a reason. This will be reviewed and the user may be banned. You can still leave the chat.</div>
+      <div class="report-reasons">
+        <button class="reason-btn" onclick="selectReason(this,'Harassment or bullying')">Harassment or bullying</button>
+        <button class="reason-btn" onclick="selectReason(this,'Hate speech or discrimination')">Hate speech or discrimination</button>
+        <button class="reason-btn" onclick="selectReason(this,'Explicit or inappropriate content')">Explicit or inappropriate content</button>
+        <button class="reason-btn" onclick="selectReason(this,'Threats or intimidation')">Threats or intimidation</button>
+        <button class="reason-btn" onclick="selectReason(this,'Spam or bot behaviour')">Spam or bot behaviour</button>
+        <button class="reason-btn" onclick="selectReason(this,'Other')">Other</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-report-cancel" onclick="closeReport()">Cancel</button>
+        <button class="btn-report-submit" id="reportSubmitBtn" disabled onclick="submitReport()">Submit report</button>
+      </div>
+    </div>
+    <div id="reportSuccess" style="display:none;" class="report-success">
+      <div class="report-success-icon">◆</div>
+      <div class="report-success-text">Report received.</div>
+      <div class="report-success-sub">Thank you. We'll review this conversation.</div>
+      <button class="btn-report-cancel" style="margin-top:20px;width:100%;" onclick="closeReport()">Close</button>
+    </div>
+  </div>
+</div>
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const TOKEN = localStorage.getItem('chapters_token');
+const USERNAME = localStorage.getItem('chapters_username') || '';
+if (USERNAME) { const el = document.getElementById('usernameTag'); if (el) el.textContent = USERNAME; }
+function logout() { localStorage.removeItem('chapters_token'); localStorage.removeItem('chapters_username'); window.location.href = '/auth.html'; }
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const STATE = { view: 'landing', history: [], currentChapter: null, connected: false, typingTimeout: null };
+let selectedSong = null;
+let confPage = 1;
+let confLoading = false;
+
+// ── Socket ────────────────────────────────────────────────────────────────────
+const socket = io();
+socket.on('connect', () => socket.emit('auth', { token: TOKEN }));
+socket.on('auth_error', () => { localStorage.removeItem('chapters_token'); window.location.href = '/auth.html'; });
+socket.on('authed', () => {});
+socket.on('online_count', c => { document.getElementById('onlineCount').textContent = c; });
+socket.on('history', h => { STATE.history = h; if (STATE.view === 'history') renderHistory(); });
+socket.on('waiting', () => showView('waiting'));
+socket.on('matched', ({ chapter, myName, theirName, pairRef, pairBond }) => {
+  STATE.currentChapter = chapter; STATE.connected = true;
+  STATE.myName = myName; STATE.theirName = theirName;
+  document.getElementById('chatChapterNum').textContent = toRoman(chapter);
+  document.getElementById('myNamePlate').textContent = myName;
+  document.getElementById('theirNamePlate').textContent = theirName;
+  document.getElementById('strangerLeft').classList.remove('show');
+  clearMessages();
+  showView('reveal');
+  playReveal(myName, theirName, pairRef, pairBond);
+});
+socket.on('message', ({ content }) => addMessage('stranger', content));
+socket.on('message_sent', ({ content }) => addMessage('you', content));
+socket.on('stranger_typing', showTyping);
+socket.on('stranger_stop_typing', hideTyping);
+socket.on('stranger_left', () => {
+  STATE.connected = false; hideTyping();
+  addSystemMsg('The stranger has closed the chapter.');
+  document.getElementById('strangerLeft').classList.add('show');
+});
+socket.on('search_cancelled', () => showView('landing'));
+socket.on('report_result', ({ success, error }) => {
+  if (success) { document.getElementById('reportForm').style.display='none'; document.getElementById('reportSuccess').style.display='block'; }
+  else alert(error || 'Could not submit report.');
+});
+socket.on('new_confession', () => { if (STATE.view === 'confessions') loadConfessions(true); });
+
+// ── Views ─────────────────────────────────────────────────────────────────────
+function showView(name) {
+  ['landing','waiting','reveal','chat','history','chapter','confessions','write'].forEach(v => {
+    document.getElementById('view-'+v).classList.toggle('hidden', v !== name);
+  });
+  STATE.view = name;
+  if (name === 'confessions') loadConfessions(true);
+}
+function goHome() { showView('landing'); }
+function showHistory() { renderHistory(); showView('history'); }
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+function findStranger() { showView('waiting'); socket.emit('find_stranger'); }
+function cancelSearch() { socket.emit('cancel_search'); }
+function leaveChat() { socket.emit('leave_chat'); STATE.connected = false; addSystemMsg('You closed the chapter.'); document.getElementById('strangerLeft').classList.add('show'); }
+function clearMessages() { document.getElementById('messages').innerHTML = ''; }
+function addSystemMsg(text) { const m = document.getElementById('messages'); const el = document.createElement('div'); el.className = 'msg-system'; el.textContent = text; m.appendChild(el); scrollBottom(); }
+function addMessage(who, content) {
+  hideTyping();
+  const m = document.getElementById('messages');
+  const w = document.createElement('div'); w.className = 'msg ' + who;
+  const label = who === 'you' ? (STATE.myName || 'You') : (STATE.theirName || 'Stranger');
+  w.innerHTML = `<div class="msg-who">${label}</div><div class="msg-bubble">${escHtml(content)}</div><div class="msg-time">${fmtTime(Date.now())}</div>`;
+  m.appendChild(w); scrollBottom();
+}
+let typingEl = null;
+function showTyping() { if (typingEl) return; const m = document.getElementById('messages'); typingEl = document.createElement('div'); typingEl.className='typing-bubble'; typingEl.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>'; m.appendChild(typingEl); scrollBottom(); }
+function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+function scrollBottom() { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }
+function onInput() {
+  const t = document.getElementById('msgInput').value;
+  const len = t.length;
+  const b = document.getElementById('wordBadge');
+  b.textContent = len + ' / 4000';
+  b.className = 'word-badge' + (len > 4000 ? ' over' : len >= 3600 ? ' warn' : '');
+  document.getElementById('sendBtn').disabled = len === 0 || len > 4000 || !STATE.connected;
+  if (STATE.connected && len > 0) { socket.emit('typing'); clearTimeout(STATE.typingTimeout); STATE.typingTimeout = setTimeout(() => socket.emit('stop_typing'), 2000); } else socket.emit('stop_typing');
+  const ta = document.getElementById('msgInput'); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+}
+function onKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function sendMessage() {
+  const inp = document.getElementById('msgInput'); const text = inp.value.trim();
+  if (!text || !STATE.connected || text.length > 4000) return;
+  socket.emit('message', { content: text }); inp.value = ''; inp.style.height = 'auto'; onInput();
+  clearTimeout(STATE.typingTimeout); socket.emit('stop_typing');
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (!STATE.history || STATE.history.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">◆</div><div class="empty-title">No chapters yet.</div><div class="empty-sub">Your conversations will live here.</div></div>`;
+    return;
+  }
+  list.innerHTML = STATE.history.map(conv => {
+    const preview = conv.preview ? (conv.preview.length > 60 ? conv.preview.slice(0,60)+'…' : conv.preview) : 'No messages';
+    const dur = conv.endedAt ? fmtDuration(conv.endedAt - conv.startedAt) : 'Ongoing';
+    return `<div class="chapter-card" onclick='openChapterById("${conv.id}")'>
+      <div class="c-num"><div class="c-roman">${toRoman(conv.chapter)}</div></div>
+      <div class="c-inner">
+        <div class="c-date">${fmtDate(conv.startedAt)}</div>
+        <div class="c-preview">"${escHtml(preview)}"</div>
+        <div class="c-meta">${conv.messageCount} messages · ${dur}</div>
+      </div>
+      <div class="c-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+function openChapterById(id) { const c = STATE.history.find(x => x.id === id); if (c) openChapter(c); }
+function openChapter(ch) {
+  document.getElementById('readerNum').textContent = toRoman(ch.chapter);
+  const nameInfo = ch.myName ? ` · ${ch.myName} & ${ch.theirName}` : '';
+  document.getElementById('readerMeta').textContent = fmtDate(ch.startedAt) + ' · ' + ch.messageCount + ' messages' + nameInfo;
+  const c = document.getElementById('readerMessages'); c.innerHTML = '';
+  if (!ch.messages || ch.messages.length === 0) { c.innerHTML = `<div style="text-align:center;color:var(--muted);font-style:italic;padding:48px 0;font-family:'Cormorant Garamond',serif;">No messages in this chapter.</div>`; }
+  else {
+    ch.messages.forEach(m => {
+      const w = document.createElement('div'); w.className = 'msg ' + m.sender;
+      const label = m.sender === 'you' ? (ch.myName || 'You') : (ch.theirName || 'Stranger');
+      w.innerHTML = `<div class="msg-who">${label}</div><div class="msg-bubble">${escHtml(m.content)}</div><div class="msg-time">${fmtTime(m.sentAt)}</div>`;
+      c.appendChild(w);
+    });
+    const end = document.createElement('div'); end.className = 'reader-end';
+    end.innerHTML = `<div class="reader-end-line"></div><div class="reader-end-text">End of Chapter ${toRoman(ch.chapter)}</div><div class="reader-end-line"></div>`;
+    c.appendChild(end);
+  }
+  showView('chapter');
+}
+
+// ── Confessions ───────────────────────────────────────────────────────────────
+async function loadConfessions(reset = false) {
+  if (confLoading) return;
+  if (reset) { confPage = 1; document.getElementById('confessionsList').innerHTML = ''; }
+  confLoading = true;
+  try {
+    const res = await fetch(`/api/confessions?page=${confPage}`);
+    const data = await res.json();
+    renderConfessions(data.confessions, reset);
+    confPage++;
+  } catch(e) {} finally { confLoading = false; }
+}
+
+async function searchConfessions() {
+  const q = document.getElementById('confSearchInput').value.trim();
+  if (!q) return;
+  document.getElementById('confessionsList').innerHTML = `<div class="empty-state"><div class="empty-sub">Searching...</div></div>`;
+  try {
+    const res = await fetch(`/api/confessions/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (data.confessions.length === 0) {
+      document.getElementById('confessionsList').innerHTML = `<div class="empty-state"><div class="empty-icon">◆</div><div class="empty-title">No results found.</div><div class="empty-sub">Try a different name or metaphor.</div></div>`;
+    } else renderConfessions(data.confessions, true);
+  } catch(e) {}
+}
+
+function renderConfessions(confessions, reset = false) {
+  const list = document.getElementById('confessionsList');
+  if (reset && confessions.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">◆</div><div class="empty-title">No confessions yet.</div><div class="empty-sub">Be the first to leave one.</div></div>`;
+    return;
+  }
+  const html = confessions.map(c => {
+    const songHtml = c.song_title ? `
+      <a class="conf-song" href="${safeSongHref(c.song_url)}" target="_blank" rel="noopener noreferrer">
+        <span class="conf-song-icon">🎵</span>
+        <div class="conf-song-info">
+          <div class="conf-song-title">${escHtml(c.song_title)}</div>
+          <div class="conf-song-artist">${escHtml(c.song_artist || '')}</div>
+        </div>
+        <span style="font-size:12px;color:var(--muted);">Open in Spotify →</span>
+      </a>` : '';
+    return `<div class="confession-card">
+      <div class="conf-from-to">
+        <span class="conf-from">From</span>
+        <span class="conf-name">${escHtml(c.from_name)}</span>
+        <span class="conf-arrow">→</span>
+        <span class="conf-from">To</span>
+        <span class="conf-to-name">${escHtml(c.to_name)}</span>
+      </div>
+      <div class="conf-text">"${escHtml(c.content)}"</div>
+      ${songHtml}
+      <div class="conf-date">${fmtDate(c.created_at * 1000)}</div>
+    </div>`;
+  }).join('');
+  if (reset) list.innerHTML = html;
+  else list.insertAdjacentHTML('beforeend', html);
+}
+
+function switchConfTab(tab) {
+  document.getElementById('confTab-all').classList.toggle('active', tab === 'all');
+  document.getElementById('confTab-search').classList.toggle('active', tab === 'search');
+  document.getElementById('confSearchBar').style.display = tab === 'search' ? 'flex' : 'none';
+  if (tab === 'all') loadConfessions(true);
+  else document.getElementById('confessionsList').innerHTML = `<div class="empty-state"><div class="empty-sub">Enter a name to search.</div></div>`;
+}
+
+// ── Write Confession ──────────────────────────────────────────────────────────
+function updateConfCount() {
+  const len = document.getElementById('wContent').value.length;
+  const el = document.getElementById('confCount');
+  el.textContent = len + ' / 500';
+  el.className = 'char-count' + (len > 500 ? ' over' : len > 400 ? ' warn' : '');
+}
+
+async function searchSongs() {
+  const q = document.getElementById('songSearchInput').value.trim();
+  if (!q) return;
+  const resultsEl = document.getElementById('songResults');
+  resultsEl.style.display = 'block';
+  resultsEl.innerHTML = `<div style="padding:12px 14px;font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);letter-spacing:0.5px;">Searching...</div>`;
+  try {
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=6`);
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) {
+      resultsEl.innerHTML = `<div style="padding:12px 14px;font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);">No results found.</div>`;
+      return;
+    }
+    resultsEl.innerHTML = data.results.map((t, i) => `
+      <div class="song-result" data-idx="${i}">
+        <div class="song-result-info">
+          <div class="song-result-title">${escHtml(t.trackName)}</div>
+          <div class="song-result-artist">${escHtml(t.artistName)}</div>
+        </div>
+        <span class="song-result-check" id="src-${i}">✓</span>
+      </div>`).join('');
+    // Attach click handlers via event delegation (no inline onclick = no injection risk)
+    resultsEl.querySelectorAll('.song-result').forEach(el => {
+      el.addEventListener('click', () => selectSong(parseInt(el.dataset.idx)));
+    });
+    window._songResults = data.results;
+  } catch(e) {
+    resultsEl.innerHTML = `<div style="padding:12px 14px;font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);">Search failed. Try again.</div>`;
+  }
+}
+
+function selectSong(idx) {
+  const track = window._songResults?.[idx];
+  if (!track) return;
+  selectedSong = {
+    title: track.trackName,
+    artist: track.artistName,
+    url: `https://open.spotify.com/search/${encodeURIComponent(track.trackName + ' ' + track.artistName)}`
+  };
+  document.getElementById('songSelTitle').textContent = selectedSong.title;
+  document.getElementById('songSelArtist').textContent = selectedSong.artist;
+  document.getElementById('songSelectedWrap').style.display = 'block';
+  document.getElementById('songSearchWrap').style.display = 'none';
+}
+
+function clearSong() {
+  selectedSong = null;
+  document.getElementById('songSelectedWrap').style.display = 'none';
+  document.getElementById('songSearchWrap').style.display = 'block';
+  document.getElementById('songResults').style.display = 'none';
+  document.getElementById('songSearchInput').value = '';
+}
+
+async function postConfession() {
+  const from = document.getElementById('wFrom').value.trim();
+  const to = document.getElementById('wTo').value.trim();
+  const content = document.getElementById('wContent').value.trim();
+  const errEl = document.getElementById('writeErr');
+  errEl.classList.remove('show');
+
+  if (!from) { errEl.textContent = 'Please fill in the "From" field.'; errEl.classList.add('show'); return; }
+  if (!to) { errEl.textContent = 'Please fill in the "To" field.'; errEl.classList.add('show'); return; }
+  if (!content) { errEl.textContent = 'Please write your confession.'; errEl.classList.add('show'); return; }
+  if (content.length < 10) { errEl.textContent = 'Confession is too short.'; errEl.classList.add('show'); return; }
+
+  const btn = document.getElementById('postBtn');
+  btn.disabled = true; btn.textContent = 'Posting...';
+
+  try {
+    const body = { from_name: from, to_name: to, content };
+    if (selectedSong) { body.song_title = selectedSong.title; body.song_artist = selectedSong.artist; body.song_url = selectedSong.url; }
+
+    const res = await fetch('/api/confessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error || 'Something went wrong.'; errEl.classList.add('show'); btn.disabled=false; btn.textContent='Post confession'; return; }
+
+    // Reset form
+    document.getElementById('wFrom').value = '';
+    document.getElementById('wTo').value = '';
+    document.getElementById('wContent').value = '';
+    clearSong(); updateConfCount();
+    btn.disabled=false; btn.textContent='Post confession';
+    showView('confessions');
+  } catch(e) {
+    errEl.textContent = 'Connection error.'; errEl.classList.add('show');
+    btn.disabled=false; btn.textContent='Post confession';
+  }
+}
+
+// ── Report ────────────────────────────────────────────────────────────────────
+let selectedReason = null;
+  const overlay = document.getElementById('pairIntro');
+  const piMyName = document.getElementById('piMyName');
+  const piTheirName = document.getElementById('piTheirName');
+  const piRef = document.getElementById('piRef');
+  const piKicker = document.getElementById('piKicker');
+  const piVs = document.getElementById('piVs');
+  const piBar = document.getElementById('piBar');
+  const piBarFill = document.getElementById('piBarFill');
+  const piHint = document.getElementById('piHint');
+
+  // Reset
+  piMyName.textContent = '';
+  piTheirName.textContent = '';
+  piRef.textContent = '';
+  piRef.classList.remove('vis');
+  piKicker.classList.remove('vis');
+  piVs.classList.remove('vis');
+  piBar.classList.remove('vis');
+  piHint.classList.remove('vis');
+  piBarFill.style.transition = 'none';
+  piBarFill.style.width = '0%';
+
+  overlay.classList.add('show');
+
+  const TOTAL_DURATION = 4200; // ms before chat opens
+  const CHAR_SPEED = 55; // ms per character
+
+  function typeText(el, text, onDone) {
+    let i = 0;
+    const tick = () => {
+      if (i <= text.length) {
+        el.textContent = text.slice(0, i);
+        i++;
+        setTimeout(tick, CHAR_SPEED);
+      } else { if (onDone) onDone(); }
+    };
+    tick();
+  }
+
+  // Timeline
+  setTimeout(() => piKicker.classList.add('vis'), 100);
+
+  setTimeout(() => {
+    typeText(piMyName, myName, () => {
+      setTimeout(() => {
+        piVs.classList.add('vis');
+        setTimeout(() => {
+          typeText(piTheirName, theirName, () => {
+            setTimeout(() => {
+              piRef.innerHTML = `<em>— ${pairRef}</em>`;
+              piRef.classList.add('vis');
+              setTimeout(() => {
+                piBar.classList.add('vis');
+                piHint.classList.add('vis');
+                // Countdown bar
+                const remaining = TOTAL_DURATION - 1800;
+                requestAnimationFrame(() => {
+                  setTimeout(() => {
+                    piBarFill.style.transition = `width ${remaining}ms linear`;
+                    piBarFill.style.width = '100%';
+                  }, 50);
+                });
+              }, 300);
+            }, 400);
+          });
+        }, 300);
+      }, 200);
+    });
+  }, 600);
+
+  // End — fade out overlay, start chat
+  setTimeout(() => {
+    overlay.style.transition = 'opacity 0.6s ease';
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+      overlay.classList.remove('show');
+      overlay.style.opacity = '';
+      overlay.style.transition = '';
+      addSystemMsg(`${myName} & ${theirName} — ${pairRef}`);
+      document.getElementById('msgInput').focus();
+    }, 600);
+  }, TOTAL_DURATION);
+}
+
+// ── Pair Reveal ───────────────────────────────────────────────────────────────
+function playReveal(myName, theirName, pairRef, pairBond) {
+  // Reset all elements
+  const elYou = document.getElementById('revealNameYou');
+  const elVs = document.getElementById('revealVs');
+  const elFrom2 = document.getElementById('revealFrom2');
+  const elThem = document.getElementById('revealNameThem');
+  const elRef = document.getElementById('revealRef');
+  const elBond = document.getElementById('revealBond');
+  const elHint = document.getElementById('revealHint');
+
+  elYou.innerHTML = '<span class="cursor"></span>';
+  elVs.style.opacity = '0';
+  elFrom2.style.opacity = '0';
+  elThem.textContent = '';
+  elRef.style.opacity = '0'; elRef.textContent = pairRef || '';
+  elBond.style.opacity = '0'; elBond.textContent = '';
+  elHint.style.opacity = '0';
+
+  function typeInto(el, text, speed, onDone) {
+    let i = 0;
+    el.innerHTML = '<span class="cursor"></span>';
+    const interval = setInterval(() => {
+      if (i >= text.length) {
+        clearInterval(interval);
+        el.innerHTML = text; // remove cursor when done
+        if (onDone) onDone();
+        return;
+      }
+      el.innerHTML = text.slice(0, ++i) + '<span class="cursor"></span>';
+    }, speed);
+  }
+
+  function fadeIn(el, delay) {
+    setTimeout(() => { el.style.transition = 'opacity 0.6s ease'; el.style.opacity = '1'; }, delay);
+  }
+
+  // Sequence
+  setTimeout(() => {
+    // Type your name
+    typeInto(elYou, myName, 60, () => {
+      // Show & after 300ms
+      setTimeout(() => {
+        fadeIn(elVs, 0);
+        fadeIn(elFrom2, 200);
+
+        // Type their name after 500ms
+        setTimeout(() => {
+          typeInto(elThem, theirName, 60, () => {
+            // Show reference
+            setTimeout(() => {
+              fadeIn(elRef, 0);
+
+              // Type bond description
+              setTimeout(() => {
+                elBond.style.transition = 'opacity 0.5s ease';
+                elBond.style.opacity = '1';
+                typeInto(elBond, pairBond || '', 18, () => {
+                  // Show hint and transition to chat
+                  setTimeout(() => {
+                    fadeIn(elHint, 0);
+                    setTimeout(() => {
+                      showView('chat');
+                      addSystemMsg(`You are ${myName}. Your stranger is ${theirName}.`);
+                      document.getElementById('msgInput').focus();
+                    }, 2200);
+                  }, 600);
+                });
+              }, 500);
+            }, 400);
+          });
+        }, 700);
+      }, 300);
+    });
+  }, 400);
+}
+
+// ── Music Player ─────────────────────────────────────────────────────────────
+const MP = {
+  audio: new Audio(),
+  tracks: [],
+  currentIdx: -1,
+  isOpen: false,
+  isExpanded: false,
+  progressTimer: null,
+};
+MP.audio.volume = 0.4;
+MP.audio.crossOrigin = 'anonymous';
+
+function togglePlayer() {
+  const el = document.getElementById('musicPlayer');
+  const btn = document.getElementById('mpToggleBtn');
+  if (!MP.isOpen) {
+    MP.isOpen = true;
+    el.classList.add('mini');
+    btn.classList.add('active');
+  } else if (!MP.isExpanded) {
+    el.classList.remove('mini');
+    el.classList.add('open');
+    MP.isExpanded = true;
+  } else {
+    el.classList.remove('open');
+    el.classList.add('mini');
+    MP.isExpanded = false;
+  }
+}
+
+function togglePlayerExpand() {
+  const el = document.getElementById('musicPlayer');
+  if (!MP.isOpen) return;
+  if (MP.isExpanded) {
+    el.classList.remove('open');
+    el.classList.add('mini');
+    MP.isExpanded = false;
+  } else {
+    el.classList.remove('mini');
+    el.classList.add('open');
+    MP.isExpanded = true;
+  }
+}
+
+async function mpSearch() {
+  const q = document.getElementById('mpSearchInput').value.trim();
+  if (!q) return;
+  const resultsEl = document.getElementById('mpResults');
+  resultsEl.style.display = 'flex';
+  resultsEl.innerHTML = `<div class="mp-result"><div class="mp-result-info"><div class="mp-result-title" style="color:var(--muted);">Searching...</div></div></div>`;
+  try {
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=8&entity=song`);
+    const data = await res.json();
+    const tracks = (data.results || []).filter(t => t.previewUrl);
+    if (tracks.length === 0) {
+      resultsEl.innerHTML = `<div class="mp-result"><div class="mp-result-info"><div class="mp-result-title" style="color:var(--muted);">No results with previews found.</div></div></div>`;
+      return;
+    }
+    MP.tracks = tracks;
+    resultsEl.innerHTML = tracks.map((t, i) => {
+      const dur = t.trackTimeMillis ? Math.round(t.trackTimeMillis / 1000) + 's' : '30s';
+      return `<div class="mp-result" id="mpR-${i}" data-idx="${i}" onclick="mpPlay(${i})">
+        <span class="mp-play-icon" id="mpPI-${i}">▷</span>
+        <div class="mp-result-info">
+          <div class="mp-result-title">${escHtml(t.trackName)}</div>
+          <div class="mp-result-artist">${escHtml(t.artistName)}</div>
+        </div>
+        <span class="mp-result-dur">${dur}</span>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    resultsEl.innerHTML = `<div class="mp-result"><div class="mp-result-info"><div class="mp-result-title" style="color:var(--muted);">Search failed. Try again.</div></div></div>`;
+  }
+}
+
+function mpPlay(idx) {
+  const track = MP.tracks[idx];
+  if (!track || !track.previewUrl) return;
+
+  // Update active state
+  document.querySelectorAll('.mp-result').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+    const pi = document.getElementById('mpPI-' + i);
+    if (pi) pi.textContent = i === idx ? '▶' : '▷';
+  });
+
+  MP.currentIdx = idx;
+  MP.audio.src = track.previewUrl;
+  MP.audio.volume = document.getElementById('mpVol').value / 100;
+  MP.audio.play().catch(() => {});
+
+  document.getElementById('mpTrackName').textContent = track.trackName;
+  document.getElementById('mpTrackArtist').textContent = track.artistName;
+  document.getElementById('mpPlayBtn').textContent = '⏸';
+  document.getElementById('mpPlayBtn').classList.add('playing');
+  document.getElementById('mpToggleBtn').classList.add('active');
+
+  mpStartProgress();
+}
+
+function mpTogglePlay() {
+  if (MP.audio.paused) {
+    if (!MP.audio.src) return;
+    MP.audio.play().catch(() => {});
+    document.getElementById('mpPlayBtn').textContent = '⏸';
+    document.getElementById('mpPlayBtn').classList.add('playing');
+    mpStartProgress();
+  } else {
+    MP.audio.pause();
+    document.getElementById('mpPlayBtn').textContent = '▶';
+    document.getElementById('mpPlayBtn').classList.remove('playing');
+    clearInterval(MP.progressTimer);
+  }
+}
+
+function mpNext() {
+  if (MP.tracks.length === 0) return;
+  const next = (MP.currentIdx + 1) % MP.tracks.length;
+  mpPlay(next);
+}
+
+function mpStartProgress() {
+  clearInterval(MP.progressTimer);
+  MP.progressTimer = setInterval(() => {
+    if (!MP.audio.duration) return;
+    const pct = (MP.audio.currentTime / MP.audio.duration) * 100;
+    document.getElementById('mpProgressFill').style.width = pct + '%';
+  }, 500);
+}
+
+function mpSeek(e) {
+  if (!MP.audio.duration) return;
+  const rect = document.getElementById('mpProgress').getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  MP.audio.currentTime = pct * MP.audio.duration;
+}
+
+function mpSetVol(val) {
+  MP.audio.volume = val / 100;
+  document.getElementById('mpVolVal').textContent = val;
+}
+
+// Auto-advance to next track when one ends
+MP.audio.addEventListener('ended', () => {
+  if (MP.tracks.length > 1) mpNext();
+  else {
+    document.getElementById('mpPlayBtn').textContent = '▶';
+    document.getElementById('mpPlayBtn').classList.remove('playing');
+    document.getElementById('mpProgressFill').style.width = '0%';
+    clearInterval(MP.progressTimer);
+  }
+});
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function toRoman(n) {
+  if (!n || n < 1) return '—';
+  const v=[1000,900,500,400,100,90,50,40,10,9,5,4,1], s=['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
+  let r=''; v.forEach((val,i)=>{while(n>=val){r+=s[i];n-=val;}});
+  return r;
+}
+function escHtml(t) { const d=document.createElement('div'); d.appendChild(document.createTextNode(t||'')); return d.innerHTML; }
+// Safe href: only allow http/https to prevent javascript: URI XSS
+function safeSongHref(url) {
+  if (!url) return '#';
+  try { const p = new URL(url); return (p.protocol === 'https:' || p.protocol === 'http:') ? escHtml(url) : '#'; } catch { return '#'; }
+}
+function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }
+function fmtTime(ts) { return new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
+function fmtDuration(ms) { const m=Math.floor(ms/60000); if(m<1)return '<1 min'; if(m<60)return m+' min'; return Math.floor(m/60)+'h '+(m%60)+'m'; }
+function openReport() {
+  selectedReason = null;
+  document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('reportSubmitBtn').disabled = true;
+  document.getElementById('reportForm').style.display = 'block';
+  document.getElementById('reportSuccess').style.display = 'none';
+  document.getElementById('reportModal').classList.add('show');
+}
+function closeReport() { document.getElementById('reportModal').classList.remove('show'); }
+function selectReason(btn, reason) {
+  selectedReason = reason;
+  document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('reportSubmitBtn').disabled = false;
+}
+function submitReport() {
+  if (!selectedReason) return;
+  socket.emit('report', { reason: selectedReason });
+  document.getElementById('reportSubmitBtn').disabled = true;
+}
+<!-- Music Player — correctly placed in body -->
+<div id="musicPlayer">
+  <div class="mp-bar" onclick="togglePlayerExpand()">
+    <div class="mp-bar-left">
+      <span class="mp-icon">♪</span>
+      <div class="mp-now-playing">
+        <div class="mp-track-name" id="mpTrackName"><span class="mp-idle">No track playing</span></div>
+        <div class="mp-track-artist" id="mpTrackArtist"></div>
+      </div>
+    </div>
+    <div class="mp-bar-controls">
+      <button class="mp-btn" id="mpPlayBtn" onclick="event.stopPropagation();mpTogglePlay()" title="Play / Pause">▶</button>
+      <button class="mp-btn" onclick="event.stopPropagation();mpNext()" title="Next">⏭</button>
+      <span class="mp-chevron">▲</span>
+    </div>
+  </div>
+  <div class="mp-progress" id="mpProgress" onclick="mpSeek(event)">
+    <div class="mp-progress-fill" id="mpProgressFill"></div>
+  </div>
+  <div class="mp-panel" id="mpPanel">
+    <div class="mp-search-row">
+      <input class="mp-search-input" id="mpSearchInput" type="text" placeholder="Search for any song..." onkeydown="if(event.key==='Enter')mpSearch()"/>
+      <button class="mp-search-btn" onclick="mpSearch()">Search</button>
+    </div>
+    <div class="mp-results" id="mpResults" style="display:none;"></div>
+    <div class="mp-vol-row">
+      <span class="mp-vol-label">Volume</span>
+      <input type="range" class="mp-vol" id="mpVol" min="0" max="100" value="40" oninput="mpSetVol(this.value)"/>
+      <span class="mp-vol-val" id="mpVolVal">40</span>
+    </div>
+    <div class="mp-note">30s official previews · iTunes · legal &amp; free</div>
+  </div>
+</div>
+
+</body>
+</html>
