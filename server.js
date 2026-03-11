@@ -487,15 +487,14 @@ app.post('/api/register', authLimiter, async (req, res) => {
 
   const hash = await bcrypt.hash(password, 12);
   const id = uuidv4();
-  db.prepare('INSERT INTO accounts (id, username, password_hash, email, email_verified) VALUES (?, ?, ?, ?, 0)').run(id, u, hash, e);
+  db.prepare('INSERT INTO accounts (id, username, password_hash, email, email_verified) VALUES (?, ?, ?, ?, 1)').run(id, u, hash, e);
 
-  // Send verification email
-  const verifyToken = uuidv4();
-  const verifyExpires = Math.floor(Date.now() / 1000) + (24 * 60 * 60); // 24h
-  db.prepare('INSERT INTO email_verifications (token, account_id, expires_at) VALUES (?, ?, ?)').run(verifyToken, id, verifyExpires);
-  sendVerificationEmail(e, u, verifyToken); // non-blocking
+  // Issue token immediately — no email verification required
+  const token = uuidv4();
+  const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
+  db.prepare('INSERT INTO auth_tokens (token, account_id, expires_at) VALUES (?, ?, ?)').run(token, id, expiresAt);
 
-  res.json({ pending_verification: true, username: u });
+  res.json({ token, username: u, id });
 });
 
 app.post('/api/login', authLimiter, async (req, res) => {
@@ -511,8 +510,6 @@ app.post('/api/login', authLimiter, async (req, res) => {
 
   const banned = db.prepare('SELECT 1 FROM banned_accounts WHERE account_id = ?').get(account.id);
   if (banned) return res.status(403).json({ error: 'This account has been suspended.' });
-
-  if (!account.email_verified) return res.status(403).json({ error: 'Please verify your email before signing in. Check your inbox.', pending_verification: true });
 
   const token = uuidv4();
   const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
