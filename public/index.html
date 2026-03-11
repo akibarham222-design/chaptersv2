@@ -2,721 +2,795 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Chapters — Strangers pass. Conversations stay.</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Chapters</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,600&family=Montserrat:wght@200;300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
 <script src="/socket.io/socket.io.js"></script>
-<script>(function(){const t=localStorage.getItem('chapters_token');if(!t){window.location.href='/auth.html';}})();</script>
+<script>(function(){if(!localStorage.getItem('chapters_token'))window.location.href='/auth.html';})();</script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{
-  --bg:#080810;--bg2:#0d0d18;--surface:#13131f;--surface2:#1a1a2a;--surface3:#222235;
-  --border:#2a2a40;--border2:#383858;
-  --gold:#d4a853;--gold2:#f0c470;--gold-dim:#7a5e28;--gold-glow:rgba(212,168,83,0.12);
-  --cream:#f4efe6;--cream2:#c8bfaa;--muted:#7a7090;--muted2:#4a4560;
-  --you:#3d7a8a;--you2:#2d6070;--stranger:#d4a853;
-  --red:#c04848;--green:#3d8a6a;
+  --bg:#07070f;
+  --s1:rgba(255,255,255,0.04);
+  --s2:rgba(255,255,255,0.07);
+  --s3:rgba(255,255,255,0.11);
+  --b1:rgba(255,255,255,0.08);
+  --b2:rgba(255,255,255,0.15);
+  --txt:#f0eeff;
+  --txt2:#a09ac0;
+  --muted:#605a80;
+  --muted2:#3a3558;
+  --violet:#8b5cf6;
+  --violet2:#a78bfa;
+  --teal:#06b6d4;
+  --rose:#f43f5e;
+  --amber:#f59e0b;
+  --green:#10b981;
+  --you-bg:rgba(6,182,212,0.13);
+  --you-br:rgba(6,182,212,0.28);
+  --them-bg:rgba(139,92,246,0.11);
+  --them-br:rgba(139,92,246,0.24);
 }
-html,body{height:100%;background:var(--bg);color:var(--cream);font-family:'Crimson Pro',Georgia,serif;overflow:hidden;}
-body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:15px;}
 
-/* ── App shell ── */
-#app{height:100vh;display:flex;flex-direction:column;position:relative;}
+/* aurora bg */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 50% at 15% 15%,rgba(139,92,246,.13) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 85% 5%,rgba(6,182,212,.10) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 60% at 75% 85%,rgba(244,63,94,.08) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 40% at 5% 85%,rgba(245,158,11,.07) 0%,transparent 50%);
+}
+body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.022;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
 
-/* ── Topbar ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 36px;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(8,8,16,0.95);backdrop-filter:blur(12px);position:relative;z-index:20;}
-.logo{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--cream);cursor:pointer;letter-spacing:-0.3px;transition:color 0.2s;}
-.logo:hover{color:var(--gold);}
-.logo em{font-style:italic;color:var(--gold);}
-.topbar-right{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
-.online-badge{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
-.online-dot{width:6px;height:6px;border-radius:50%;background:var(--gold-dim);animation:glow-pulse 3s ease-in-out infinite;}
-@keyframes glow-pulse{0%,100%{opacity:0.4;}50%{opacity:1;box-shadow:0 0 6px var(--gold);}}
-.nav-btn{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted);background:none;border:1px solid var(--border);padding:9px 20px;border-radius:6px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all 0.2s;white-space:nowrap;}
-.nav-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
-.nav-btn.accent{border-color:var(--gold-dim);color:var(--gold);}
-.username-tag{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--gold-dim);letter-spacing:1px;}
-/* mobile topbar handled in unified media block below */
+/* app shell */
+#app{height:100dvh;display:flex;flex-direction:column;position:relative;z-index:2;}
 
-/* ── Views ── */
-.view{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;transition:opacity 0.4s ease,transform 0.4s ease;z-index:1;}
-.view.hidden{opacity:0;pointer-events:none;transform:translateY(6px);}
+/* topbar */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;
+  border-bottom:1px solid var(--b1);flex-shrink:0;position:relative;z-index:20;
+  background:rgba(7,7,15,.85);backdrop-filter:blur(20px);}
+.logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;cursor:pointer;
+  background:linear-gradient(130deg,#fff 20%,var(--violet2) 65%,var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:-.3px;transition:opacity .2s;}
+.logo:hover{opacity:.75;}
+.topbar-r{display:flex;align-items:center;gap:8px;}
+.pill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt2);
+  background:var(--s1);border:1px solid var(--b1);padding:6px 13px;border-radius:100px;}
+.gdot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  animation:gpulse 2.5s ease-in-out infinite;}
+@keyframes gpulse{0%,100%{opacity:.5;transform:scale(1);}50%{opacity:1;transform:scale(1.3);box-shadow:0 0 7px var(--green);}}
+.nbtn{font-size:12px;font-weight:500;color:var(--txt2);background:var(--s1);
+  border:1px solid var(--b1);padding:8px 15px;border-radius:8px;cursor:pointer;
+  transition:all .2s;white-space:nowrap;}
+.nbtn:hover{background:var(--s2);border-color:var(--b2);color:var(--txt);}
+.nbtn.ac{background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.35);color:var(--violet2);}
+.nbtn.ac:hover{background:rgba(139,92,246,.25);border-color:var(--violet2);}
+.uchip{font-size:12px;color:var(--txt2);background:var(--s1);border:1px solid var(--b1);
+  padding:6px 12px;border-radius:100px;}
+.mptbtn{font-size:12px;font-weight:500;color:var(--txt2);background:var(--s1);
+  border:1px solid var(--b1);padding:8px 13px;border-radius:8px;cursor:pointer;
+  display:flex;align-items:center;gap:5px;transition:all .2s;}
+.mptbtn:hover,.mptbtn.on{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.35);color:var(--amber);}
 
-/* ── Landing ── */
-#view-landing{justify-content:center;align-items:center;padding:24px;position:relative;}
-#view-landing::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(196,151,62,0.05) 0%,transparent 70%);pointer-events:none;}
-.landing-inner{max-width:480px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:28px;position:relative;z-index:1;}
-.landing-kicker{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--gold-dim);letter-spacing:4px;text-transform:uppercase;display:flex;align-items:center;gap:12px;}
-.landing-kicker::before,.landing-kicker::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border2));}
-.landing-kicker::after{background:linear-gradient(90deg,var(--border2),transparent);}
-.landing-title{font-family:'Cormorant Garamond',serif;font-size:clamp(48px,8vw,80px);font-weight:300;line-height:1.1;letter-spacing:-1px;color:var(--cream);}
-.landing-title em{font-style:italic;color:var(--gold);display:block;}
-.landing-tagline{font-size:19px;color:var(--cream2);font-style:italic;line-height:1.8;max-width:400px;}
-.landing-rules{display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;padding:24px 28px;background:var(--surface);border:1px solid var(--border);border-radius:10px;}
-.rule{display:flex;align-items:center;gap:12px;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--muted);letter-spacing:0.3px;}
-.rule-icon{color:var(--gold-dim);}
-.btn-find{padding:18px 60px;background:transparent;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;border-radius:8px;cursor:pointer;transition:all 0.3s;letter-spacing:0.5px;position:relative;overflow:hidden;}
-.btn-find::before{content:'';position:absolute;inset:0;background:var(--gold-glow);opacity:0;transition:opacity 0.3s;}
-.btn-find:hover{border-color:var(--gold);box-shadow:0 0 50px rgba(212,168,83,0.2);}
-.btn-find:hover::before{opacity:1;}
+/* content wrapper - views live here, below topbar */
+#content{flex:1;position:relative;overflow:hidden;min-height:0;}
+/* views */
+.view{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;
+  transition:opacity .3s ease,transform .3s ease;z-index:1;}
+.view.hidden{opacity:0;pointer-events:none;transform:translateY(10px);}
 
-/* ── Waiting ── */
-#view-waiting{justify-content:center;align-items:center;gap:28px;}
-.wait-orb{width:90px;height:90px;border-radius:50%;border:1px solid var(--border2);position:relative;}
-.wait-orb::before{content:'';position:absolute;inset:8px;border-radius:50%;border:1px solid var(--gold-dim);border-top-color:var(--gold);animation:spin 2s linear infinite;}
-.wait-orb::after{content:'◆';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18px;color:var(--gold-dim);animation:spin 2s linear infinite reverse;}
+/* ─ LANDING ─ */
+#view-landing{justify-content:center;align-items:center;padding:20px;}
+.land-wrap{max-width:540px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px;}
+.land-badge{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+  letter-spacing:2px;text-transform:uppercase;color:var(--violet2);
+  background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);
+  padding:6px 16px;border-radius:100px;}
+.land-h1{font-family:'Playfair Display',serif;
+  font-size:clamp(36px,6.5vw,62px);font-weight:700;line-height:1.1;
+  background:linear-gradient(130deg,#fff 20%,var(--violet2) 60%,var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.land-p{font-size:16px;color:var(--txt2);line-height:1.75;max-width:400px;}
+.land-cards{display:flex;gap:8px;width:100%;justify-content:center;flex-wrap:wrap;}
+.lcard{flex:1;min-width:108px;max-width:135px;background:var(--s1);border:1px solid var(--b1);
+  border-radius:12px;padding:14px 10px;text-align:center;}
+.lcard-ico{font-size:22px;margin-bottom:7px;}
+.lcard-txt{font-size:11px;color:var(--txt2);line-height:1.4;}
+.btn-find{padding:15px 50px;
+  background:linear-gradient(135deg,var(--violet),var(--teal));
+  border:none;border-radius:12px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;color:#fff;
+  box-shadow:0 8px 28px rgba(139,92,246,.4);
+  transition:all .3s;position:relative;overflow:hidden;}
+.btn-find:hover{transform:translateY(-2px);box-shadow:0 12px 38px rgba(139,92,246,.55);}
+.btn-find:active{transform:translateY(0);}
+
+/* ─ WAITING ─ */
+#view-waiting{justify-content:center;align-items:center;gap:24px;}
+.wring{width:78px;height:78px;border-radius:50%;border:1px solid var(--b1);position:relative;}
+.wring::before{content:'';position:absolute;inset:7px;border-radius:50%;
+  border:2px solid transparent;border-top-color:var(--violet);border-right-color:var(--teal);
+  animation:spin 1.4s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.wait-orb-wrap{position:relative;animation:spin 6s linear infinite;}
-.wait-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--cream2);}
-.wait-dots span{animation:dblink 1.4s ease-in-out infinite;opacity:0;}
-.wait-dots span:nth-child(2){animation-delay:0.2s;}
-.wait-dots span:nth-child(3){animation-delay:0.4s;}
-@keyframes dblink{0%,80%,100%{opacity:0;}40%{opacity:1;}}
-.wait-sub{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
-.btn-cancel{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);background:none;border:1px solid var(--border);padding:10px 24px;border-radius:4px;cursor:pointer;transition:all 0.2s;letter-spacing:1.5px;text-transform:uppercase;}
-.btn-cancel:hover{border-color:var(--border2);color:var(--cream2);}
+.w-title{font-family:'Playfair Display',serif;font-size:22px;font-style:italic;color:var(--txt);}
+.wdots span{opacity:0;animation:bdot 1.4s infinite;}
+.wdots span:nth-child(2){animation-delay:.2s;}
+.wdots span:nth-child(3){animation-delay:.4s;}
+@keyframes bdot{0%,80%,100%{opacity:0;}40%{opacity:1;}}
+.w-sub{font-size:12px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+.btn-cancel{font-size:12px;color:var(--txt2);background:var(--s1);
+  border:1px solid var(--b1);padding:10px 22px;border-radius:8px;cursor:pointer;transition:all .2s;}
+.btn-cancel:hover{border-color:var(--rose);color:var(--rose);}
 
-/* ── Chat ── */
+/* ─ REVEAL ─ */
+#view-reveal{justify-content:center;align-items:center;padding:32px;}
+.rev-wrap{max-width:480px;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;}
+.rev-kick{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--violet2);
+  margin-bottom:32px;opacity:0;animation:fup .5s ease .2s forwards;}
+.rev-lbl{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;opacity:0;animation:fup .5s ease .4s forwards;}
+.rev-name-you{font-family:'Playfair Display',serif;font-size:clamp(42px,9vw,70px);
+  font-weight:700;line-height:1;min-height:78px;
+  background:linear-gradient(130deg,#fff,var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.rev-vs{font-size:11px;color:var(--muted);letter-spacing:4px;text-transform:uppercase;margin:14px 0;opacity:0;}
+.rev-lbl2{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;opacity:0;}
+.rev-name-them{font-family:'Playfair Display',serif;font-size:clamp(42px,9vw,70px);
+  font-weight:700;line-height:1;min-height:78px;
+  background:linear-gradient(130deg,var(--violet2),var(--rose));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.rev-ref{font-size:11px;color:var(--amber);letter-spacing:2px;text-transform:uppercase;
+  margin-top:22px;opacity:0;display:flex;align-items:center;gap:12px;}
+.rev-ref::before,.rev-ref::after{content:'';flex:1;height:1px;background:var(--b2);}
+.rev-bond{font-family:'DM Serif Display',serif;font-style:italic;font-size:17px;
+  color:var(--txt2);line-height:1.75;margin-top:14px;max-width:360px;opacity:0;min-height:48px;}
+.rev-hint{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;
+  margin-top:26px;opacity:0;animation:blnk 2s ease-in-out infinite;}
+@keyframes fup{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes blnk{0%,100%{opacity:.3;}50%{opacity:1;}}
+.cur{display:inline-block;width:2px;height:.85em;background:currentColor;
+  margin-left:2px;vertical-align:middle;animation:curblink .7s step-end infinite;}
+@keyframes curblink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* ─ CHAT ─ */
 #view-chat{overflow:hidden;}
-.chat-header{display:flex;align-items:center;justify-content:space-between;padding:16px 36px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg);}
-.chapter-badge{display:flex;align-items:center;gap:12px;}
-.chapter-label{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--gold-dim);letter-spacing:2px;text-transform:uppercase;}
-.chapter-num{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--gold);}
-.chat-live{display:flex;align-items:center;gap:8px;font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:glow-pulse 2s ease-in-out infinite;}
-.btn-leave{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted2);background:none;border:1px solid var(--border);padding:8px 18px;border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;text-transform:uppercase;}
-.btn-leave:hover{border-color:var(--red);color:var(--red);}
-.messages{flex:1;overflow-y:auto;padding:32px 36px;display:flex;flex-direction:column;gap:20px;max-width:820px;width:100%;margin:0 auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
-.messages::-webkit-scrollbar{width:3px;}
-.messages::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-.msg-system{text-align:center;font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;gap:12px;animation:fadeup 0.3s ease;}
-.msg-system::before,.msg-system::after{content:'';flex:1;height:1px;background:var(--border);}
-@keyframes fadeup{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-.msg{display:flex;flex-direction:column;gap:5px;max-width:68%;animation:fadeup 0.3s ease;}
+.chat-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;
+  border-bottom:1px solid var(--b1);flex-shrink:0;
+  background:rgba(7,7,15,.65);backdrop-filter:blur(12px);}
+.ch-badge{display:flex;align-items:center;gap:9px;}
+.ch-lbl{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.ch-num{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;
+  background:linear-gradient(130deg,var(--violet2),var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.live-pill{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--txt2);
+  letter-spacing:1px;text-transform:uppercase;}
+.ldot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  animation:gpulse 2s ease-in-out infinite;}
+.ch-acts{display:flex;gap:7px;}
+.btn-lv{font-size:11px;color:var(--txt2);background:var(--s1);
+  border:1px solid var(--b1);padding:7px 13px;border-radius:7px;cursor:pointer;transition:all .2s;}
+.btn-lv:hover{border-color:var(--rose);color:var(--rose);background:rgba(244,63,94,.08);}
+/* nameplates */
+.nplates{display:flex;align-items:center;gap:10px;padding:9px 24px;
+  border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(7,7,15,.4);}
+.nplate{display:flex;align-items:center;gap:8px;font-family:'Playfair Display',serif;font-size:15px;}
+.ndot{width:8px;height:8px;border-radius:50%;}
+.nplate.you .ndot{background:var(--teal);box-shadow:0 0 8px var(--teal);}
+.nplate.them .ndot{background:var(--violet);box-shadow:0 0 8px var(--violet);}
+.nplate.you{color:var(--teal);}
+.nplate.them{color:var(--violet2);}
+.nvs{font-size:10px;color:var(--muted);letter-spacing:2px;}
+/* messages */
+.msgs{flex:1;overflow-y:auto;padding:22px 24px;display:flex;flex-direction:column;gap:14px;
+  max-width:780px;width:100%;margin:0 auto;
+  scrollbar-width:thin;scrollbar-color:var(--b1) transparent;}
+.msgs::-webkit-scrollbar{width:3px;}
+.msgs::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+.msg-sys{text-align:center;font-size:11px;color:var(--muted);letter-spacing:1.5px;
+  text-transform:uppercase;display:flex;align-items:center;gap:10px;animation:fup .3s ease;}
+.msg-sys::before,.msg-sys::after{content:'';flex:1;height:1px;background:var(--b1);}
+.msg{display:flex;flex-direction:column;gap:4px;max-width:70%;animation:fup .3s ease;}
 .msg.you{align-self:flex-end;align-items:flex-end;}
 .msg.stranger{align-self:flex-start;align-items:flex-start;}
-.msg-who{font-family:'Montserrat',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:0 4px;}
-.msg.you .msg-who{color:var(--you2);}
-.msg.stranger .msg-who{color:var(--gold-dim);}
-.msg-bubble{padding:14px 18px;border-radius:14px;font-size:16px;line-height:1.7;word-break:break-word;}
-.msg.you .msg-bubble{background:var(--you);border:1px solid rgba(61,122,138,0.4);color:var(--cream);border-radius:14px 14px 3px 14px;}
-.msg.stranger .msg-bubble{background:var(--surface2);border:1px solid var(--border2);color:var(--cream);border-radius:14px 14px 14px 3px;}
-.msg-time{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted2);padding:0 4px;}
-.typing-bubble{display:flex;gap:5px;align-items:center;padding:14px 18px;background:var(--surface2);border:1px solid var(--border2);border-radius:14px 14px 14px 3px;align-self:flex-start;animation:fadeup 0.3s ease;}
-.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--gold-dim);animation:tbounce 1.3s ease-in-out infinite;}
-.typing-dot:nth-child(2){animation-delay:0.15s;}
-.typing-dot:nth-child(3){animation-delay:0.3s;}
-@keyframes tbounce{0%,60%,100%{opacity:0.3;transform:scale(1);}30%{opacity:1;transform:scale(1.2);}}
-.chat-input-area{border-top:1px solid var(--border);padding:20px 36px;background:var(--bg);flex-shrink:0;}
-.input-row{display:flex;gap:12px;align-items:flex-end;max-width:820px;margin:0 auto;}
-.input-wrap{flex:1;position:relative;}
-textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 64px 14px 18px;color:var(--cream);font-family:'Crimson Pro',serif;font-size:17px;resize:none;outline:none;min-height:54px;max-height:200px;line-height:1.6;transition:border-color 0.2s;}
-textarea:focus{border-color:var(--gold-dim);}
-textarea::placeholder{color:var(--muted2);font-style:italic;}
-.word-badge{position:absolute;right:14px;bottom:14px;font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted2);pointer-events:none;transition:color 0.2s;letter-spacing:0.5px;}
-.word-badge.warn{color:#c08030;}
-.word-badge.over{color:var(--red);}
-.btn-send{width:54px;height:54px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);color:var(--gold);font-size:20px;cursor:pointer;transition:all 0.2s;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.btn-send:hover{background:var(--surface3);border-color:var(--gold-dim);box-shadow:0 0 20px var(--gold-glow);}
-.btn-send:disabled{opacity:0.3;cursor:not-allowed;box-shadow:none;}
-.input-hint{text-align:center;font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted2);margin-top:10px;letter-spacing:0.5px;}
-.stranger-left-overlay{position:absolute;inset:0;background:rgba(12,11,9,0.92);backdrop-filter:blur(12px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;z-index:50;padding:32px;}
-.stranger-left-overlay.show{display:flex;}
-.left-icon{font-size:36px;animation:float 3s ease-in-out infinite;}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-.left-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-style:italic;color:var(--cream);}
-.left-sub{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
-.left-actions{display:flex;gap:12px;margin-top:8px;}
+.msg-who{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:0 3px;font-weight:600;}
+.msg.you .msg-who{color:var(--teal);}
+.msg.stranger .msg-who{color:var(--violet2);}
+.msg-bub{padding:12px 15px;border-radius:14px;font-size:15px;line-height:1.65;word-break:break-word;}
+.msg.you .msg-bub{background:var(--you-bg);border:1px solid var(--you-br);color:var(--txt);border-radius:14px 14px 3px 14px;}
+.msg.stranger .msg-bub{background:var(--them-bg);border:1px solid var(--them-br);color:var(--txt);border-radius:14px 14px 14px 3px;}
+.msg-t{font-size:10px;color:var(--muted);padding:0 3px;}
+.typing-bub{display:flex;gap:5px;align-items:center;padding:12px 16px;
+  background:var(--them-bg);border:1px solid var(--them-br);
+  border-radius:14px 14px 14px 3px;align-self:flex-start;animation:fup .3s ease;}
+.tdot{width:6px;height:6px;border-radius:50%;background:var(--violet2);animation:tdance 1.3s ease-in-out infinite;}
+.tdot:nth-child(2){animation-delay:.15s;}
+.tdot:nth-child(3){animation-delay:.3s;}
+@keyframes tdance{0%,60%,100%{opacity:.3;transform:scale(1);}30%{opacity:1;transform:scale(1.3);}}
+/* stranger-left overlay */
+.sleft{position:absolute;inset:0;background:rgba(7,7,15,.93);backdrop-filter:blur(16px);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;text-align:center;z-index:50;padding:32px;}
+.sleft.show{display:flex;}
+.sleft-ico{font-size:42px;animation:flt 3s ease-in-out infinite;}
+@keyframes flt{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.sleft-h{font-family:'Playfair Display',serif;font-size:26px;font-style:italic;color:var(--txt);}
+.sleft-p{font-size:14px;color:var(--txt2);}
+.sleft-acts{display:flex;gap:10px;margin-top:6px;}
+/* input */
+.chat-inp-area{border-top:1px solid var(--b1);padding:14px 24px;
+  background:rgba(7,7,15,.65);backdrop-filter:blur(12px);flex-shrink:0;}
+.inp-row{display:flex;gap:9px;align-items:flex-end;max-width:780px;margin:0 auto;}
+.inp-wrap{flex:1;position:relative;}
+textarea{width:100%;background:var(--s1);border:1px solid var(--b1);border-radius:12px;
+  padding:13px 58px 13px 15px;color:var(--txt);font-family:'DM Sans',sans-serif;
+  font-size:15px;resize:none;outline:none;min-height:50px;max-height:200px;line-height:1.6;
+  transition:border-color .2s;}
+textarea:focus{border-color:rgba(139,92,246,.45);background:var(--s2);}
+textarea::placeholder{color:var(--muted);font-style:italic;}
+.cbadge{position:absolute;right:11px;bottom:13px;font-size:10px;color:var(--muted);
+  pointer-events:none;transition:color .2s;}
+.cbadge.warn{color:var(--amber);}
+.cbadge.over{color:var(--rose);}
+.btn-send{width:50px;height:50px;border-radius:11px;
+  background:linear-gradient(135deg,var(--violet),var(--teal));
+  border:none;color:#fff;font-size:17px;cursor:pointer;transition:all .2s;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(139,92,246,.3);}
+.btn-send:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(139,92,246,.48);}
+.btn-send:disabled{opacity:.28;cursor:not-allowed;transform:none;box-shadow:none;}
+.inp-hint{text-align:center;font-size:10px;color:var(--muted);margin-top:7px;}
 
-/* ── History ── */
+/* ─ shared header ─ */
+.vhdr{padding:22px 28px 18px;border-bottom:1px solid var(--b1);flex-shrink:0;
+  display:flex;align-items:flex-end;justify-content:space-between;
+  background:rgba(7,7,15,.65);backdrop-filter:blur(12px);}
+.vhdr-l .vlbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--violet2);margin-bottom:3px;}
+.vhdr-l .vtit{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--txt);}
+.btn-back{font-size:12px;color:var(--txt2);background:none;border:none;cursor:pointer;
+  letter-spacing:1px;transition:color .2s;}
+.btn-back:hover{color:var(--violet2);}
+
+/* ─ HISTORY ─ */
 #view-history{overflow:hidden;}
-.view-header{padding:28px 36px 20px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:flex-end;justify-content:space-between;}
-.view-header-left .label{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--gold-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;}
-.view-header-left .title{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:400;color:var(--cream);}
-.btn-back{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:color 0.2s;}
-.btn-back:hover{color:var(--gold);}
-.scroll-list{flex:1;overflow-y:auto;padding:24px 36px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;max-width:820px;width:100%;margin:0 auto;}
-.empty-state{text-align:center;padding:80px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;}
-.empty-icon{font-size:36px;color:var(--muted2);}
-.empty-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-style:italic;color:var(--muted);}
-.empty-sub{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted2);letter-spacing:1px;text-transform:uppercase;}
-.chapter-card{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all 0.2s;align-items:flex-start;animation:fadeup 0.3s ease;}
-.chapter-card:last-child{border-bottom:none;}
-.chapter-card:hover .c-inner{opacity:0.8;}
-.chapter-card:hover .c-arrow{color:var(--gold);opacity:1;}
-.c-num{flex-shrink:0;width:56px;text-align:right;}
-.c-roman{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:var(--gold-dim);line-height:1;}
-.c-inner{flex:1;transition:opacity 0.2s;}
-.c-date{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted);letter-spacing:0.5px;margin-bottom:6px;}
-.c-preview{font-size:16px;color:var(--cream2);line-height:1.5;font-style:italic;margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.c-meta{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted2);letter-spacing:0.3px;}
-.c-arrow{flex-shrink:0;font-size:16px;color:var(--muted2);opacity:0.4;transition:all 0.2s;padding-top:5px;}
+.slist{flex:1;overflow-y:auto;padding:18px 28px;scrollbar-width:thin;scrollbar-color:var(--b1) transparent;
+  max-width:780px;width:100%;margin:0 auto;}
+.empty-st{text-align:center;padding:70px 20px;display:flex;flex-direction:column;align-items:center;gap:11px;}
+.emt-ico{font-size:38px;opacity:.3;}
+.emt-h{font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:var(--txt2);}
+.emt-s{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.ccard{display:flex;gap:16px;padding:17px 0;border-bottom:1px solid var(--b1);
+  cursor:pointer;transition:all .2s;align-items:flex-start;animation:fup .3s ease;}
+.ccard:last-child{border-bottom:none;}
+.ccard:hover{padding-left:5px;}
+.cc-n{flex-shrink:0;width:48px;text-align:right;}
+.cc-rom{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;line-height:1;
+  background:linear-gradient(130deg,var(--violet2),var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  opacity:.55;transition:opacity .2s;}
+.ccard:hover .cc-rom{opacity:1;}
+.cc-in{flex:1;}
+.cc-dt{font-size:11px;color:var(--muted);margin-bottom:3px;}
+.cc-pre{font-family:'DM Serif Display',serif;font-style:italic;font-size:14px;
+  color:var(--txt2);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cc-mt{font-size:11px;color:var(--muted2);}
+.cc-arr{flex-shrink:0;font-size:18px;color:var(--violet2);opacity:0;transition:opacity .2s;padding-top:3px;}
+.ccard:hover .cc-arr{opacity:1;}
 
-/* ── Chapter Reader ── */
+/* ─ READER ─ */
 #view-chapter{overflow:hidden;}
-.reader-messages{flex:1;overflow-y:auto;padding:36px 36px;max-width:820px;width:100%;margin:0 auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;display:flex;flex-direction:column;gap:20px;}
-.reader-end{text-align:center;padding:32px 0 20px;display:flex;flex-direction:column;align-items:center;gap:10px;}
-.reader-end-line{width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);}
-.reader-end-text{font-family:'Cormorant Garamond',serif;font-size:19px;font-style:italic;color:var(--muted);}
+.reader-msgs{flex:1;overflow-y:auto;padding:26px 28px;max-width:780px;width:100%;margin:0 auto;
+  scrollbar-width:thin;scrollbar-color:var(--b1) transparent;display:flex;flex-direction:column;gap:14px;}
+.rend{text-align:center;padding:26px 0;display:flex;flex-direction:column;align-items:center;gap:9px;}
+.rend-ln{width:70px;height:1px;background:linear-gradient(90deg,transparent,var(--b2),transparent);}
+.rend-tx{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:var(--muted);}
 
-/* ── Confession Wall ── */
+/* ─ CONFESSIONS ─ */
 #view-confessions{overflow:hidden;}
-.confession-header-area{padding:24px 36px 0;border-bottom:1px solid var(--border);flex-shrink:0;}
-.confession-tabs{display:flex;gap:0;margin-top:16px;}
-.conf-tab{font-family:'Montserrat',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;padding:10px 20px 10px 0;margin-right:8px;transition:all 0.2s;}
-.conf-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
-.conf-search-bar{display:flex;gap:10px;margin:16px 36px;max-width:820px;margin-left:auto;margin-right:auto;}
-.conf-search-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px 18px;color:var(--cream);font-family:'Crimson Pro',serif;font-size:17px;outline:none;transition:border-color 0.2s;width:100%;}
-.conf-search-input:focus{border-color:var(--gold-dim);}
-.conf-search-input::placeholder{color:var(--muted2);font-style:italic;}
-.btn-search{padding:13px 22px;background:transparent;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Montserrat',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;border-radius:8px;cursor:pointer;transition:all 0.2s;}
-.btn-search:hover{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow);}
-.confessions-list{flex:1;overflow-y:auto;padding:12px 36px 28px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
-.confession-card{border:1px solid var(--border);border-radius:12px;padding:26px 28px;margin-bottom:16px;background:var(--surface);transition:border-color 0.2s;animation:fadeup 0.4s ease;position:relative;overflow:hidden;max-width:820px;margin-left:auto;margin-right:auto;}
-.confession-card:hover{border-color:var(--border2);}
-.confession-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--gold-dim),transparent);}
-.conf-from-to{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
-.conf-from{font-family:'Montserrat',sans-serif;font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
-.conf-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-style:italic;color:var(--cream2);}
-.conf-arrow{font-size:13px;color:var(--gold-dim);}
-.conf-to-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-style:italic;color:var(--gold);}
-.conf-text{font-family:'Crimson Pro',serif;font-size:17px;line-height:1.75;color:var(--cream);margin-bottom:16px;font-style:italic;}
-.conf-song{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:100px;text-decoration:none;transition:all 0.2s;cursor:pointer;}
-.conf-song:hover{border-color:var(--gold-dim);background:var(--surface3);}
-.conf-song-icon{font-size:17px;}
-.conf-song-info{display:flex;flex-direction:column;gap:1px;}
-.conf-song-title{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--cream2);letter-spacing:0.5px;}
-.conf-song-artist{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);letter-spacing:0.3px;}
-.conf-date{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted2);letter-spacing:0.5px;margin-top:14px;}
+.conf-hdr2{padding:18px 28px 0;border-bottom:1px solid var(--b1);flex-shrink:0;
+  background:rgba(7,7,15,.65);backdrop-filter:blur(12px);}
+.conf-hdr-top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px;}
+.conf-tabs{display:flex;}
+.ctab{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;
+  border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;
+  padding:9px 14px 9px 0;margin-right:6px;transition:all .2s;}
+.ctab.on{color:var(--violet2);border-bottom-color:var(--violet2);}
+.conf-sbar{display:flex;gap:8px;padding:12px 28px;max-width:780px;margin:0 auto;}
+.conf-sinp{flex:1;background:var(--s1);border:1px solid var(--b1);border-radius:10px;
+  padding:11px 15px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:15px;
+  outline:none;transition:border-color .2s;}
+.conf-sinp:focus{border-color:rgba(139,92,246,.45);}
+.conf-sinp::placeholder{color:var(--muted);font-style:italic;}
+.btn-srch{padding:11px 18px;background:linear-gradient(135deg,var(--violet),var(--teal));
+  border:none;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;
+  font-size:12px;font-weight:600;letter-spacing:.5px;cursor:pointer;transition:all .2s;}
+.btn-srch:hover{opacity:.82;transform:translateY(-1px);}
+.conf-list{flex:1;overflow-y:auto;padding:10px 28px 22px;
+  scrollbar-width:thin;scrollbar-color:var(--b1) transparent;}
+.cconf{background:var(--s1);border:1px solid var(--b1);border-radius:14px;
+  padding:20px 22px;margin-bottom:12px;transition:all .2s;animation:fup .4s ease;
+  position:relative;overflow:hidden;max-width:780px;margin-left:auto;margin-right:auto;}
+.cconf:hover{border-color:var(--b2);transform:translateY(-1px);}
+.cconf::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;
+  background:linear-gradient(180deg,var(--violet),var(--rose),transparent);}
+.cft{display:flex;align-items:center;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
+.cflbl{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;}
+.cfnm{font-family:'DM Serif Display',serif;font-size:17px;font-style:italic;color:var(--txt2);}
+.cfarr{font-size:13px;color:var(--rose);margin:0 3px;}
+.cfto{font-family:'DM Serif Display',serif;font-size:17px;font-style:italic;color:var(--violet2);}
+.cftxt{font-family:'DM Serif Display',serif;font-style:italic;font-size:16px;
+  line-height:1.8;color:var(--txt);margin-bottom:12px;}
+.cfsong{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;
+  background:var(--s2);border:1px solid var(--b2);border-radius:100px;
+  text-decoration:none;transition:all .2s;cursor:pointer;}
+.cfsong:hover{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08);}
+.cfsong-t{font-size:11px;color:var(--txt2);}
+.cfsong-a{font-size:10px;color:var(--muted);}
+.cfdt{font-size:10px;color:var(--muted2);margin-top:10px;}
 
-/* ── Write Confession ── */
+/* ─ WRITE ─ */
 #view-write{overflow:hidden;}
-.write-inner{flex:1;overflow-y:auto;padding:32px 36px;max-width:660px;width:100%;margin:0 auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
-.write-heading{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:300;color:var(--cream);margin-bottom:4px;}
-.write-sub{font-size:16px;color:var(--muted);font-style:italic;margin-bottom:36px;}
-.wfield{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
-.wlabel{font-family:'Montserrat',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dim);}
-.winput{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;color:var(--cream);font-family:'Crimson Pro',serif;font-size:17px;outline:none;transition:border-color 0.2s;width:100%;}
-.winput:focus{border-color:var(--gold-dim);}
-.winput::placeholder{color:var(--muted2);font-style:italic;}
-.wtextarea{resize:none;min-height:130px;line-height:1.7;}
-.char-count{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted2);text-align:right;letter-spacing:0.5px;}
-.char-count.warn{color:#c08030;}
-.char-count.over{color:var(--red);}
+.write-sc{flex:1;overflow-y:auto;padding:24px 28px;max-width:620px;width:100%;margin:0 auto;
+  scrollbar-width:thin;scrollbar-color:var(--b1) transparent;}
+.write-sub{font-size:14px;color:var(--txt2);font-style:italic;margin-bottom:24px;line-height:1.6;}
+.wf{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.wlbl{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--violet2);font-weight:600;}
+.winp{background:var(--s1);border:1px solid var(--b1);border-radius:10px;
+  padding:12px 15px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:15px;
+  outline:none;transition:border-color .2s;width:100%;}
+.winp:focus{border-color:rgba(139,92,246,.45);}
+.winp::placeholder{color:var(--muted);font-style:italic;}
+.wta{resize:none;min-height:115px;line-height:1.65;}
+.wcnt{font-size:10px;color:var(--muted);text-align:right;}
+.wcnt.warn{color:var(--amber);}
+.wcnt.over{color:var(--rose);}
+.song-wrap{display:flex;flex-direction:column;gap:8px;}
+.song-row{display:flex;gap:8px;}
+.song-res{display:flex;flex-direction:column;max-height:175px;overflow-y:auto;
+  border:1px solid var(--b1);border-radius:10px;background:var(--s2);scrollbar-width:thin;}
+.sres{display:flex;align-items:center;gap:11px;padding:10px 13px;cursor:pointer;
+  transition:background .15s;border-bottom:1px solid var(--b1);}
+.sres:last-child{border-bottom:none;}
+.sres:hover{background:var(--s3);}
+.sres-t{font-size:13px;color:var(--txt2);}
+.sres-a{font-size:11px;color:var(--muted);}
+.ssel{display:flex;align-items:center;gap:9px;padding:10px 13px;
+  background:var(--s2);border:1px solid var(--b2);border-radius:10px;}
+.ssel-t{font-size:13px;color:var(--txt2);}
+.ssel-a{font-size:11px;color:var(--muted);}
+.btn-clrs{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;margin-left:auto;transition:color .2s;}
+.btn-clrs:hover{color:var(--rose);}
+.werr{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.25);
+  border-radius:10px;padding:11px 15px;font-size:13px;color:var(--rose);
+  display:none;margin-bottom:13px;}
+.werr.show{display:block;}
+.btn-post{width:100%;padding:14px;
+  background:linear-gradient(135deg,var(--violet),var(--rose));
+  border:none;border-radius:12px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;color:#fff;
+  box-shadow:0 6px 22px rgba(139,92,246,.32);transition:all .3s;}
+.btn-post:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 30px rgba(139,92,246,.5);}
+.btn-post:disabled{opacity:.3;cursor:not-allowed;transform:none;}
 
-/* Song search */
-.song-search-wrap{display:flex;flex-direction:column;gap:10px;}
-.song-search-row{display:flex;gap:8px;}
-.song-results{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface2);scrollbar-width:thin;}
-.song-result{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background 0.15s;border-bottom:1px solid var(--border);}
-.song-result:last-child{border-bottom:none;}
-.song-result:hover{background:var(--surface3);}
-.song-result-info{flex:1;}
-.song-result-title{font-family:'Montserrat',sans-serif;font-size:12px;color:var(--cream2);letter-spacing:0.3px;}
-.song-result-artist{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted);}
-.song-result-check{color:var(--green);font-size:14px;display:none;}
-.song-selected{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;}
-.song-selected-info{flex:1;}
-.song-selected-title{font-family:'Montserrat',sans-serif;font-size:12px;color:var(--cream2);}
-.song-selected-artist{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted);}
-.btn-clear-song{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:18px;transition:color 0.2s;}
-.btn-clear-song:hover{color:var(--red);}
+/* shared buttons */
+.btn-pri{padding:10px 24px;background:linear-gradient(135deg,var(--violet),var(--teal));
+  border:none;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;
+  font-size:14px;font-weight:600;color:#fff;box-shadow:0 4px 14px rgba(139,92,246,.28);transition:all .2s;}
+.btn-pri:hover{opacity:.84;}
+.btn-sec{padding:10px 24px;background:var(--s1);border:1px solid var(--b1);
+  border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;
+  font-size:14px;color:var(--txt2);transition:all .2s;}
+.btn-sec:hover{border-color:var(--b2);color:var(--txt);}
 
-.write-error{background:rgba(192,72,72,0.1);border:1px solid rgba(192,72,72,0.25);border-radius:8px;padding:14px 18px;font-family:'Montserrat',sans-serif;font-size:12px;color:#d07070;letter-spacing:0.3px;display:none;margin-bottom:18px;}
-.write-error.show{display:block;}
-.btn-post{width:100%;padding:16px;background:transparent;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;border-radius:8px;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;}
-.btn-post::before{content:'';position:absolute;inset:0;background:var(--gold-glow);opacity:0;transition:opacity 0.3s;}
-.btn-post:hover:not(:disabled){border-color:var(--gold);box-shadow:0 0 40px var(--gold-glow);}
-.btn-post:hover::before{opacity:1;}
-.btn-post:disabled{opacity:0.3;cursor:not-allowed;}
+/* ─ REPORT MODAL ─ */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(12px);
+  z-index:200;display:flex;align-items:center;justify-content:center;padding:22px;
+  opacity:0;pointer-events:none;transition:opacity .3s;}
+.modal-ov.show{opacity:1;pointer-events:all;}
+.modal{background:#0e0e1c;border:1px solid var(--b2);border-radius:16px;
+  padding:26px;max-width:390px;width:100%;animation:fup .3s ease;}
+.modal-tit{font-family:'Playfair Display',serif;font-size:22px;color:var(--txt);margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--txt2);font-style:italic;margin-bottom:18px;line-height:1.6;}
+.rep-rss{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.rrb{background:var(--s1);border:1px solid var(--b1);border-radius:8px;
+  padding:9px 13px;color:var(--txt2);font-family:'DM Sans',sans-serif;font-size:13px;
+  text-align:left;cursor:pointer;transition:all .2s;}
+.rrb:hover,.rrb.sel{border-color:rgba(139,92,246,.4);color:var(--violet2);background:rgba(139,92,246,.08);}
+.modal-acts{display:flex;gap:7px;margin-top:5px;}
+.btn-rsub{flex:1;padding:10px;background:transparent;border:1px solid var(--rose);
+  color:var(--rose);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;border-radius:8px;cursor:pointer;transition:all .2s;}
+.btn-rsub:hover:not(:disabled){background:rgba(244,63,94,.1);}
+.btn-rsub:disabled{opacity:.28;cursor:not-allowed;}
+.btn-rcan{flex:1;padding:10px;background:var(--s1);border:1px solid var(--b1);
+  color:var(--txt2);font-family:'DM Sans',sans-serif;font-size:11px;
+  letter-spacing:1px;text-transform:uppercase;border-radius:8px;cursor:pointer;transition:all .2s;}
+.btn-rcan:hover{border-color:var(--b2);color:var(--txt);}
+.rep-ok{text-align:center;padding:10px 0;}
+.rep-ok-ico{font-size:30px;margin-bottom:7px;}
+.rep-ok-h{font-family:'Playfair Display',serif;font-size:19px;font-style:italic;color:var(--txt2);}
+.rep-ok-s{font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:5px;}
 
-/* ── Pair Intro Overlay ── */
-.pair-intro{position:absolute;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:32px;opacity:0;pointer-events:none;transition:opacity 0.5s;}
-.pair-intro.show{opacity:1;pointer-events:all;}
-.pair-intro-kicker{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--gold-dim);letter-spacing:4px;text-transform:uppercase;margin-bottom:40px;opacity:0;transition:opacity 0.4s;}
-.pair-intro-kicker.vis{opacity:1;}
-.pair-intro-row{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:80px;}
-.pair-intro-label{font-family:'Montserrat',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted2);}
-.pair-intro-name{font-family:'Cormorant Garamond',serif;font-size:clamp(42px,9vw,72px);font-weight:300;font-style:italic;line-height:1;min-height:72px;}
-.pair-intro-name.you-name{color:var(--cream);}
-.pair-intro-name.their-name{color:var(--gold);}
-.pair-intro-vs{font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted2);letter-spacing:4px;text-transform:uppercase;margin:16px 0;opacity:0;transition:opacity 0.4s;}
-.pair-intro-vs.vis{opacity:1;}
-.pair-intro-ref{font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--muted);margin-top:32px;opacity:0;transition:opacity 0.6s;text-align:center;}
-.pair-intro-ref.vis{opacity:1;}
-.pair-intro-ref em{color:var(--gold-dim);}
-.pair-intro-bar{width:200px;height:1px;background:var(--border);margin:20px auto 0;overflow:hidden;opacity:0;transition:opacity 0.3s;}
-.pair-intro-bar.vis{opacity:1;}
-.pair-intro-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));transition:width linear;}
-.pair-intro-hint{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase;margin-top:12px;opacity:0;transition:opacity 0.4s;}
-.pair-intro-hint.vis{opacity:1;}
+/* ─ MUSIC PLAYER ─ */
+#mp{position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(9,9,20,.93);backdrop-filter:blur(22px);
+  border-top:1px solid var(--b1);
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);}
+#mp.mini{transform:translateY(0);}
+#mp.open{transform:translateY(0);}
+.mp-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 22px;cursor:pointer;}
+.mp-bl{display:flex;align-items:center;gap:11px;flex:1;min-width:0;}
+.mp-ico{font-size:15px;width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--violet),var(--amber));
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mp-np{min-width:0;}
+.mp-tn{font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mp-ta{font-size:11px;color:var(--txt2);}
+.mp-idle{font-size:12px;color:var(--muted);font-style:italic;}
+.mp-bc{display:flex;align-items:center;gap:9px;}
+.mpbtn{background:none;border:none;color:var(--txt2);cursor:pointer;font-size:16px;padding:3px;transition:color .2s;}
+.mpbtn:hover,.mpbtn.on{color:var(--amber);}
+.mp-chev{font-size:11px;color:var(--muted);transition:transform .3s;}
+#mp.open .mp-chev{transform:rotate(180deg);}
+.mp-prog{height:2px;background:var(--b1);cursor:pointer;transition:height .2s;}
+.mp-prog:hover{height:4px;}
+.mp-prog-f{height:100%;width:0%;background:linear-gradient(90deg,var(--violet),var(--amber));}
+.mp-panel{display:none;padding:14px 22px 18px;border-top:1px solid var(--b1);}
+#mp.open .mp-panel{display:block;}
+.mp-srow{display:flex;gap:8px;margin-bottom:11px;}
+.mp-sinp{flex:1;background:var(--s1);border:1px solid var(--b1);border-radius:8px;
+  padding:9px 13px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;
+  transition:border-color .2s;}
+.mp-sinp:focus{border-color:rgba(245,158,11,.4);}
+.mp-sinp::placeholder{color:var(--muted);font-style:italic;}
+.mp-sbtn{padding:9px 15px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.28);
+  border-radius:8px;color:var(--amber);font-family:'DM Sans',sans-serif;font-size:12px;
+  font-weight:600;cursor:pointer;transition:all .2s;}
+.mp-sbtn:hover{background:rgba(245,158,11,.25);}
+.mp-res{display:none;flex-direction:column;max-height:155px;overflow-y:auto;
+  border:1px solid var(--b1);border-radius:10px;background:var(--s1);margin-bottom:11px;scrollbar-width:thin;}
+.mp-r{display:flex;align-items:center;gap:9px;padding:9px 13px;cursor:pointer;
+  transition:background .15s;border-bottom:1px solid var(--b1);}
+.mp-r:last-child{border-bottom:none;}
+.mp-r:hover,.mp-r.on{background:var(--s2);}
+.mp-rpi{font-size:12px;color:var(--muted);flex-shrink:0;width:15px;}
+.mp-r.on .mp-rpi{color:var(--amber);}
+.mp-ri{flex:1;min-width:0;}
+.mp-rt{font-size:13px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mp-ra{font-size:11px;color:var(--muted);}
+.mp-rd{font-size:10px;color:var(--muted);flex-shrink:0;}
+.mp-volr{display:flex;align-items:center;gap:11px;}
+.mp-vlbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;flex-shrink:0;}
+input[type=range].mp-vol{-webkit-appearance:none;appearance:none;
+  flex:1;height:3px;background:var(--b1);border-radius:2px;outline:none;cursor:pointer;}
+input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;
+  border-radius:50%;background:var(--amber);cursor:pointer;}
+.mp-vv{font-size:10px;color:var(--muted);width:22px;text-align:right;}
 
-/* ── Pair Reveal Screen ── */
-#view-reveal{justify-content:center;align-items:center;background:var(--bg);z-index:50;}
-.reveal-inner{max-width:520px;width:100%;padding:32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0;}
-.reveal-kicker{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--gold-dim);letter-spacing:4px;text-transform:uppercase;margin-bottom:32px;opacity:0;animation:rfade 0.6s ease 0.2s forwards;}
-.reveal-from{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:300;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;opacity:0;animation:rfade 0.5s ease 0.5s forwards;}
-.reveal-name-you{font-family:'Cormorant Garamond',serif;font-size:clamp(52px,10vw,80px);font-weight:300;color:var(--cream);line-height:1;letter-spacing:-1px;min-height:90px;}
-.reveal-vs{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted2);letter-spacing:4px;text-transform:uppercase;margin:18px 0;opacity:0;}
-.reveal-from2{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:300;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;opacity:0;}
-.reveal-name-them{font-family:'Cormorant Garamond',serif;font-size:clamp(52px,10vw,80px);font-weight:300;color:var(--gold);line-height:1;letter-spacing:-1px;min-height:90px;}
-.reveal-ref{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--gold-dim);letter-spacing:2px;text-transform:uppercase;margin-top:24px;opacity:0;display:flex;align-items:center;gap:10px;}
-.reveal-ref::before,.reveal-ref::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);}
-.reveal-bond{font-family:'Crimson Pro',serif;font-size:17px;font-style:italic;color:var(--cream2);line-height:1.7;margin-top:18px;max-width:380px;opacity:0;min-height:52px;}
-.reveal-hint{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:1.5px;text-transform:uppercase;margin-top:32px;opacity:0;animation:blink 2s ease-in-out infinite;}
-@keyframes rfade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-@keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
-.cursor{display:inline-block;width:2px;height:0.85em;background:currentColor;margin-left:2px;vertical-align:middle;animation:cur 0.7s step-end infinite;}
-@keyframes cur{0%,100%{opacity:1;}50%{opacity:0;}}
-
-/* ── Name plates ── */
-.name-plates{display:flex;align-items:center;gap:8px;padding:10px 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
-.name-plate{font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;display:flex;align-items:center;gap:7px;}
-.name-plate-dot{width:7px;height:7px;border-radius:50%;}
-.name-plate.you .name-plate-dot{background:var(--you);}
-.name-plate.stranger .name-plate-dot{background:var(--gold);}
-.name-plate.you{color:var(--cream2);}
-.name-plate.stranger{color:var(--gold);}
-.name-plate-vs{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:1px;}
-
-/* ── Report modal ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.3s;}
-.modal-overlay.show{opacity:1;pointer-events:all;}
-.modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:32px;max-width:400px;width:100%;position:relative;animation:fadeup 0.3s ease;}
-.modal-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;color:var(--cream);margin-bottom:6px;}
-.modal-sub{font-size:14px;color:var(--muted);font-style:italic;margin-bottom:24px;line-height:1.6;}
-.report-reasons{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
-.reason-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:11px 16px;color:var(--cream2);font-family:'Montserrat',sans-serif;font-size:10px;letter-spacing:1px;text-align:left;cursor:pointer;transition:all 0.2s;}
-.reason-btn:hover,.reason-btn.selected{border-color:var(--gold-dim);color:var(--gold);background:var(--surface3);}
-.modal-actions{display:flex;gap:10px;margin-top:8px;}
-.btn-report-submit{flex:1;padding:12px;background:transparent;border:1px solid var(--red);color:var(--red);font-family:'Montserrat',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;border-radius:6px;cursor:pointer;transition:all 0.2s;}
-.btn-report-submit:hover:not(:disabled){background:rgba(160,64,48,0.1);}
-.btn-report-submit:disabled{opacity:0.35;cursor:not-allowed;}
-.btn-report-cancel{flex:1;padding:12px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Montserrat',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;border-radius:6px;cursor:pointer;transition:all 0.2s;}
-.btn-report-cancel:hover{border-color:var(--border2);color:var(--cream2);}
-.report-success{text-align:center;padding:12px 0;}
-.report-success-icon{font-size:28px;margin-bottom:8px;}
-.report-success-text{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--cream2);}
-.report-success-sub{font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:6px;}
-.btn-primary{padding:13px 36px;background:transparent;border:1px solid var(--gold-dim);color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;border-radius:6px;cursor:pointer;transition:all 0.2s;}
-.btn-primary:hover{border-color:var(--gold);box-shadow:0 0 30px var(--gold-glow);}
-.btn-secondary{padding:13px 36px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Montserrat',sans-serif;font-size:11px;border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:1px;text-transform:uppercase;}
-.btn-secondary:hover{border-color:var(--border2);color:var(--cream2);}
-
+/* ─ MOBILE ─ */
 @media(max-width:600px){
-  /* layout padding */
-  .messages,.chat-input-area,.scroll-list,.reader-messages,.confessions-list,.write-inner,.conf-search-bar{padding-left:18px;padding-right:18px;}
-  .chat-header,.view-header,.confession-header-area{padding-left:18px;padding-right:18px;}
-  .msg{max-width:90%;}
-  .confession-card{padding:20px 18px;}
-  .conf-search-bar{margin:12px 18px;}
-  /* player bottom clearance */
-  .scroll-list,.reader-messages,.confessions-list,.write-inner,.messages{padding-bottom:80px;}
-  /* topbar */
-  .topbar{padding:12px 18px;}
-  .topbar-right{gap:8px;flex-wrap:nowrap;}
-  .online-badge{display:none;}
-  .username-tag{display:none;}
-  .nav-btn{padding:6px 10px;font-size:8px;letter-spacing:0.8px;}
-  .mp-toggle-btn{padding:6px 10px;font-size:9px;}
-  .btn-label{display:none;}
+  .topbar{padding:11px 15px;}
+  .topbar-r{gap:5px;}
+  .pill{display:none;}
+  .uchip{display:none;}
+  .msgs,.chat-inp-area,.slist,.reader-msgs,.conf-list,.write-sc,.conf-sbar{padding-left:15px;padding-right:15px;}
+  .chat-hdr,.vhdr,.conf-hdr2{padding-left:15px;padding-right:15px;}
+  .msg{max-width:88%;}
+  .cconf{padding:16px 14px;}
+  .land-cards{gap:6px;}
+  .lcard{min-width:90px;padding:11px 7px;}
+  .btn-find{padding:14px 32px;font-size:15px;}
 }
-@media(max-width:380px){
-  .nav-btn-signout{display:none;}
-  .topbar-right{gap:4px;}
+@media(max-width:420px){
+  .nbtn span.lbl{display:none;}
+  .mptbtn span.lbl{display:none;}
 }
-
-/* ── Music Player ── */
-#musicPlayer{
-  position:fixed;bottom:0;left:0;right:0;
-  background:rgba(10,9,8,0.97);
-  border-top:1px solid var(--border2);
-  backdrop-filter:blur(20px);
-  z-index:300;
-  transform:translateY(100%);
-  transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
-  font-family:'Montserrat',sans-serif;
-}
-#musicPlayer.open{transform:translateY(0);}
-#musicPlayer.mini{transform:translateY(calc(100% - 56px));}
-
-.mp-bar{
-  display:flex;align-items:center;gap:14px;
-  padding:0 20px;height:56px;cursor:pointer;
-  border-bottom:1px solid var(--border);
-  position:relative;
-}
-.mp-bar-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
-.mp-icon{font-size:15px;color:var(--gold-dim);flex-shrink:0;}
-.mp-now-playing{display:flex;flex-direction:column;min-width:0;flex:1;}
-.mp-track-name{font-size:10px;color:var(--cream2);letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.mp-track-artist{font-size:9px;color:var(--muted);letter-spacing:0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.mp-idle{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
-.mp-bar-controls{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.mp-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;transition:color 0.15s;line-height:1;}
-.mp-btn:hover{color:var(--gold);}
-.mp-btn.playing{color:var(--gold);}
-.mp-chevron{font-size:11px;color:var(--muted2);transition:transform 0.3s;margin-left:4px;}
-#musicPlayer.open .mp-chevron{transform:rotate(180deg);}
-#musicPlayer.mini .mp-chevron{transform:rotate(0deg);}
-
-/* Progress bar */
-.mp-progress{height:2px;background:var(--border);position:relative;cursor:pointer;}
-.mp-progress-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));width:0%;transition:width 0.5s linear;pointer-events:none;}
-
-/* Expanded panel */
-.mp-panel{padding:16px 20px 20px;display:flex;flex-direction:column;gap:14px;}
-
-.mp-search-row{display:flex;gap:8px;}
-.mp-search-input{
-  flex:1;background:var(--surface2);border:1px solid var(--border);
-  border-radius:6px;padding:9px 14px;color:var(--cream);
-  font-family:'Montserrat',sans-serif;font-size:11px;outline:none;
-  transition:border-color 0.2s;
-}
-.mp-search-input:focus{border-color:var(--gold-dim);}
-.mp-search-input::placeholder{color:var(--muted2);}
-.mp-search-btn{
-  padding:9px 16px;background:none;border:1px solid var(--gold-dim);
-  color:var(--gold);font-family:'Montserrat',sans-serif;font-size:9px;
-  letter-spacing:1.5px;text-transform:uppercase;border-radius:6px;
-  cursor:pointer;transition:all 0.2s;white-space:nowrap;flex-shrink:0;
-}
-.mp-search-btn:hover{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow);}
-
-.mp-results{
-  display:flex;flex-direction:column;gap:0;
-  max-height:180px;overflow-y:auto;
-  border:1px solid var(--border);border-radius:6px;
-  background:var(--surface);
-  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
-}
-.mp-result{
-  display:flex;align-items:center;gap:10px;
-  padding:9px 14px;cursor:pointer;transition:background 0.15s;
-  border-bottom:1px solid var(--border);
-}
-.mp-result:last-child{border-bottom:none;}
-.mp-result:hover{background:var(--surface2);}
-.mp-result.active{background:var(--surface2);border-left:2px solid var(--gold);}
-.mp-result-info{flex:1;min-width:0;}
-.mp-result-title{font-size:11px;color:var(--cream2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.mp-result-artist{font-size:9px;color:var(--muted);margin-top:2px;}
-.mp-result-dur{font-size:9px;color:var(--muted2);flex-shrink:0;}
-.mp-play-icon{font-size:12px;color:var(--gold-dim);flex-shrink:0;width:16px;text-align:center;}
-
-.mp-vol-row{display:flex;align-items:center;gap:10px;}
-.mp-vol-label{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;}
-input[type=range].mp-vol{
-  -webkit-appearance:none;appearance:none;
-  flex:1;height:2px;background:var(--border);border-radius:1px;outline:none;cursor:pointer;
-}
-input[type=range].mp-vol::-webkit-slider-thumb{
-  -webkit-appearance:none;width:12px;height:12px;border-radius:50%;
-  background:var(--gold);cursor:pointer;
-}
-input[type=range].mp-vol::-moz-range-thumb{
-  width:12px;height:12px;border-radius:50%;background:var(--gold);cursor:pointer;border:none;
-}
-.mp-vol-val{font-size:9px;color:var(--muted2);width:24px;text-align:right;flex-shrink:0;}
-.mp-note{font-size:9px;color:var(--muted2);letter-spacing:0.3px;text-align:center;}
-
-/* Toggle button in topbar */
-.mp-toggle-btn{
-  font-family:'Montserrat',sans-serif;font-size:11px;color:var(--muted);
-  background:none;border:1px solid var(--border);padding:9px 16px;
-  border-radius:6px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;
-  transition:all 0.2s;display:flex;align-items:center;gap:5px;
-}
-.mp-toggle-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
-.mp-toggle-btn.active{border-color:var(--gold-dim);color:var(--gold);}
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- Topbar -->
-  <div class="topbar" id="topbar" style="top:0;position:relative;z-index:20;">
-    <div class="logo" onclick="goHome()">Chap<em>ters</em></div>
-    <div class="topbar-right">
-      <div class="online-badge"><div class="online-dot"></div><span id="onlineCount">—</span> online</div>
-      <button class="mp-toggle-btn" id="mpToggleBtn" onclick="togglePlayer()" title="Play music">♪<span class="btn-label"> Music</span></button>
-      <button class="nav-btn accent" onclick="showView('confessions')"><span class="btn-label">Confessions</span></button>
-      <button class="nav-btn" onclick="showHistory()"><span class="btn-label">My Chapters</span></button>
-      <span class="username-tag" id="usernameTag"></span>
-      <button class="nav-btn nav-btn-signout" onclick="logout()" style="color:var(--muted2);"><span class="btn-label">Sign out</span></button>
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo" onclick="goHome()">Chapters</div>
+    <div class="topbar-r">
+      <div class="pill"><div class="gdot"></div><span id="onlineCount">—</span> online</div>
+      <button class="mptbtn" id="mpToggleBtn" onclick="togglePlayer()">♪ <span class="lbl">Music</span></button>
+      <button class="nbtn ac" onclick="showView('confessions')">Confessions</button>
+      <button class="nbtn" onclick="showHistory()">My Chapters</button>
+      <span class="uchip" id="usernameTag"></span>
+      <button class="nbtn" onclick="logout()" style="color:var(--muted);">Sign out</button>
     </div>
-  </div>
+  </div><!-- /topbar -->
 
-  <!-- Landing -->
+  <div id="content">
+
+  <!-- LANDING -->
   <div class="view" id="view-landing">
-    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;z-index:1;">
-      <div class="landing-inner">
-        <div class="landing-kicker">anthology of strangers</div>
-        <div class="landing-title">Strangers pass.<em>Conversations stay.</em></div>
-        <p class="landing-tagline">You meet someone. You talk. They leave. But every conversation is saved as a chapter — yours forever.</p>
-        <div class="landing-rules">
-          <div class="rule"><span class="rule-icon">◆</span> Anonymous. No names, no traces.</div>
-          <div class="rule"><span class="rule-icon">◆</span> 4000-character limit per message.</div>
-          <div class="rule"><span class="rule-icon">◆</span> Every chat saved as a chapter.</div>
-          <div class="rule"><span class="rule-icon">◆</span> Leave anytime. The words remain.</div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div class="land-wrap">
+        <div class="land-badge">✦ anthology of strangers</div>
+        <h1 class="land-h1">Strangers pass.<br/>Conversations stay.</h1>
+        <p class="land-p">You meet someone. You talk. They leave. But every conversation is saved — a chapter in your private anthology.</p>
+        <div class="land-cards">
+          <div class="lcard"><div class="lcard-ico">👤</div><div class="lcard-txt">Fully anonymous</div></div>
+          <div class="lcard"><div class="lcard-ico">📖</div><div class="lcard-txt">Every chat saved</div></div>
+          <div class="lcard"><div class="lcard-ico">🎭</div><div class="lcard-txt">Literary names</div></div>
+          <div class="lcard"><div class="lcard-ico">✉️</div><div class="lcard-txt">Leave anytime</div></div>
         </div>
-        <button class="btn-find" onclick="findStranger()">Find a stranger</button>
+        <button class="btn-find" onclick="findStranger()">Find a stranger →</button>
       </div>
     </div>
   </div>
 
-  <!-- Waiting -->
+  <!-- WAITING -->
   <div class="view hidden" id="view-waiting">
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;position:relative;z-index:1;">
-      <div class="wait-orb-wrap"><div class="wait-orb"></div></div>
-      <div class="wait-title">Looking for someone<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span></div>
-      <div class="wait-sub">Searching for a stranger</div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;">
+      <div class="wring"></div>
+      <div class="w-title">Looking for someone<span class="wdots"><span>.</span><span>.</span><span>.</span></span></div>
+      <div class="w-sub">Searching the world</div>
       <button class="btn-cancel" onclick="cancelSearch()">Cancel</button>
     </div>
   </div>
 
-  <!-- Pair Reveal -->
+  <!-- REVEAL -->
   <div class="view hidden" id="view-reveal">
-    <div class="reveal-inner">
-      <div class="reveal-kicker">Your names for this chapter</div>
-      <div class="reveal-from">You are</div>
-      <div class="reveal-name-you" id="revealNameYou"><span class="cursor"></span></div>
-      <div class="reveal-vs" id="revealVs">&amp;</div>
-      <div class="reveal-from2" id="revealFrom2">Your stranger is</div>
-      <div class="reveal-name-them" id="revealNameThem"></div>
-      <div class="reveal-ref" id="revealRef"></div>
-      <div class="reveal-bond" id="revealBond"></div>
-      <div class="reveal-hint" id="revealHint">Beginning your chapter...</div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:28px;">
+      <div class="rev-wrap">
+        <div class="rev-kick">Your names for this chapter</div>
+        <div class="rev-lbl">You are</div>
+        <div class="rev-name-you" id="revealNameYou"><span class="cur"></span></div>
+        <div class="rev-vs" id="revealVs">&amp;</div>
+        <div class="rev-lbl2" id="revealFrom2">Your stranger is</div>
+        <div class="rev-name-them" id="revealNameThem"></div>
+        <div class="rev-ref" id="revealRef"></div>
+        <div class="rev-bond" id="revealBond"></div>
+        <div class="rev-hint" id="revealHint">Beginning your chapter...</div>
+      </div>
     </div>
   </div>
 
-  <!-- Chat -->
+  <!-- CHAT -->
   <div class="view hidden" id="view-chat" style="position:relative;">
-    <div class="chat-header">
-      <div class="chapter-badge">
-        <div class="chapter-label">Chapter</div>
-        <div class="chapter-num" id="chatChapterNum">—</div>
+    <div class="chat-hdr">
+      <div class="ch-badge">
+        <div class="ch-lbl">Chapter</div>
+        <div class="ch-num" id="chatChapterNum">—</div>
       </div>
-      <div class="chat-live"><div class="live-dot"></div>Connected</div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-leave" style="color:var(--muted2);border-color:var(--border);" onclick="openReport()">⚑ Report</button>
-        <button class="btn-leave" onclick="leaveChat()">Leave</button>
+      <div class="live-pill"><div class="ldot"></div>Connected</div>
+      <div class="ch-acts">
+        <button class="btn-lv" onclick="openReport()">⚑ Report</button>
+        <button class="btn-lv" onclick="leaveChat()">Leave</button>
       </div>
     </div>
-    <div class="name-plates">
-      <div class="name-plate you"><div class="name-plate-dot"></div><span id="myNamePlate">—</span></div>
-      <div class="name-plate-vs">vs</div>
-      <div class="name-plate stranger"><div class="name-plate-dot"></div><span id="theirNamePlate">—</span></div>
+    <div class="nplates">
+      <div class="nplate you"><div class="ndot"></div><span id="myNamePlate">—</span></div>
+      <div class="nvs">vs</div>
+      <div class="nplate them"><div class="ndot"></div><span id="theirNamePlate">—</span></div>
     </div>
-    <div class="messages" id="messages"></div>
-    <div class="chat-input-area">
-      <div class="input-row">
-        <div class="input-wrap">
+    <div class="msgs" id="messages"></div>
+    <div class="chat-inp-area">
+      <div class="inp-row">
+        <div class="inp-wrap">
           <textarea id="msgInput" placeholder="Write something..." rows="1" oninput="onInput()" onkeydown="onKeydown(event)"></textarea>
-          <span class="word-badge" id="wordBadge">0 / 4000</span>
+          <span class="cbadge" id="charBadge">0 / 4000</span>
         </div>
         <button class="btn-send" id="sendBtn" onclick="sendMessage()" disabled>→</button>
       </div>
-      <div class="input-hint">Enter to send · Shift+Enter for new line · 4000 characters per message</div>
+      <div class="inp-hint">Enter to send · Shift+Enter for new line</div>
     </div>
-    <div class="stranger-left-overlay" id="strangerLeft">
-      <div class="left-icon">◆</div>
-      <div class="left-title">The stranger has gone.</div>
-      <div class="left-sub">This chapter has been saved.</div>
-      <div class="left-actions">
-        <button class="btn-secondary" onclick="goHome()">Go home</button>
-        <button class="btn-primary" onclick="findStranger()">Find another</button>
+    <div class="sleft" id="strangerLeft">
+      <div class="sleft-ico">📖</div>
+      <div class="sleft-h">The chapter has ended.</div>
+      <div class="sleft-p">The stranger has left. This conversation is saved in your chapters.</div>
+      <div class="sleft-acts">
+        <button class="btn-pri" onclick="findStranger()">Find another stranger</button>
+        <button class="btn-sec" onclick="goHome()">Go home</button>
       </div>
-    </div>
-
-    <!-- Pair Intro Overlay -->
-    <div class="pair-intro" id="pairIntro">
-      <div class="pair-intro-kicker" id="piKicker">your story begins</div>
-      <div class="pair-intro-row">
-        <div class="pair-intro-label">You are</div>
-        <div class="pair-intro-name you-name" id="piMyName"></div>
-      </div>
-      <div class="pair-intro-vs" id="piVs">&</div>
-      <div class="pair-intro-row">
-        <div class="pair-intro-label">Your stranger is</div>
-        <div class="pair-intro-name their-name" id="piTheirName"></div>
-      </div>
-      <div class="pair-intro-ref" id="piRef"></div>
-      <div class="pair-intro-bar" id="piBar"><div class="pair-intro-bar-fill" id="piBarFill"></div></div>
-      <div class="pair-intro-hint" id="piHint">chat begins shortly</div>
     </div>
   </div>
 
-  <!-- History -->
+  <!-- HISTORY -->
   <div class="view hidden" id="view-history">
-    <div class="view-header">
-      <div class="view-header-left"><div class="label">Your anthology</div><div class="title">My Chapters</div></div>
+    <div class="vhdr">
+      <div class="vhdr-l"><div class="vlbl">Your anthology</div><div class="vtit">My Chapters</div></div>
       <button class="btn-back" onclick="goHome()">← Back</button>
     </div>
-    <div class="scroll-list" id="historyList"></div>
+    <div class="slist" id="historyList"></div>
   </div>
 
-  <!-- Chapter Reader -->
+  <!-- READER -->
   <div class="view hidden" id="view-chapter">
-    <div class="view-header">
-      <div class="view-header-left">
-        <div class="label">Chapter</div>
-        <div class="title" id="readerNum">—</div>
-      </div>
+    <div class="vhdr">
+      <div class="vhdr-l"><div class="vlbl">Reading</div><div class="vtit" id="readerNum">—</div></div>
       <div style="text-align:right;">
-        <div style="font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted);letter-spacing:0.5px;" id="readerMeta">—</div>
-        <button class="btn-back" style="margin-top:4px;" onclick="showHistory()">← My Chapters</button>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:3px;" id="readerMeta">—</div>
+        <button class="btn-back" onclick="showHistory()">← My Chapters</button>
       </div>
     </div>
-    <div class="reader-messages" id="readerMessages"></div>
+    <div class="reader-msgs" id="readerMessages"></div>
   </div>
 
-  <!-- Confession Wall -->
+  <!-- CONFESSIONS -->
   <div class="view hidden" id="view-confessions">
-    <div class="confession-header-area">
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
-        <div class="view-header-left"><div class="label">Public Wall</div><div class="title">Confessions</div></div>
-        <div style="display:flex;gap:10px;align-items:center;">
+    <div class="conf-hdr2">
+      <div class="conf-hdr-top">
+        <div class="vhdr-l"><div class="vlbl">Public Wall</div><div class="vtit">Confessions</div></div>
+        <div style="display:flex;gap:8px;align-items:center;">
           <button class="btn-back" onclick="goHome()">← Back</button>
-          <button class="btn-primary" style="padding:8px 18px;font-size:14px;" onclick="showView('write')">Write one →</button>
+          <button class="btn-pri" style="padding:8px 16px;font-size:13px;" onclick="showView('write')">Write one →</button>
         </div>
       </div>
-      <div class="confession-tabs">
-        <button class="conf-tab active" id="confTab-all" onclick="switchConfTab('all')">All</button>
-        <button class="conf-tab" id="confTab-search" onclick="switchConfTab('search')">Search by name</button>
+      <div class="conf-tabs">
+        <button class="ctab on" id="confTab-all" onclick="switchConfTab('all')">All</button>
+        <button class="ctab" id="confTab-search" onclick="switchConfTab('search')">Search by name</button>
       </div>
     </div>
-    <div class="conf-search-bar" id="confSearchBar" style="display:none;">
-      <input type="text" class="conf-search-input" id="confSearchInput" placeholder="Type a name or metaphor..." onkeydown="if(event.key==='Enter')searchConfessions()"/>
-      <button class="btn-search" onclick="searchConfessions()">Search</button>
+    <div class="conf-sbar" id="confSearchBar" style="display:none;">
+      <input type="text" class="conf-sinp" id="confSearchInput" placeholder="Type a name..." onkeydown="if(event.key==='Enter')searchConfessions()"/>
+      <button class="btn-srch" onclick="searchConfessions()">Search</button>
     </div>
-    <div class="confessions-list" id="confessionsList"></div>
+    <div class="conf-list" id="confessionsList"></div>
   </div>
 
-  <!-- Write Confession -->
+  <!-- WRITE CONFESSION -->
   <div class="view hidden" id="view-write">
-    <div class="view-header">
-      <div class="view-header-left"><div class="label">New</div><div class="title">Write a Confession</div></div>
+    <div class="vhdr">
+      <div class="vhdr-l"><div class="vlbl">New</div><div class="vtit">Write a Confession</div></div>
       <button class="btn-back" onclick="showView('confessions')">← Wall</button>
     </div>
-    <div class="write-inner">
+    <div class="write-sc">
       <p class="write-sub">Say what you've been holding. No one will know it's you — unless you tell them.</p>
-
-      <div class="wfield">
-        <label class="wlabel">From (your name or a metaphor)</label>
-        <input type="text" class="winput" id="wFrom" placeholder="e.g. A girl from the third floor, Someone from June..." maxlength="60"/>
+      <div class="wf">
+        <label class="wlbl">From</label>
+        <input type="text" class="winp" id="wFrom" placeholder="A girl from the third floor, Someone from June..." maxlength="60"/>
       </div>
-
-      <div class="wfield">
-        <label class="wlabel">To (their name or a metaphor)</label>
-        <input type="text" class="winput" id="wTo" placeholder="e.g. R., The boy who never called back..." maxlength="60"/>
+      <div class="wf">
+        <label class="wlbl">To</label>
+        <input type="text" class="winp" id="wTo" placeholder="R., The boy who never called back..." maxlength="60"/>
       </div>
-
-      <div class="wfield">
-        <label class="wlabel">The confession</label>
-        <textarea class="winput wtextarea" id="wContent" placeholder="Write what you've been meaning to say..." maxlength="500" oninput="updateConfCount()"></textarea>
-        <div class="char-count" id="confCount">0 / 500</div>
+      <div class="wf">
+        <label class="wlbl">The confession</label>
+        <textarea class="winp wta" id="wContent" placeholder="Write what you've been meaning to say..." maxlength="500" oninput="updConfCnt()"></textarea>
+        <div class="wcnt" id="confCount">0 / 500</div>
       </div>
-
-      <div class="wfield">
-        <label class="wlabel">Dedicate a song (optional)</label>
-        <div class="song-search-wrap">
-          <div id="songSelectedWrap" style="display:none;">
-            <div class="song-selected">
-              <span style="font-size:18px;">🎵</span>
-              <div class="song-selected-info">
-                <div class="song-selected-title" id="songSelTitle"></div>
-                <div class="song-selected-artist" id="songSelArtist"></div>
-              </div>
-              <button class="btn-clear-song" onclick="clearSong()" title="Remove">×</button>
+      <div class="wf">
+        <label class="wlbl">Dedicate a song (optional)</label>
+        <div class="song-wrap">
+          <div id="songSelWrap" style="display:none;">
+            <div class="ssel">
+              <span style="font-size:16px;">🎵</span>
+              <div style="flex:1;"><div class="ssel-t" id="songSelTitle"></div><div class="ssel-a" id="songSelArtist"></div></div>
+              <button class="btn-clrs" onclick="clearSong()">×</button>
             </div>
           </div>
-          <div id="songSearchWrap">
-            <div class="song-search-row">
-              <input type="text" class="winput" id="songSearchInput" placeholder="Search for a song..." onkeydown="if(event.key==='Enter')searchSongs()" style="font-size:15px;"/>
-              <button class="btn-search" onclick="searchSongs()">Find</button>
+          <div id="songSrchWrap">
+            <div class="song-row">
+              <input type="text" class="winp" id="songSrchInp" placeholder="Search for a song..." onkeydown="if(event.key==='Enter')searchSongs()" style="font-size:14px;"/>
+              <button class="btn-srch" onclick="searchSongs()">Find</button>
             </div>
-            <div class="song-results" id="songResults" style="display:none;"></div>
+            <div class="song-res" id="songResults" style="display:none;"></div>
           </div>
         </div>
       </div>
-
-      <div class="write-error" id="writeErr"></div>
+      <div class="werr" id="writeErr"></div>
       <button class="btn-post" id="postBtn" onclick="postConfession()">Post confession</button>
-      <p style="text-align:center;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:0.5px;margin-top:14px;">Once posted, confessions cannot be deleted.</p>
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:12px;">Once posted, confessions cannot be deleted.</p>
     </div>
   </div>
 
-</div>
+  </div><!-- /content -->
 
-<!-- Report Modal -->
-<div class="modal-overlay" id="reportModal">
+</div><!-- #app -->
+
+<!-- REPORT MODAL -->
+<div class="modal-ov" id="reportModal">
   <div class="modal">
     <div id="reportForm">
-      <div class="modal-title">Report this conversation</div>
-      <div class="modal-sub">Select a reason. This will be reviewed and the user may be banned. You can still leave the chat.</div>
-      <div class="report-reasons">
-        <button class="reason-btn" onclick="selectReason(this,'Harassment or bullying')">Harassment or bullying</button>
-        <button class="reason-btn" onclick="selectReason(this,'Hate speech or discrimination')">Hate speech or discrimination</button>
-        <button class="reason-btn" onclick="selectReason(this,'Explicit or inappropriate content')">Explicit or inappropriate content</button>
-        <button class="reason-btn" onclick="selectReason(this,'Threats or intimidation')">Threats or intimidation</button>
-        <button class="reason-btn" onclick="selectReason(this,'Spam or bot behaviour')">Spam or bot behaviour</button>
-        <button class="reason-btn" onclick="selectReason(this,'Other')">Other</button>
+      <div class="modal-tit">Report this conversation</div>
+      <div class="modal-sub">Select a reason. The user may be banned after review.</div>
+      <div class="rep-rss">
+        <button class="rrb" onclick="selReason(this,'Harassment or bullying')">Harassment or bullying</button>
+        <button class="rrb" onclick="selReason(this,'Hate speech or discrimination')">Hate speech or discrimination</button>
+        <button class="rrb" onclick="selReason(this,'Explicit or inappropriate content')">Explicit or inappropriate content</button>
+        <button class="rrb" onclick="selReason(this,'Threats or intimidation')">Threats or intimidation</button>
+        <button class="rrb" onclick="selReason(this,'Spam or bot behaviour')">Spam or bot behaviour</button>
+        <button class="rrb" onclick="selReason(this,'Other')">Other</button>
       </div>
-      <div class="modal-actions">
-        <button class="btn-report-cancel" onclick="closeReport()">Cancel</button>
-        <button class="btn-report-submit" id="reportSubmitBtn" disabled onclick="submitReport()">Submit report</button>
+      <div class="modal-acts">
+        <button class="btn-rcan" onclick="closeReport()">Cancel</button>
+        <button class="btn-rsub" id="reportSubmitBtn" disabled onclick="submitReport()">Submit report</button>
       </div>
     </div>
-    <div id="reportSuccess" style="display:none;" class="report-success">
-      <div class="report-success-icon">◆</div>
-      <div class="report-success-text">Report received.</div>
-      <div class="report-success-sub">Thank you. We'll review this conversation.</div>
-      <button class="btn-report-cancel" style="margin-top:20px;width:100%;" onclick="closeReport()">Close</button>
+    <div id="reportSuccess" style="display:none;" class="rep-ok">
+      <div class="rep-ok-ico">✓</div>
+      <div class="rep-ok-h">Report received.</div>
+      <div class="rep-ok-s">Thank you. We will review this conversation.</div>
+      <button class="btn-rcan" style="margin-top:18px;width:100%;" onclick="closeReport()">Close</button>
     </div>
   </div>
 </div>
+
+<!-- MUSIC PLAYER -->
+<div id="mp">
+  <div class="mp-bar" onclick="togglePlayerExpand()">
+    <div class="mp-bl">
+      <div class="mp-ico">♪</div>
+      <div class="mp-np">
+        <div class="mp-tn" id="mpTrackName"><span class="mp-idle">No track playing</span></div>
+        <div class="mp-ta" id="mpTrackArtist"></div>
+      </div>
+    </div>
+    <div class="mp-bc">
+      <button class="mpbtn" id="mpPlayBtn" onclick="event.stopPropagation();mpTogglePlay()">▶</button>
+      <button class="mpbtn" onclick="event.stopPropagation();mpNext()">⏭</button>
+      <span class="mp-chev">▲</span>
+    </div>
+  </div>
+  <div class="mp-prog" id="mpProgress" onclick="mpSeek(event)">
+    <div class="mp-prog-f" id="mpProgressFill"></div>
+  </div>
+  <div class="mp-panel">
+    <div class="mp-srow">
+      <input class="mp-sinp" id="mpSearchInput" type="text" placeholder="Search for any song..." onkeydown="if(event.key==='Enter')mpSearch()"/>
+      <button class="mp-sbtn" onclick="mpSearch()">Search</button>
+    </div>
+    <div class="mp-res" id="mpResults"></div>
+    <div class="mp-volr">
+      <span class="mp-vlbl">Vol</span>
+      <input type="range" class="mp-vol" id="mpVol" min="0" max="100" value="40" oninput="mpSetVol(this.value)"/>
+      <span class="mp-vv" id="mpVolVal">40</span>
+    </div>
+  </div>
+</div>
+
 <script>
-// ── Auth ──────────────────────────────────────────────────────────────────────
+// ── AUTH ─────────────────────────────────────────────────────────────────────
 const TOKEN = localStorage.getItem('chapters_token');
 const USERNAME = localStorage.getItem('chapters_username') || '';
-if (USERNAME) { const el = document.getElementById('usernameTag'); if (el) el.textContent = USERNAME; }
-function logout() { localStorage.removeItem('chapters_token'); localStorage.removeItem('chapters_username'); window.location.href = '/auth.html'; }
+if (!TOKEN) { window.location.href = '/auth.html'; }
+const _utag = document.getElementById('usernameTag');
+if (_utag && USERNAME) _utag.textContent = USERNAME;
 
-// ── State ─────────────────────────────────────────────────────────────────────
-const STATE = { view: 'landing', history: [], currentChapter: null, connected: false, typingTimeout: null };
-let selectedSong = null;
-let confPage = 1;
-let confLoading = false;
+function logout() {
+  localStorage.removeItem('chapters_token');
+  localStorage.removeItem('chapters_username');
+  window.location.href = '/auth.html';
+}
 
-// ── Socket ────────────────────────────────────────────────────────────────────
+// ── STATE ────────────────────────────────────────────────────────────────────
+const S = { view:'landing', history:[], connected:false, typingTO:null, myName:'', theirName:'' };
+let selSong = null, confPage = 1, confLoading = false, selRsn = null;
+
+// ── SOCKET ───────────────────────────────────────────────────────────────────
 const socket = io();
 socket.on('connect', () => socket.emit('auth', { token: TOKEN }));
 socket.on('auth_error', () => { localStorage.removeItem('chapters_token'); window.location.href = '/auth.html'; });
 socket.on('authed', () => {});
 socket.on('online_count', c => { document.getElementById('onlineCount').textContent = c; });
-socket.on('history', h => { STATE.history = h; if (STATE.view === 'history') renderHistory(); });
+socket.on('history', h => { S.history = h; if (S.view === 'history') renderHistory(); });
 socket.on('waiting', () => showView('waiting'));
 socket.on('matched', ({ chapter, myName, theirName, pairRef, pairBond }) => {
-  STATE.currentChapter = chapter; STATE.connected = true;
-  STATE.myName = myName; STATE.theirName = theirName;
+  S.connected = true; S.myName = myName; S.theirName = theirName;
   document.getElementById('chatChapterNum').textContent = toRoman(chapter);
   document.getElementById('myNamePlate').textContent = myName;
   document.getElementById('theirNamePlate').textContent = theirName;
   document.getElementById('strangerLeft').classList.remove('show');
-  clearMessages();
+  clearMsgs();
   showView('reveal');
   playReveal(myName, theirName, pairRef, pairBond);
 });
-socket.on('message', ({ content }) => addMessage('stranger', content));
-socket.on('message_sent', ({ content }) => addMessage('you', content));
+socket.on('message', ({ content }) => addMsg('stranger', content));
+socket.on('message_sent', ({ content }) => addMsg('you', content));
 socket.on('stranger_typing', showTyping);
 socket.on('stranger_stop_typing', hideTyping);
 socket.on('stranger_left', () => {
-  STATE.connected = false; hideTyping();
-  addSystemMsg('The stranger has closed the chapter.');
+  S.connected = false; hideTyping();
+  addSysMsg('The stranger has closed the chapter.');
   document.getElementById('strangerLeft').classList.add('show');
 });
 socket.on('search_cancelled', () => showView('landing'));
@@ -724,652 +798,361 @@ socket.on('report_result', ({ success, error }) => {
   if (success) { document.getElementById('reportForm').style.display='none'; document.getElementById('reportSuccess').style.display='block'; }
   else alert(error || 'Could not submit report.');
 });
-socket.on('new_confession', () => { if (STATE.view === 'confessions') loadConfessions(true); });
+socket.on('new_confession', () => { if (S.view === 'confessions') loadConf(true); });
 
-// ── Views ─────────────────────────────────────────────────────────────────────
+// ── VIEWS ────────────────────────────────────────────────────────────────────
 function showView(name) {
   ['landing','waiting','reveal','chat','history','chapter','confessions','write'].forEach(v => {
-    document.getElementById('view-'+v).classList.toggle('hidden', v !== name);
+    document.getElementById('view-' + v).classList.toggle('hidden', v !== name);
   });
-  STATE.view = name;
-  if (name === 'confessions') loadConfessions(true);
+  S.view = name;
+  if (name === 'confessions') loadConf(true);
 }
 function goHome() { showView('landing'); }
 function showHistory() { renderHistory(); showView('history'); }
 
-// ── Chat ──────────────────────────────────────────────────────────────────────
+// ── CHAT ─────────────────────────────────────────────────────────────────────
 function findStranger() { showView('waiting'); socket.emit('find_stranger'); }
 function cancelSearch() { socket.emit('cancel_search'); }
-function leaveChat() { socket.emit('leave_chat'); STATE.connected = false; addSystemMsg('You closed the chapter.'); document.getElementById('strangerLeft').classList.add('show'); }
-function clearMessages() { document.getElementById('messages').innerHTML = ''; }
-function addSystemMsg(text) { const m = document.getElementById('messages'); const el = document.createElement('div'); el.className = 'msg-system'; el.textContent = text; m.appendChild(el); scrollBottom(); }
-function addMessage(who, content) {
+function leaveChat() {
+  socket.emit('leave_chat'); S.connected = false;
+  addSysMsg('You closed the chapter.');
+  document.getElementById('strangerLeft').classList.add('show');
+}
+function clearMsgs() { document.getElementById('messages').innerHTML = ''; }
+function addSysMsg(txt) {
+  const m = document.getElementById('messages');
+  const el = document.createElement('div'); el.className = 'msg-sys'; el.textContent = txt;
+  m.appendChild(el); scrollBot();
+}
+function addMsg(who, content) {
   hideTyping();
   const m = document.getElementById('messages');
   const w = document.createElement('div'); w.className = 'msg ' + who;
-  const label = who === 'you' ? (STATE.myName || 'You') : (STATE.theirName || 'Stranger');
-  w.innerHTML = `<div class="msg-who">${label}</div><div class="msg-bubble">${escHtml(content)}</div><div class="msg-time">${fmtTime(Date.now())}</div>`;
-  m.appendChild(w); scrollBottom();
+  const lbl = who === 'you' ? (S.myName || 'You') : (S.theirName || 'Stranger');
+  w.innerHTML = `<div class="msg-who">${lbl}</div><div class="msg-bub">${esc(content)}</div><div class="msg-t">${fmtTime(Date.now())}</div>`;
+  m.appendChild(w); scrollBot();
 }
-let typingEl = null;
-function showTyping() { if (typingEl) return; const m = document.getElementById('messages'); typingEl = document.createElement('div'); typingEl.className='typing-bubble'; typingEl.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>'; m.appendChild(typingEl); scrollBottom(); }
-function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
-function scrollBottom() { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }
+let typEl = null;
+function showTyping() {
+  if (typEl) return;
+  const m = document.getElementById('messages');
+  typEl = document.createElement('div'); typEl.className = 'typing-bub';
+  typEl.innerHTML = '<div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>';
+  m.appendChild(typEl); scrollBot();
+}
+function hideTyping() { if (typEl) { typEl.remove(); typEl = null; } }
+function scrollBot() { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }
 function onInput() {
-  const t = document.getElementById('msgInput').value;
-  const len = t.length;
-  const b = document.getElementById('wordBadge');
+  const val = document.getElementById('msgInput').value;
+  const len = val.length;
+  const b = document.getElementById('charBadge');
   b.textContent = len + ' / 4000';
-  b.className = 'word-badge' + (len > 4000 ? ' over' : len >= 3600 ? ' warn' : '');
-  document.getElementById('sendBtn').disabled = len === 0 || len > 4000 || !STATE.connected;
-  if (STATE.connected && len > 0) { socket.emit('typing'); clearTimeout(STATE.typingTimeout); STATE.typingTimeout = setTimeout(() => socket.emit('stop_typing'), 2000); } else socket.emit('stop_typing');
-  const ta = document.getElementById('msgInput'); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+  b.className = 'cbadge' + (len > 4000 ? ' over' : len >= 3600 ? ' warn' : '');
+  document.getElementById('sendBtn').disabled = len === 0 || len > 4000 || !S.connected;
+  if (S.connected && len > 0) {
+    socket.emit('typing'); clearTimeout(S.typingTO);
+    S.typingTO = setTimeout(() => socket.emit('stop_typing'), 2000);
+  } else socket.emit('stop_typing');
+  const ta = document.getElementById('msgInput');
+  ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
 }
 function onKeydown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
 function sendMessage() {
-  const inp = document.getElementById('msgInput'); const text = inp.value.trim();
-  if (!text || !STATE.connected || text.length > 4000) return;
-  socket.emit('message', { content: text }); inp.value = ''; inp.style.height = 'auto'; onInput();
-  clearTimeout(STATE.typingTimeout); socket.emit('stop_typing');
+  const inp = document.getElementById('msgInput'); const txt = inp.value.trim();
+  if (!txt || !S.connected || txt.length > 4000) return;
+  socket.emit('message', { content: txt }); inp.value = ''; inp.style.height = 'auto'; onInput();
+  clearTimeout(S.typingTO); socket.emit('stop_typing');
 }
 
-// ── History ───────────────────────────────────────────────────────────────────
+// ── HISTORY ──────────────────────────────────────────────────────────────────
 function renderHistory() {
   const list = document.getElementById('historyList');
-  if (!STATE.history || STATE.history.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">◆</div><div class="empty-title">No chapters yet.</div><div class="empty-sub">Your conversations will live here.</div></div>`;
+  if (!S.history || !S.history.length) {
+    list.innerHTML = `<div class="empty-st"><div class="emt-ico">📖</div><div class="emt-h">No chapters yet.</div><div class="emt-s">Your conversations will live here.</div></div>`;
     return;
   }
-  list.innerHTML = STATE.history.map(conv => {
-    const preview = conv.preview ? (conv.preview.length > 60 ? conv.preview.slice(0,60)+'…' : conv.preview) : 'No messages';
-    const dur = conv.endedAt ? fmtDuration(conv.endedAt - conv.startedAt) : 'Ongoing';
-    return `<div class="chapter-card" onclick='openChapterById("${conv.id}")'>
-      <div class="c-num"><div class="c-roman">${toRoman(conv.chapter)}</div></div>
-      <div class="c-inner">
-        <div class="c-date">${fmtDate(conv.startedAt)}</div>
-        <div class="c-preview">"${escHtml(preview)}"</div>
-        <div class="c-meta">${conv.messageCount} messages · ${dur}</div>
+  list.innerHTML = S.history.map(conv => {
+    const pre = conv.preview ? (conv.preview.length > 60 ? conv.preview.slice(0,60)+'…' : conv.preview) : 'No messages';
+    const dur = conv.endedAt ? fmtDur(conv.endedAt - conv.startedAt) : 'Ongoing';
+    return `<div class="ccard" onclick='openCById("${conv.id}")'>
+      <div class="cc-n"><div class="cc-rom">${toRoman(conv.chapter)}</div></div>
+      <div class="cc-in">
+        <div class="cc-dt">${fmtDate(conv.startedAt)}</div>
+        <div class="cc-pre">"${esc(pre)}"</div>
+        <div class="cc-mt">${conv.messageCount} messages · ${dur}</div>
       </div>
-      <div class="c-arrow">›</div>
+      <div class="cc-arr">›</div>
     </div>`;
   }).join('');
 }
-function openChapterById(id) { const c = STATE.history.find(x => x.id === id); if (c) openChapter(c); }
+function openCById(id) { const c = S.history.find(x => x.id === id); if (c) openChapter(c); }
 function openChapter(ch) {
   document.getElementById('readerNum').textContent = toRoman(ch.chapter);
-  const nameInfo = ch.myName ? ` · ${ch.myName} & ${ch.theirName}` : '';
-  document.getElementById('readerMeta').textContent = fmtDate(ch.startedAt) + ' · ' + ch.messageCount + ' messages' + nameInfo;
+  const ni = ch.myName ? ` · ${ch.myName} & ${ch.theirName}` : '';
+  document.getElementById('readerMeta').textContent = fmtDate(ch.startedAt) + ' · ' + ch.messageCount + ' messages' + ni;
   const c = document.getElementById('readerMessages'); c.innerHTML = '';
-  if (!ch.messages || ch.messages.length === 0) { c.innerHTML = `<div style="text-align:center;color:var(--muted);font-style:italic;padding:48px 0;font-family:'Cormorant Garamond',serif;">No messages in this chapter.</div>`; }
-  else {
+  if (!ch.messages || !ch.messages.length) {
+    c.innerHTML = `<div style="text-align:center;color:var(--muted);font-style:italic;padding:48px 0;font-family:'Playfair Display',serif;font-size:18px;">No messages in this chapter.</div>`;
+  } else {
     ch.messages.forEach(m => {
       const w = document.createElement('div'); w.className = 'msg ' + m.sender;
-      const label = m.sender === 'you' ? (ch.myName || 'You') : (ch.theirName || 'Stranger');
-      w.innerHTML = `<div class="msg-who">${label}</div><div class="msg-bubble">${escHtml(m.content)}</div><div class="msg-time">${fmtTime(m.sentAt)}</div>`;
+      const lbl = m.sender === 'you' ? (ch.myName || 'You') : (ch.theirName || 'Stranger');
+      w.innerHTML = `<div class="msg-who">${lbl}</div><div class="msg-bub">${esc(m.content)}</div><div class="msg-t">${fmtTime(m.sentAt)}</div>`;
       c.appendChild(w);
     });
-    const end = document.createElement('div'); end.className = 'reader-end';
-    end.innerHTML = `<div class="reader-end-line"></div><div class="reader-end-text">End of Chapter ${toRoman(ch.chapter)}</div><div class="reader-end-line"></div>`;
+    const end = document.createElement('div'); end.className = 'rend';
+    end.innerHTML = `<div class="rend-ln"></div><div class="rend-tx">End of Chapter ${toRoman(ch.chapter)}</div><div class="rend-ln"></div>`;
     c.appendChild(end);
   }
   showView('chapter');
 }
 
-// ── Confessions ───────────────────────────────────────────────────────────────
-async function loadConfessions(reset = false) {
+// ── CONFESSIONS ──────────────────────────────────────────────────────────────
+async function loadConf(reset=false) {
   if (confLoading) return;
-  if (reset) { confPage = 1; document.getElementById('confessionsList').innerHTML = ''; }
+  if (reset) { confPage=1; document.getElementById('confessionsList').innerHTML=''; }
   confLoading = true;
   try {
-    const res = await fetch(`/api/confessions?page=${confPage}`);
-    const data = await res.json();
-    renderConfessions(data.confessions, reset);
-    confPage++;
-  } catch(e) {} finally { confLoading = false; }
+    const r = await fetch(`/api/confessions?page=${confPage}`);
+    const d = await r.json();
+    renderConf(d.confessions, reset); confPage++;
+  } catch(e) {} finally { confLoading=false; }
 }
-
 async function searchConfessions() {
   const q = document.getElementById('confSearchInput').value.trim();
   if (!q) return;
-  document.getElementById('confessionsList').innerHTML = `<div class="empty-state"><div class="empty-sub">Searching...</div></div>`;
+  document.getElementById('confessionsList').innerHTML = `<div class="empty-st"><div class="emt-s">Searching...</div></div>`;
   try {
-    const res = await fetch(`/api/confessions/search?q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-    if (data.confessions.length === 0) {
-      document.getElementById('confessionsList').innerHTML = `<div class="empty-state"><div class="empty-icon">◆</div><div class="empty-title">No results found.</div><div class="empty-sub">Try a different name or metaphor.</div></div>`;
-    } else renderConfessions(data.confessions, true);
+    const r = await fetch(`/api/confessions/search?q=${encodeURIComponent(q)}`);
+    const d = await r.json();
+    if (!d.confessions.length) {
+      document.getElementById('confessionsList').innerHTML = `<div class="empty-st"><div class="emt-ico">🔍</div><div class="emt-h">No results found.</div></div>`;
+    } else renderConf(d.confessions, true);
   } catch(e) {}
 }
-
-function renderConfessions(confessions, reset = false) {
-  const list = document.getElementById('confessionsList');
-  if (reset && confessions.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">◆</div><div class="empty-title">No confessions yet.</div><div class="empty-sub">Be the first to leave one.</div></div>`;
+function renderConf(list, reset=false) {
+  const el = document.getElementById('confessionsList');
+  if (reset && !list.length) {
+    el.innerHTML = `<div class="empty-st"><div class="emt-ico">💌</div><div class="emt-h">No confessions yet.</div><div class="emt-s">Be the first.</div></div>`;
     return;
   }
-  const html = confessions.map(c => {
-    const songHtml = c.song_title ? `
-      <a class="conf-song" href="${safeSongHref(c.song_url)}" target="_blank" rel="noopener noreferrer">
-        <span class="conf-song-icon">🎵</span>
-        <div class="conf-song-info">
-          <div class="conf-song-title">${escHtml(c.song_title)}</div>
-          <div class="conf-song-artist">${escHtml(c.song_artist || '')}</div>
-        </div>
-        <span style="font-size:12px;color:var(--muted);">Open in Spotify →</span>
-      </a>` : '';
-    return `<div class="confession-card">
-      <div class="conf-from-to">
-        <span class="conf-from">From</span>
-        <span class="conf-name">${escHtml(c.from_name)}</span>
-        <span class="conf-arrow">→</span>
-        <span class="conf-from">To</span>
-        <span class="conf-to-name">${escHtml(c.to_name)}</span>
-      </div>
-      <div class="conf-text">"${escHtml(c.content)}"</div>
-      ${songHtml}
-      <div class="conf-date">${fmtDate(c.created_at * 1000)}</div>
+  const html = list.map(c => {
+    const sg = c.song_title ? `<a class="cfsong" href="${safeHref(c.song_url)}" target="_blank" rel="noopener noreferrer"><span>🎵</span><div><div class="cfsong-t">${esc(c.song_title)}</div><div class="cfsong-a">${esc(c.song_artist||'')}</div></div><span style="font-size:11px;color:var(--muted);margin-left:4px;">Open →</span></a>` : '';
+    return `<div class="cconf">
+      <div class="cft"><span class="cflbl">From</span><span class="cfnm">${esc(c.from_name)}</span><span class="cfarr">→</span><span class="cflbl">To</span><span class="cfto">${esc(c.to_name)}</span></div>
+      <div class="cftxt">"${esc(c.content)}"</div>${sg}
+      <div class="cfdt">${fmtDate(c.created_at*1000)}</div>
     </div>`;
   }).join('');
-  if (reset) list.innerHTML = html;
-  else list.insertAdjacentHTML('beforeend', html);
+  if (reset) el.innerHTML = html; else el.insertAdjacentHTML('beforeend', html);
 }
-
 function switchConfTab(tab) {
-  document.getElementById('confTab-all').classList.toggle('active', tab === 'all');
-  document.getElementById('confTab-search').classList.toggle('active', tab === 'search');
-  document.getElementById('confSearchBar').style.display = tab === 'search' ? 'flex' : 'none';
-  if (tab === 'all') loadConfessions(true);
-  else document.getElementById('confessionsList').innerHTML = `<div class="empty-state"><div class="empty-sub">Enter a name to search.</div></div>`;
+  document.getElementById('confTab-all').classList.toggle('on', tab==='all');
+  document.getElementById('confTab-search').classList.toggle('on', tab==='search');
+  document.getElementById('confSearchBar').style.display = tab==='search' ? 'flex' : 'none';
+  if (tab==='all') loadConf(true);
+  else document.getElementById('confessionsList').innerHTML = `<div class="empty-st"><div class="emt-s">Enter a name to search.</div></div>`;
 }
 
-// ── Write Confession ──────────────────────────────────────────────────────────
-function updateConfCount() {
+// ── WRITE CONFESSION ──────────────────────────────────────────────────────────
+function updConfCnt() {
   const len = document.getElementById('wContent').value.length;
   const el = document.getElementById('confCount');
   el.textContent = len + ' / 500';
-  el.className = 'char-count' + (len > 500 ? ' over' : len > 400 ? ' warn' : '');
+  el.className = 'wcnt' + (len>500?' over':len>400?' warn':'');
 }
-
 async function searchSongs() {
-  const q = document.getElementById('songSearchInput').value.trim();
+  const q = document.getElementById('songSrchInp').value.trim();
   if (!q) return;
-  const resultsEl = document.getElementById('songResults');
-  resultsEl.style.display = 'block';
-  resultsEl.innerHTML = `<div style="padding:12px 14px;font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);letter-spacing:0.5px;">Searching...</div>`;
+  const re = document.getElementById('songResults');
+  re.style.display='flex';
+  re.innerHTML = `<div style="padding:11px 13px;font-size:12px;color:var(--muted);">Searching...</div>`;
   try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=6`);
-    const data = await res.json();
-    if (!data.results || data.results.length === 0) {
-      resultsEl.innerHTML = `<div style="padding:12px 14px;font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);">No results found.</div>`;
-      return;
-    }
-    resultsEl.innerHTML = data.results.map((t, i) => `
-      <div class="song-result" data-idx="${i}">
-        <div class="song-result-info">
-          <div class="song-result-title">${escHtml(t.trackName)}</div>
-          <div class="song-result-artist">${escHtml(t.artistName)}</div>
-        </div>
-        <span class="song-result-check" id="src-${i}">✓</span>
-      </div>`).join('');
-    // Attach click handlers via event delegation (no inline onclick = no injection risk)
-    resultsEl.querySelectorAll('.song-result').forEach(el => {
-      el.addEventListener('click', () => selectSong(parseInt(el.dataset.idx)));
-    });
-    window._songResults = data.results;
-  } catch(e) {
-    resultsEl.innerHTML = `<div style="padding:12px 14px;font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);">Search failed. Try again.</div>`;
-  }
+    const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=6`);
+    const d = await r.json();
+    if (!d.results||!d.results.length) { re.innerHTML=`<div style="padding:11px 13px;font-size:12px;color:var(--muted);">No results.</div>`; return; }
+    re.innerHTML = d.results.map((t,i)=>`<div class="sres" data-i="${i}"><div style="flex:1;"><div class="sres-t">${esc(t.trackName)}</div><div class="sres-a">${esc(t.artistName)}</div></div></div>`).join('');
+    re.querySelectorAll('.sres').forEach(el=>el.addEventListener('click',()=>pickSong(parseInt(el.dataset.i))));
+    window._sr = d.results;
+  } catch(e) { re.innerHTML=`<div style="padding:11px 13px;font-size:12px;color:var(--muted);">Failed.</div>`; }
 }
-
-function selectSong(idx) {
-  const track = window._songResults?.[idx];
-  if (!track) return;
-  selectedSong = {
-    title: track.trackName,
-    artist: track.artistName,
-    url: `https://open.spotify.com/search/${encodeURIComponent(track.trackName + ' ' + track.artistName)}`
-  };
-  document.getElementById('songSelTitle').textContent = selectedSong.title;
-  document.getElementById('songSelArtist').textContent = selectedSong.artist;
-  document.getElementById('songSelectedWrap').style.display = 'block';
-  document.getElementById('songSearchWrap').style.display = 'none';
+function pickSong(i) {
+  const t = window._sr?.[i]; if (!t) return;
+  selSong = { title:t.trackName, artist:t.artistName, url:`https://open.spotify.com/search/${encodeURIComponent(t.trackName+' '+t.artistName)}` };
+  document.getElementById('songSelTitle').textContent = selSong.title;
+  document.getElementById('songSelArtist').textContent = selSong.artist;
+  document.getElementById('songSelWrap').style.display='block';
+  document.getElementById('songSrchWrap').style.display='none';
 }
-
 function clearSong() {
-  selectedSong = null;
-  document.getElementById('songSelectedWrap').style.display = 'none';
-  document.getElementById('songSearchWrap').style.display = 'block';
-  document.getElementById('songResults').style.display = 'none';
-  document.getElementById('songSearchInput').value = '';
+  selSong=null;
+  document.getElementById('songSelWrap').style.display='none';
+  document.getElementById('songSrchWrap').style.display='block';
+  document.getElementById('songResults').style.display='none';
+  document.getElementById('songSrchInp').value='';
 }
-
 async function postConfession() {
-  const from = document.getElementById('wFrom').value.trim();
-  const to = document.getElementById('wTo').value.trim();
-  const content = document.getElementById('wContent').value.trim();
-  const errEl = document.getElementById('writeErr');
-  errEl.classList.remove('show');
-
-  if (!from) { errEl.textContent = 'Please fill in the "From" field.'; errEl.classList.add('show'); return; }
-  if (!to) { errEl.textContent = 'Please fill in the "To" field.'; errEl.classList.add('show'); return; }
-  if (!content) { errEl.textContent = 'Please write your confession.'; errEl.classList.add('show'); return; }
-  if (content.length < 10) { errEl.textContent = 'Confession is too short.'; errEl.classList.add('show'); return; }
-
-  const btn = document.getElementById('postBtn');
-  btn.disabled = true; btn.textContent = 'Posting...';
-
+  const from=document.getElementById('wFrom').value.trim();
+  const to=document.getElementById('wTo').value.trim();
+  const cnt=document.getElementById('wContent').value.trim();
+  const err=document.getElementById('writeErr');
+  err.classList.remove('show');
+  if (!from){err.textContent='Fill in the From field.';err.classList.add('show');return;}
+  if (!to){err.textContent='Fill in the To field.';err.classList.add('show');return;}
+  if (!cnt||cnt.length<10){err.textContent='Confession is too short.';err.classList.add('show');return;}
+  const btn=document.getElementById('postBtn'); btn.disabled=true; btn.textContent='Posting...';
   try {
-    const body = { from_name: from, to_name: to, content };
-    if (selectedSong) { body.song_title = selectedSong.title; body.song_artist = selectedSong.artist; body.song_url = selectedSong.url; }
-
-    const res = await fetch('/api/confessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN },
-      body: JSON.stringify(body)
-    });
-    const data = await res.json();
-    if (!res.ok) { errEl.textContent = data.error || 'Something went wrong.'; errEl.classList.add('show'); btn.disabled=false; btn.textContent='Post confession'; return; }
-
-    // Reset form
-    document.getElementById('wFrom').value = '';
-    document.getElementById('wTo').value = '';
-    document.getElementById('wContent').value = '';
-    clearSong(); updateConfCount();
-    btn.disabled=false; btn.textContent='Post confession';
-    showView('confessions');
-  } catch(e) {
-    errEl.textContent = 'Connection error.'; errEl.classList.add('show');
-    btn.disabled=false; btn.textContent='Post confession';
-  }
+    const body={from_name:from,to_name:to,content:cnt};
+    if (selSong){body.song_title=selSong.title;body.song_artist=selSong.artist;body.song_url=selSong.url;}
+    const r=await fetch('/api/confessions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify(body)});
+    const d=await r.json();
+    if (!r.ok){err.textContent=d.error||'Something went wrong.';err.classList.add('show');btn.disabled=false;btn.textContent='Post confession';return;}
+    document.getElementById('wFrom').value='';document.getElementById('wTo').value='';document.getElementById('wContent').value='';
+    clearSong();updConfCnt();btn.disabled=false;btn.textContent='Post confession';showView('confessions');
+  } catch(e){err.textContent='Connection error.';err.classList.add('show');btn.disabled=false;btn.textContent='Post confession';}
 }
 
-// ── Report ────────────────────────────────────────────────────────────────────
-let selectedReason = null;
-  const overlay = document.getElementById('pairIntro');
-  const piMyName = document.getElementById('piMyName');
-  const piTheirName = document.getElementById('piTheirName');
-  const piRef = document.getElementById('piRef');
-  const piKicker = document.getElementById('piKicker');
-  const piVs = document.getElementById('piVs');
-  const piBar = document.getElementById('piBar');
-  const piBarFill = document.getElementById('piBarFill');
-  const piHint = document.getElementById('piHint');
-
-  // Reset
-  piMyName.textContent = '';
-  piTheirName.textContent = '';
-  piRef.textContent = '';
-  piRef.classList.remove('vis');
-  piKicker.classList.remove('vis');
-  piVs.classList.remove('vis');
-  piBar.classList.remove('vis');
-  piHint.classList.remove('vis');
-  piBarFill.style.transition = 'none';
-  piBarFill.style.width = '0%';
-
-  overlay.classList.add('show');
-
-  const TOTAL_DURATION = 4200; // ms before chat opens
-  const CHAR_SPEED = 55; // ms per character
-
-  function typeText(el, text, onDone) {
-    let i = 0;
-    const tick = () => {
-      if (i <= text.length) {
-        el.textContent = text.slice(0, i);
-        i++;
-        setTimeout(tick, CHAR_SPEED);
-      } else { if (onDone) onDone(); }
-    };
-    tick();
-  }
-
-  // Timeline
-  setTimeout(() => piKicker.classList.add('vis'), 100);
-
-  setTimeout(() => {
-    typeText(piMyName, myName, () => {
-      setTimeout(() => {
-        piVs.classList.add('vis');
-        setTimeout(() => {
-          typeText(piTheirName, theirName, () => {
-            setTimeout(() => {
-              piRef.innerHTML = `<em>— ${pairRef}</em>`;
-              piRef.classList.add('vis');
-              setTimeout(() => {
-                piBar.classList.add('vis');
-                piHint.classList.add('vis');
-                // Countdown bar
-                const remaining = TOTAL_DURATION - 1800;
-                requestAnimationFrame(() => {
-                  setTimeout(() => {
-                    piBarFill.style.transition = `width ${remaining}ms linear`;
-                    piBarFill.style.width = '100%';
-                  }, 50);
-                });
-              }, 300);
-            }, 400);
-          });
-        }, 300);
-      }, 200);
-    });
-  }, 600);
-
-  // End — fade out overlay, start chat
-  setTimeout(() => {
-    overlay.style.transition = 'opacity 0.6s ease';
-    overlay.style.opacity = '0';
-    setTimeout(() => {
-      overlay.classList.remove('show');
-      overlay.style.opacity = '';
-      overlay.style.transition = '';
-      addSystemMsg(`${myName} & ${theirName} — ${pairRef}`);
-      document.getElementById('msgInput').focus();
-    }, 600);
-  }, TOTAL_DURATION);
-}
-
-// ── Pair Reveal ───────────────────────────────────────────────────────────────
-function playReveal(myName, theirName, pairRef, pairBond) {
-  // Reset all elements
-  const elYou = document.getElementById('revealNameYou');
-  const elVs = document.getElementById('revealVs');
-  const elFrom2 = document.getElementById('revealFrom2');
-  const elThem = document.getElementById('revealNameThem');
-  const elRef = document.getElementById('revealRef');
-  const elBond = document.getElementById('revealBond');
-  const elHint = document.getElementById('revealHint');
-
-  elYou.innerHTML = '<span class="cursor"></span>';
-  elVs.style.opacity = '0';
-  elFrom2.style.opacity = '0';
-  elThem.textContent = '';
-  elRef.style.opacity = '0'; elRef.textContent = pairRef || '';
-  elBond.style.opacity = '0'; elBond.textContent = '';
-  elHint.style.opacity = '0';
-
-  function typeInto(el, text, speed, onDone) {
-    let i = 0;
-    el.innerHTML = '<span class="cursor"></span>';
-    const interval = setInterval(() => {
-      if (i >= text.length) {
-        clearInterval(interval);
-        el.innerHTML = text; // remove cursor when done
-        if (onDone) onDone();
-        return;
-      }
-      el.innerHTML = text.slice(0, ++i) + '<span class="cursor"></span>';
-    }, speed);
-  }
-
-  function fadeIn(el, delay) {
-    setTimeout(() => { el.style.transition = 'opacity 0.6s ease'; el.style.opacity = '1'; }, delay);
-  }
-
-  // Sequence
-  setTimeout(() => {
-    // Type your name
-    typeInto(elYou, myName, 60, () => {
-      // Show & after 300ms
-      setTimeout(() => {
-        fadeIn(elVs, 0);
-        fadeIn(elFrom2, 200);
-
-        // Type their name after 500ms
-        setTimeout(() => {
-          typeInto(elThem, theirName, 60, () => {
-            // Show reference
-            setTimeout(() => {
-              fadeIn(elRef, 0);
-
-              // Type bond description
-              setTimeout(() => {
-                elBond.style.transition = 'opacity 0.5s ease';
-                elBond.style.opacity = '1';
-                typeInto(elBond, pairBond || '', 18, () => {
-                  // Show hint and transition to chat
-                  setTimeout(() => {
-                    fadeIn(elHint, 0);
-                    setTimeout(() => {
-                      showView('chat');
-                      addSystemMsg(`You are ${myName}. Your stranger is ${theirName}.`);
-                      document.getElementById('msgInput').focus();
-                    }, 2200);
-                  }, 600);
-                });
-              }, 500);
-            }, 400);
-          });
-        }, 700);
-      }, 300);
-    });
-  }, 400);
-}
-
-// ── Music Player ─────────────────────────────────────────────────────────────
-const MP = {
-  audio: new Audio(),
-  tracks: [],
-  currentIdx: -1,
-  isOpen: false,
-  isExpanded: false,
-  progressTimer: null,
-};
-MP.audio.volume = 0.4;
-MP.audio.crossOrigin = 'anonymous';
-
-function togglePlayer() {
-  const el = document.getElementById('musicPlayer');
-  const btn = document.getElementById('mpToggleBtn');
-  if (!MP.isOpen) {
-    MP.isOpen = true;
-    el.classList.add('mini');
-    btn.classList.add('active');
-  } else if (!MP.isExpanded) {
-    el.classList.remove('mini');
-    el.classList.add('open');
-    MP.isExpanded = true;
-  } else {
-    el.classList.remove('open');
-    el.classList.add('mini');
-    MP.isExpanded = false;
-  }
-}
-
-function togglePlayerExpand() {
-  const el = document.getElementById('musicPlayer');
-  if (!MP.isOpen) return;
-  if (MP.isExpanded) {
-    el.classList.remove('open');
-    el.classList.add('mini');
-    MP.isExpanded = false;
-  } else {
-    el.classList.remove('mini');
-    el.classList.add('open');
-    MP.isExpanded = true;
-  }
-}
-
-async function mpSearch() {
-  const q = document.getElementById('mpSearchInput').value.trim();
-  if (!q) return;
-  const resultsEl = document.getElementById('mpResults');
-  resultsEl.style.display = 'flex';
-  resultsEl.innerHTML = `<div class="mp-result"><div class="mp-result-info"><div class="mp-result-title" style="color:var(--muted);">Searching...</div></div></div>`;
-  try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=8&entity=song`);
-    const data = await res.json();
-    const tracks = (data.results || []).filter(t => t.previewUrl);
-    if (tracks.length === 0) {
-      resultsEl.innerHTML = `<div class="mp-result"><div class="mp-result-info"><div class="mp-result-title" style="color:var(--muted);">No results with previews found.</div></div></div>`;
-      return;
-    }
-    MP.tracks = tracks;
-    resultsEl.innerHTML = tracks.map((t, i) => {
-      const dur = t.trackTimeMillis ? Math.round(t.trackTimeMillis / 1000) + 's' : '30s';
-      return `<div class="mp-result" id="mpR-${i}" data-idx="${i}" onclick="mpPlay(${i})">
-        <span class="mp-play-icon" id="mpPI-${i}">▷</span>
-        <div class="mp-result-info">
-          <div class="mp-result-title">${escHtml(t.trackName)}</div>
-          <div class="mp-result-artist">${escHtml(t.artistName)}</div>
-        </div>
-        <span class="mp-result-dur">${dur}</span>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    resultsEl.innerHTML = `<div class="mp-result"><div class="mp-result-info"><div class="mp-result-title" style="color:var(--muted);">Search failed. Try again.</div></div></div>`;
-  }
-}
-
-function mpPlay(idx) {
-  const track = MP.tracks[idx];
-  if (!track || !track.previewUrl) return;
-
-  // Update active state
-  document.querySelectorAll('.mp-result').forEach((el, i) => {
-    el.classList.toggle('active', i === idx);
-    const pi = document.getElementById('mpPI-' + i);
-    if (pi) pi.textContent = i === idx ? '▶' : '▷';
-  });
-
-  MP.currentIdx = idx;
-  MP.audio.src = track.previewUrl;
-  MP.audio.volume = document.getElementById('mpVol').value / 100;
-  MP.audio.play().catch(() => {});
-
-  document.getElementById('mpTrackName').textContent = track.trackName;
-  document.getElementById('mpTrackArtist').textContent = track.artistName;
-  document.getElementById('mpPlayBtn').textContent = '⏸';
-  document.getElementById('mpPlayBtn').classList.add('playing');
-  document.getElementById('mpToggleBtn').classList.add('active');
-
-  mpStartProgress();
-}
-
-function mpTogglePlay() {
-  if (MP.audio.paused) {
-    if (!MP.audio.src) return;
-    MP.audio.play().catch(() => {});
-    document.getElementById('mpPlayBtn').textContent = '⏸';
-    document.getElementById('mpPlayBtn').classList.add('playing');
-    mpStartProgress();
-  } else {
-    MP.audio.pause();
-    document.getElementById('mpPlayBtn').textContent = '▶';
-    document.getElementById('mpPlayBtn').classList.remove('playing');
-    clearInterval(MP.progressTimer);
-  }
-}
-
-function mpNext() {
-  if (MP.tracks.length === 0) return;
-  const next = (MP.currentIdx + 1) % MP.tracks.length;
-  mpPlay(next);
-}
-
-function mpStartProgress() {
-  clearInterval(MP.progressTimer);
-  MP.progressTimer = setInterval(() => {
-    if (!MP.audio.duration) return;
-    const pct = (MP.audio.currentTime / MP.audio.duration) * 100;
-    document.getElementById('mpProgressFill').style.width = pct + '%';
-  }, 500);
-}
-
-function mpSeek(e) {
-  if (!MP.audio.duration) return;
-  const rect = document.getElementById('mpProgress').getBoundingClientRect();
-  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  MP.audio.currentTime = pct * MP.audio.duration;
-}
-
-function mpSetVol(val) {
-  MP.audio.volume = val / 100;
-  document.getElementById('mpVolVal').textContent = val;
-}
-
-// Auto-advance to next track when one ends
-MP.audio.addEventListener('ended', () => {
-  if (MP.tracks.length > 1) mpNext();
-  else {
-    document.getElementById('mpPlayBtn').textContent = '▶';
-    document.getElementById('mpPlayBtn').classList.remove('playing');
-    document.getElementById('mpProgressFill').style.width = '0%';
-    clearInterval(MP.progressTimer);
-  }
-});
-
-// ── Utils ─────────────────────────────────────────────────────────────────────
-function toRoman(n) {
-  if (!n || n < 1) return '—';
-  const v=[1000,900,500,400,100,90,50,40,10,9,5,4,1], s=['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
-  let r=''; v.forEach((val,i)=>{while(n>=val){r+=s[i];n-=val;}});
-  return r;
-}
-function escHtml(t) { const d=document.createElement('div'); d.appendChild(document.createTextNode(t||'')); return d.innerHTML; }
-// Safe href: only allow http/https to prevent javascript: URI XSS
-function safeSongHref(url) {
-  if (!url) return '#';
-  try { const p = new URL(url); return (p.protocol === 'https:' || p.protocol === 'http:') ? escHtml(url) : '#'; } catch { return '#'; }
-}
-function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }
-function fmtTime(ts) { return new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
-function fmtDuration(ms) { const m=Math.floor(ms/60000); if(m<1)return '<1 min'; if(m<60)return m+' min'; return Math.floor(m/60)+'h '+(m%60)+'m'; }
+// ── REPORT ────────────────────────────────────────────────────────────────────
 function openReport() {
-  selectedReason = null;
-  document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById('reportSubmitBtn').disabled = true;
-  document.getElementById('reportForm').style.display = 'block';
-  document.getElementById('reportSuccess').style.display = 'none';
+  selRsn=null;
+  document.querySelectorAll('.rrb').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('reportSubmitBtn').disabled=true;
+  document.getElementById('reportForm').style.display='block';
+  document.getElementById('reportSuccess').style.display='none';
   document.getElementById('reportModal').classList.add('show');
 }
-function closeReport() { document.getElementById('reportModal').classList.remove('show'); }
-function selectReason(btn, reason) {
-  selectedReason = reason;
-  document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  document.getElementById('reportSubmitBtn').disabled = false;
+function closeReport(){document.getElementById('reportModal').classList.remove('show');}
+function selReason(btn,reason){
+  selRsn=reason;
+  document.querySelectorAll('.rrb').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('reportSubmitBtn').disabled=false;
 }
-function submitReport() {
-  if (!selectedReason) return;
-  socket.emit('report', { reason: selectedReason });
-  document.getElementById('reportSubmitBtn').disabled = true;
+function submitReport(){if(!selRsn)return;socket.emit('report',{reason:selRsn});document.getElementById('reportSubmitBtn').disabled=true;}
+
+// ── REVEAL ───────────────────────────────────────────────────────────────────
+function playReveal(myName,theirName,pairRef,pairBond){
+  const eY=document.getElementById('revealNameYou'),eV=document.getElementById('revealVs'),
+    eF2=document.getElementById('revealFrom2'),eT=document.getElementById('revealNameThem'),
+    eR=document.getElementById('revealRef'),eB=document.getElementById('revealBond'),
+    eH=document.getElementById('revealHint');
+  eY.innerHTML='<span class="cur"></span>';
+  [eV,eF2,eR,eB,eH].forEach(e=>e.style.opacity='0');
+  eT.textContent=''; eR.textContent=pairRef||''; eB.textContent='';
+  function type(el,txt,spd,cb){
+    let i=0; el.innerHTML='<span class="cur"></span>';
+    const iv=setInterval(()=>{
+      if(i>=txt.length){clearInterval(iv);el.innerHTML=txt;if(cb)cb();return;}
+      el.innerHTML=txt.slice(0,++i)+'<span class="cur"></span>';
+    },spd);
+  }
+  function fi(el,delay){setTimeout(()=>{el.style.transition='opacity .6s ease';el.style.opacity='1';},delay);}
+  setTimeout(()=>{
+    type(eY,myName,60,()=>{
+      setTimeout(()=>{
+        fi(eV,0);fi(eF2,200);
+        setTimeout(()=>{
+          type(eT,theirName,60,()=>{
+            setTimeout(()=>{
+              fi(eR,0);
+              setTimeout(()=>{
+                eB.style.transition='opacity .5s ease';eB.style.opacity='1';
+                type(eB,pairBond||'',18,()=>{
+                  setTimeout(()=>{
+                    fi(eH,0);
+                    setTimeout(()=>{
+                      showView('chat');
+                      addSysMsg(`You are ${myName}. Your stranger is ${theirName}.`);
+                      document.getElementById('msgInput').focus();
+                    },2200);
+                  },600);
+                });
+              },500);
+            },400);
+          });
+        },700);
+      },300);
+    });
+  },400);
 }
+
+// ── MUSIC PLAYER ─────────────────────────────────────────────────────────────
+const MP={audio:new Audio(),tracks:[],idx:-1,open:false,expanded:false,timer:null};
+MP.audio.volume=.4; MP.audio.crossOrigin='anonymous';
+function togglePlayer(){
+  const el=document.getElementById('mp'),btn=document.getElementById('mpToggleBtn');
+  if(!MP.open){MP.open=true;el.classList.add('mini');btn.classList.add('on');}
+  else if(!MP.expanded){el.classList.remove('mini');el.classList.add('open');MP.expanded=true;}
+  else{el.classList.remove('open');el.classList.add('mini');MP.expanded=false;}
+}
+function togglePlayerExpand(){
+  const el=document.getElementById('mp'); if(!MP.open) return;
+  if(MP.expanded){el.classList.remove('open');el.classList.add('mini');MP.expanded=false;}
+  else{el.classList.remove('mini');el.classList.add('open');MP.expanded=true;}
+}
+async function mpSearch(){
+  const q=document.getElementById('mpSearchInput').value.trim(); if(!q) return;
+  const re=document.getElementById('mpResults');
+  re.style.display='flex';
+  re.innerHTML=`<div class="mp-r"><div class="mp-ri"><div class="mp-rt" style="color:var(--muted)">Searching...</div></div></div>`;
+  try{
+    const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=8&entity=song`);
+    const d=await r.json();
+    const tracks=(d.results||[]).filter(t=>t.previewUrl);
+    if(!tracks.length){re.innerHTML=`<div class="mp-r"><div class="mp-ri"><div class="mp-rt" style="color:var(--muted)">No previews found.</div></div></div>`;return;}
+    MP.tracks=tracks;
+    re.innerHTML=tracks.map((t,i)=>{
+      const dur=t.trackTimeMillis?Math.round(t.trackTimeMillis/1000)+'s':'30s';
+      return `<div class="mp-r" data-i="${i}"><span class="mp-rpi" id="mpi${i}">▷</span><div class="mp-ri"><div class="mp-rt">${esc(t.trackName)}</div><div class="mp-ra">${esc(t.artistName)}</div></div><span class="mp-rd">${dur}</span></div>`;
+    }).join('');
+    re.querySelectorAll('.mp-r').forEach(el=>el.addEventListener('click',()=>mpPlay(parseInt(el.dataset.i))));
+  }catch(e){re.innerHTML=`<div class="mp-r"><div class="mp-ri"><div class="mp-rt" style="color:var(--muted)">Search failed.</div></div></div>`;}
+}
+function mpPlay(i){
+  const t=MP.tracks[i]; if(!t||!t.previewUrl) return;
+  document.querySelectorAll('.mp-r').forEach((el,j)=>{el.classList.toggle('on',j===i);const p=document.getElementById('mpi'+j);if(p)p.textContent=j===i?'▶':'▷';});
+  MP.idx=i; MP.audio.src=t.previewUrl;
+  MP.audio.volume=document.getElementById('mpVol').value/100;
+  MP.audio.play().catch(()=>{});
+  document.getElementById('mpTrackName').textContent=t.trackName;
+  document.getElementById('mpTrackArtist').textContent=t.artistName;
+  document.getElementById('mpPlayBtn').textContent='⏸';
+  document.getElementById('mpPlayBtn').classList.add('on');
+  document.getElementById('mpToggleBtn').classList.add('on');
+  mpStartProg();
+}
+function mpTogglePlay(){
+  if(MP.audio.paused){if(!MP.audio.src)return;MP.audio.play().catch(()=>{});document.getElementById('mpPlayBtn').textContent='⏸';document.getElementById('mpPlayBtn').classList.add('on');mpStartProg();}
+  else{MP.audio.pause();document.getElementById('mpPlayBtn').textContent='▶';document.getElementById('mpPlayBtn').classList.remove('on');clearInterval(MP.timer);}
+}
+function mpNext(){if(MP.tracks.length)mpPlay((MP.idx+1)%MP.tracks.length);}
+function mpStartProg(){
+  clearInterval(MP.timer);
+  MP.timer=setInterval(()=>{if(!MP.audio.duration)return;document.getElementById('mpProgressFill').style.width=(MP.audio.currentTime/MP.audio.duration*100)+'%';},500);
+}
+function mpSeek(e){
+  if(!MP.audio.duration)return;
+  const rect=document.getElementById('mpProgress').getBoundingClientRect();
+  MP.audio.currentTime=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width))*MP.audio.duration;
+}
+function mpSetVol(v){MP.audio.volume=v/100;document.getElementById('mpVolVal').textContent=v;}
+MP.audio.addEventListener('ended',()=>{
+  if(MP.tracks.length>1)mpNext();
+  else{document.getElementById('mpPlayBtn').textContent='▶';document.getElementById('mpPlayBtn').classList.remove('on');document.getElementById('mpProgressFill').style.width='0%';clearInterval(MP.timer);}
+});
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
+function toRoman(n){
+  if(!n||n<1)return'—';
+  const v=[1000,900,500,400,100,90,50,40,10,9,5,4,1],s=['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
+  let r='';v.forEach((val,i)=>{while(n>=val){r+=s[i];n-=val;}});return r;
+}
+function esc(t){const d=document.createElement('div');d.appendChild(document.createTextNode(t||''));return d.innerHTML;}
+function safeHref(u){if(!u)return'#';try{const p=new URL(u);return(p.protocol==='https:'||p.protocol==='http:')?esc(u):'#';}catch{return'#';}}
+function fmtDate(ts){return new Date(ts).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}
+function fmtTime(ts){return new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});}
+function fmtDur(ms){const m=Math.floor(ms/60000);if(m<1)return'<1 min';if(m<60)return m+' min';return Math.floor(m/60)+'h '+(m%60)+'m';}
 </script>
-
-<!-- Music Player -->
-<div id="musicPlayer">
-  <div class="mp-bar" onclick="togglePlayerExpand()">
-    <div class="mp-bar-left">
-      <span class="mp-icon">♪</span>
-      <div class="mp-now-playing">
-        <div class="mp-track-name" id="mpTrackName"><span class="mp-idle">No track playing</span></div>
-        <div class="mp-track-artist" id="mpTrackArtist"></div>
-      </div>
-    </div>
-    <div class="mp-bar-controls">
-      <button class="mp-btn" id="mpPlayBtn" onclick="event.stopPropagation();mpTogglePlay()" title="Play / Pause">▶</button>
-      <button class="mp-btn" onclick="event.stopPropagation();mpNext()" title="Next">⏭</button>
-      <span class="mp-chevron">▲</span>
-    </div>
-  </div>
-  <div class="mp-progress" id="mpProgress" onclick="mpSeek(event)">
-    <div class="mp-progress-fill" id="mpProgressFill"></div>
-  </div>
-  <div class="mp-panel" id="mpPanel">
-    <div class="mp-search-row">
-      <input class="mp-search-input" id="mpSearchInput" type="text" placeholder="Search for any song..." onkeydown="if(event.key==='Enter')mpSearch()"/>
-      <button class="mp-search-btn" onclick="mpSearch()">Search</button>
-    </div>
-    <div class="mp-results" id="mpResults" style="display:none;"></div>
-    <div class="mp-vol-row">
-      <span class="mp-vol-label">Volume</span>
-      <input type="range" class="mp-vol" id="mpVol" min="0" max="100" value="40" oninput="mpSetVol(this.value)"/>
-      <span class="mp-vol-val" id="mpVolVal">40</span>
-    </div>
-    <div class="mp-note">30s official previews · iTunes · legal &amp; free</div>
-  </div>
-</div>
-
 </body>
 </html>

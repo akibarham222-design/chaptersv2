@@ -31,7 +31,7 @@ app.use((req, res, next) => {
     "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' wss: ws: https://itunes.apple.com https://api.resend.com https://oauth2.googleapis.com https://www.googleapis.com https://graph.facebook.com https://www.facebook.com",
+    "connect-src 'self' wss: ws: https://itunes.apple.com https://oauth2.googleapis.com https://www.googleapis.com",
     "img-src 'self' data: https:",
     "frame-ancestors 'none'"
   ].join('; '));
@@ -391,51 +391,6 @@ app.get('/api/auth/google/callback', async (req, res) => {
   } catch (e) {
     console.error('Google OAuth error:', e.message);
     oauthRedirectError(res, 'Google login error.');
-  }
-});
-
-// ─── Facebook OAuth ───────────────────────────────────────────────────────────
-
-app.get('/api/auth/facebook', (req, res) => {
-  const appId = process.env.FACEBOOK_APP_ID;
-  if (!appId) return res.status(501).json({ error: 'Facebook OAuth not configured.' });
-  const APP_URL = (process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
-  const params = new URLSearchParams({
-    client_id: appId,
-    redirect_uri: `${APP_URL}/api/auth/facebook/callback`,
-    scope: 'email',
-    response_type: 'code'
-  });
-  res.redirect(`https://www.facebook.com/v19.0/dialog/oauth?${params}`);
-});
-
-app.get('/api/auth/facebook/callback', async (req, res) => {
-  const { code, error } = req.query;
-  if (error || !code) return oauthRedirectError(res, 'Facebook login was cancelled.');
-  const APP_URL = (process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
-  try {
-    // Exchange code for access token
-    const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?` + new URLSearchParams({
-      client_id: process.env.FACEBOOK_APP_ID,
-      client_secret: process.env.FACEBOOK_APP_SECRET,
-      redirect_uri: `${APP_URL}/api/auth/facebook/callback`,
-      code
-    });
-    const tokenRes = await fetch(tokenUrl);
-    const tokenData = await tokenRes.json();
-    if (!tokenData.access_token) return oauthRedirectError(res, 'Facebook auth failed.');
-
-    // Get user info
-    const userUrl = `https://graph.facebook.com/v19.0/me?fields=id,name,first_name,email&access_token=${tokenData.access_token}`;
-    const userRes = await fetch(userUrl);
-    const user = await userRes.json();
-    if (!user.id) return oauthRedirectError(res, 'Could not get Facebook profile.');
-
-    const { token, username } = oauthCreateOrFind('facebook', user.id, user.email, user.first_name || user.name);
-    oauthRedirectSuccess(res, token, username);
-  } catch (e) {
-    console.error('Facebook OAuth error:', e.message);
-    oauthRedirectError(res, 'Facebook login error.');
   }
 });
 
