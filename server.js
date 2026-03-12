@@ -196,6 +196,8 @@ try { db.prepare('ALTER TABLE accounts ADD COLUMN email TEXT').run(); } catch {}
 try { db.prepare('ALTER TABLE accounts ADD COLUMN email_verified INTEGER DEFAULT 0').run(); } catch {}
 try { db.prepare('ALTER TABLE accounts ADD COLUMN oauth_provider TEXT').run(); } catch {}
 try { db.prepare('ALTER TABLE accounts ADD COLUMN oauth_id TEXT').run(); } catch {}
+try { db.prepare('ALTER TABLE accounts ADD COLUMN is_admin INTEGER DEFAULT 0').run(); } catch {}
+try { db.prepare('ALTER TABLE confessions ADD COLUMN status TEXT DEFAULT \'approved\'').run(); } catch {}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -306,10 +308,16 @@ async function sendVerificationEmail(email, username, verifyToken) {
 
 // ─── OAuth Helpers ────────────────────────────────────────────────────────────
 
+const ADMIN_EMAIL = 'n.i.farhan44@gmail.com';
+
 function oauthCreateOrFind(oauthProvider, oauthId, email, displayName) {
   // Check existing OAuth account
   const existing = db.prepare('SELECT * FROM accounts WHERE oauth_provider = ? AND oauth_id = ?').get(oauthProvider, oauthId);
   if (existing) {
+    // Auto-grant admin if this is the admin email
+    if (email === ADMIN_EMAIL && !existing.is_admin) {
+      db.prepare('UPDATE accounts SET is_admin = 1 WHERE id = ?').run(existing.id);
+    }
     const token = uuidv4();
     const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
     db.prepare('INSERT INTO auth_tokens (token, account_id, expires_at) VALUES (?, ?, ?)').run(token, existing.id, expiresAt);
@@ -327,8 +335,9 @@ function oauthCreateOrFind(oauthProvider, oauthId, email, displayName) {
   }
 
   const id = uuidv4();
-  db.prepare('INSERT INTO accounts (id, username, password_hash, email, email_verified, oauth_provider, oauth_id) VALUES (?, ?, ?, ?, 1, ?, ?)')
-    .run(id, username, '', email || '', oauthProvider, oauthId);
+  const isAdmin = email === ADMIN_EMAIL ? 1 : 0;
+  db.prepare('INSERT INTO accounts (id, username, password_hash, email, email_verified, oauth_provider, oauth_id, is_admin) VALUES (?, ?, ?, ?, 1, ?, ?, ?)')
+    .run(id, username, '', email || '', oauthProvider, oauthId, isAdmin);
 
   const token = uuidv4();
   const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
@@ -477,7 +486,7 @@ app.get('/api/me', (req, res) => {
   if (!token) return res.status(401).json({ error: 'No token.' });
   const account = getAccountByToken(token);
   if (!account) return res.status(401).json({ error: 'Session expired. Please sign in again.' });
-  res.json({ username: account.username, id: account.id });
+  res.json({ username: account.username, id: account.id, is_admin: account.is_admin || 0 });
 });
 
 // ─── Confession Routes ────────────────────────────────────────────────────────
@@ -487,8 +496,13 @@ app.get('/api/confessions', (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
-  const rows = db.prepare(`SELECT * FROM confessions ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(limit, offset);
-  const total = db.prepare(`SELECT COUNT(*) as c FROM confessions`).get().c;
+  // Check if admin
+  const token2 = req.headers.authorization?.replace('Bearer ', '');
+  const acc2 = token2 ? getAccountByToken(token2) : null;
+  const isAdmin2 = acc2 && acc2.is_admin;
+  const whereStatus = isAdmin2 ? '' : "WHERE status = 'approved'";
+  const rows = db.prepare(`SELECT * FROM confessions ${whereStatus} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(limit, offset);
+  const total = db.prepare(`SELECT COUNT(*) as c FROM confessions ${whereStatus}`).get().c;
   res.json({ confessions: rows, total, page });
 });
 
@@ -500,7 +514,7 @@ app.get('/api/confessions/search', (req, res) => {
   const pattern = `%${q}%`;
   const rows = db.prepare(`
     SELECT * FROM confessions
-    WHERE from_name LIKE ? OR to_name LIKE ?
+    WHERE (from_name LIKE ? OR to_name LIKE ?) AND status = 'approved'
     ORDER BY created_at DESC LIMIT 50
   `).all(pattern, pattern);
   res.json({ confessions: rows });
@@ -533,8 +547,8 @@ app.post('/api/confessions', confessionLimiter, (req, res) => {
   }
 
   db.prepare(`
-    INSERT INTO confessions (id, from_name, to_name, content, song_title, song_artist, song_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO confessions (id, from_name, to_name, content, song_title, song_artist, song_url, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
   `).run(
     id,
     sanitize(from_name.trim()),
@@ -800,6 +814,100 @@ app.get('/admin/api/users', adminLimiter, adminAuth, (req, res) => {
   `).all(`%${q}%`, limit, offset);
   const total = db.prepare(`SELECT COUNT(*) as c FROM accounts WHERE username LIKE ?`).get(`%${q}%`).c;
   res.json({ users, total, page });
+});
+
+// ─── In-app Admin API (uses user JWT token, checks is_admin) ──────────────────
+function inAppAdminAuth(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Not signed in.' });
+  const account = getAccountByToken(token);
+  if (!account || !account.is_admin) return res.status(403).json({ error: 'Admin only.' });
+  req.adminAccount = account;
+  next();
+}
+
+// Get pending confessions (admin only)
+app.get('/api/admin/confessions/pending', authMiddleware, inAppAdminAuth, (req, res) => {
+  const rows = db.prepare(`SELECT * FROM confessions WHERE status = 'pending' ORDER BY created_at ASC`).all();
+  res.json({ confessions: rows });
+});
+
+// Get all confessions (admin sees all)
+app.get('/api/admin/confessions/all', authMiddleware, inAppAdminAuth, (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 30;
+  const offset = (page - 1) * limit;
+  const rows = db.prepare(`SELECT * FROM confessions ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(limit, offset);
+  const total = db.prepare(`SELECT COUNT(*) as c FROM confessions`).get().c;
+  res.json({ confessions: rows, total, page });
+});
+
+// Approve confession
+app.post('/api/admin/confessions/:id/approve', authMiddleware, inAppAdminAuth, (req, res) => {
+  db.prepare(`UPDATE confessions SET status = 'approved' WHERE id = ?`).run(req.params.id);
+  // Broadcast to all connected clients
+  io.emit('new_confession');
+  res.json({ success: true });
+});
+
+// Reject confession
+app.post('/api/admin/confessions/:id/reject', authMiddleware, inAppAdminAuth, (req, res) => {
+  db.prepare(`UPDATE confessions SET status = 'rejected' WHERE id = ?`).run(req.params.id);
+  res.json({ success: true });
+});
+
+// Delete confession
+app.delete('/api/admin/confessions/:id', authMiddleware, inAppAdminAuth, (req, res) => {
+  db.prepare(`DELETE FROM confessions WHERE id = ?`).run(req.params.id);
+  res.json({ success: true });
+});
+
+// Get reports (in-app)
+app.get('/api/admin/reports', authMiddleware, inAppAdminAuth, (req, res) => {
+  const reports = db.prepare(`
+    SELECT r.*,
+      rep.username as reporter_name,
+      rpd.username as reported_name,
+      CASE WHEN b.account_id IS NOT NULL THEN 1 ELSE 0 END as is_banned
+    FROM reports r
+    LEFT JOIN accounts rep ON rep.id = r.reporter_account
+    LEFT JOIN accounts rpd ON rpd.id = r.reported_account
+    LEFT JOIN banned_accounts b ON b.account_id = r.reported_account
+    ORDER BY r.created_at DESC LIMIT 50
+  `).all();
+  res.json({ reports });
+});
+
+// Ban user (in-app)
+app.post('/api/admin/ban/:accountId', authMiddleware, inAppAdminAuth, (req, res) => {
+  const acc = db.prepare(`SELECT * FROM accounts WHERE id = ?`).get(req.params.accountId);
+  if (!acc) return res.status(404).json({ error: 'User not found.' });
+  if (acc.is_admin) return res.status(400).json({ error: 'Cannot ban admin.' });
+  db.prepare(`INSERT OR IGNORE INTO banned_accounts (account_id, reason) VALUES (?, ?)`).run(req.params.accountId, 'Banned by admin');
+  db.prepare(`DELETE FROM auth_tokens WHERE account_id = ?`).run(req.params.accountId);
+  res.json({ success: true, username: acc.username });
+});
+
+// Unban user (in-app)
+app.post('/api/admin/unban/:accountId', authMiddleware, inAppAdminAuth, (req, res) => {
+  db.prepare(`DELETE FROM banned_accounts WHERE account_id = ?`).run(req.params.accountId);
+  res.json({ success: true });
+});
+
+// Mark report read (in-app)
+app.post('/api/admin/reports/:id/read', authMiddleware, inAppAdminAuth, (req, res) => {
+  db.prepare(`UPDATE reports SET read_at = strftime('%s','now') WHERE id = ?`).run(req.params.id);
+  res.json({ success: true });
+});
+
+// Make a user admin (one-time setup — secured by ADMIN_PASSWORD)
+app.post('/api/admin/make-admin', (req, res) => {
+  const { username, password } = req.body;
+  if (!password || password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Wrong password.' });
+  const acc = db.prepare(`SELECT * FROM accounts WHERE username = ?`).get(username);
+  if (!acc) return res.status(404).json({ error: 'User not found.' });
+  db.prepare(`UPDATE accounts SET is_admin = 1 WHERE id = ?`).run(acc.id);
+  res.json({ success: true, message: `${username} is now admin.` });
 });
 
 // Serve admin panel

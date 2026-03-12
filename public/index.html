@@ -209,6 +209,23 @@ textarea::placeholder{color:var(--muted);font-style:italic;}
 .conf-tabs{display:flex;}
 .ctab{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;padding:9px 14px 9px 0;margin-right:6px;transition:all .2s;}
 .ctab.on{color:var(--violet2);border-bottom-color:var(--violet2);}
+/* Admin panel cards */
+.acard{background:var(--s1);border:1px solid var(--b1);border-radius:13px;padding:16px 18px;margin-bottom:11px;position:relative;}
+.acard-status{display:inline-block;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:20px;margin-bottom:8px;font-weight:600;}
+.acard-status.pending{background:rgba(245,158,11,.15);color:var(--amber);}
+.acard-status.approved{background:rgba(16,185,129,.15);color:#10b981;}
+.acard-status.rejected{background:rgba(244,63,94,.15);color:var(--rose);}
+.acard-body{font-size:14px;color:var(--txt2);line-height:1.6;margin:6px 0 12px;}
+.acard-meta{font-size:11px;color:var(--muted);}
+.acard-acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;}
+.acard-acts button{padding:6px 14px;border-radius:7px;border:none;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-approve{background:rgba(16,185,129,.15);color:#10b981;}
+.btn-approve:hover{background:rgba(16,185,129,.28);}
+.btn-reject{background:rgba(245,158,11,.12);color:var(--amber);}
+.btn-reject:hover{background:rgba(245,158,11,.25);}
+.btn-adel{background:rgba(244,63,94,.12);color:var(--rose);}
+.btn-adel:hover{background:rgba(244,63,94,.25);}
+.btn-ban{background:rgba(244,63,94,.12);color:var(--rose);}
 .conf-sbar{display:flex;gap:8px;padding:12px 28px;max-width:780px;margin:0 auto;}
 .conf-sinp{flex:1;background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:11px 15px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color .2s;}
 .conf-sinp:focus{border-color:rgba(139,92,246,.45);}
@@ -231,6 +248,7 @@ textarea::placeholder{color:var(--muted);font-style:italic;}
 .cfdt{font-size:10px;color:var(--muted2);margin-top:10px;}
 /* Write */
 #view-write{overflow:hidden;}
+#view-admin{overflow:hidden;}
 .write-sc{flex:1;min-height:0;overflow-y:auto;padding:24px 28px;max-width:620px;width:100%;margin:0 auto;scrollbar-width:thin;scrollbar-color:var(--b1) transparent;}
 .write-sub{font-size:14px;color:var(--txt2);font-style:italic;margin-bottom:24px;line-height:1.6;}
 .wf{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
@@ -450,6 +468,7 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
       <button class="mptbtn" id="mpToggleBtn" onclick="togglePlayer()">♪ <span class="lbl">Music</span></button>
       <button class="nbtn ac" onclick="showView('confessions')">Confessions</button>
       <button class="nbtn" onclick="showHistory()">My Chapters</button>
+      <button class="nbtn" id="adminNavBtn" onclick="openAdminPanel()" style="display:none;color:var(--amber);">⚙ Admin</button>
       <span class="uchip" id="usernameTag"></span>
       <button class="nbtn" onclick="logout()" style="color:var(--muted);">Sign out</button>
     </div>
@@ -600,9 +619,41 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
       </div>
       <div class="werr" id="writeErr"></div>
       <button class="btn-post" id="postBtn" onclick="postConfession()">Post confession</button>
-      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:12px;">Once posted, confessions cannot be deleted.</p>
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:12px;">Confessions are reviewed by our team before being posted.</p>
     </div>
   </div>
+
+  <!-- ADMIN PANEL -->
+  <div class="view hidden" id="view-admin">
+    <div class="vhdr">
+      <div class="vhdr-l"><div class="vlbl">Admin</div><div class="vtit">Control Panel</div></div>
+      <button class="btn-back" onclick="goHome()">← Home</button>
+    </div>
+    <div class="write-sc" style="max-width:860px;">
+      <!-- Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+        <button class="ctab on" id="atab-pending" onclick="adminTab('pending')">⏳ Pending</button>
+        <button class="ctab" id="atab-all" onclick="adminTab('all')">📋 All Confessions</button>
+        <button class="ctab" id="atab-reports" onclick="adminTab('reports')">🚨 Reports</button>
+      </div>
+
+      <!-- Pending confessions -->
+      <div id="admin-pending">
+        <div id="adminPendingList"><div class="empty-st"><div class="emt-s">Loading...</div></div></div>
+      </div>
+
+      <!-- All confessions -->
+      <div id="admin-all" style="display:none;">
+        <div id="adminAllList"><div class="empty-st"><div class="emt-s">Loading...</div></div></div>
+      </div>
+
+      <!-- Reports -->
+      <div id="admin-reports" style="display:none;">
+        <div id="adminReportsList"><div class="empty-st"><div class="emt-s">Loading...</div></div></div>
+      </div>
+    </div>
+  </div>
+
   </div>
 </div>
 
@@ -718,6 +769,19 @@ const _utag = document.getElementById('usernameTag');
 if (_utag && USERNAME) _utag.textContent = USERNAME;
 function logout(){ localStorage.removeItem('chapters_token'); localStorage.removeItem('chapters_username'); window.location.href='/auth.html'; }
 
+// Check if this account is admin
+(async () => {
+  try {
+    const r = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + TOKEN } });
+    const d = await r.json();
+    if (d.is_admin) {
+      IS_ADMIN = true;
+      const btn = document.getElementById('adminNavBtn');
+      if (btn) btn.style.display = '';
+    }
+  } catch {}
+})();
+
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const S = { view:'landing', history:[], connected:false, typingTO:null, myName:'', theirName:'' };
 let selSong=null, confPage=1, confLoading=false, selRsn=null;
@@ -789,7 +853,7 @@ socket.on('game_action', data => handleGameAction(data));
 
 // ── VIEWS ─────────────────────────────────────────────────────────────────────
 function showView(name) {
-  ['landing','waiting','reveal','chat','history','chapter','confessions','write'].forEach(v => {
+  ['landing','waiting','reveal','chat','history','chapter','confessions','write','admin'].forEach(v => {
     document.getElementById('view-'+v).classList.toggle('hidden', v!==name);
   });
   S.view=name;
@@ -1673,6 +1737,131 @@ function mpHeadConfirm() {
   document.getElementById('app').classList.add('mp-on');
   mpRenderPlaylist();
   MP.skipCount = 0; mpPlay(0);
+}
+
+// ── ADMIN PANEL ───────────────────────────────────────────────────────────────
+let IS_ADMIN = false;
+
+function openAdminPanel() {
+  showView('admin');
+  adminTab('pending');
+}
+
+function adminTab(tab) {
+  ['pending','all','reports'].forEach(t => {
+    document.getElementById('admin-' + t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('atab-' + t).classList.toggle('on', t === tab);
+  });
+  if (tab === 'pending') loadAdminPending();
+  if (tab === 'all')     loadAdminAll();
+  if (tab === 'reports') loadAdminReports();
+}
+
+async function adminFetch(url, opts = {}) {
+  const r = await fetch(url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN, ...(opts.headers || {}) }
+  });
+  return r.json();
+}
+
+async function loadAdminPending() {
+  const el = document.getElementById('adminPendingList');
+  el.innerHTML = '<div class="empty-st"><div class="emt-s">Loading...</div></div>';
+  const d = await adminFetch('/api/admin/confessions/pending');
+  if (!d.confessions || d.confessions.length === 0) {
+    el.innerHTML = '<div class="empty-st"><div class="emt-i">✓</div><div class="emt-s">No pending confessions</div></div>';
+    return;
+  }
+  el.innerHTML = d.confessions.map(c => `
+    <div class="acard" id="ac-${c.id}">
+      <div><span class="acard-status pending">Pending</span></div>
+      <div class="acard-meta">From <b>${esc(c.from_name)}</b> → To <b>${esc(c.to_name)}</b> · ${new Date(c.created_at * 1000).toLocaleString()}</div>
+      <div class="acard-body">${esc(c.content)}</div>
+      ${c.song_title ? `<div class="acard-meta">🎵 ${esc(c.song_title)} — ${esc(c.song_artist || '')}</div>` : ''}
+      <div class="acard-acts">
+        <button class="btn-approve" onclick="adminApprove('${c.id}')">✓ Approve</button>
+        <button class="btn-reject"  onclick="adminReject('${c.id}')">✕ Reject</button>
+        <button class="btn-adel"    onclick="adminDelete('${c.id}')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function loadAdminAll() {
+  const el = document.getElementById('adminAllList');
+  el.innerHTML = '<div class="empty-st"><div class="emt-s">Loading...</div></div>';
+  const d = await adminFetch('/api/admin/confessions/all');
+  if (!d.confessions || d.confessions.length === 0) {
+    el.innerHTML = '<div class="empty-st"><div class="emt-s">No confessions yet</div></div>';
+    return;
+  }
+  el.innerHTML = d.confessions.map(c => `
+    <div class="acard" id="ac-${c.id}">
+      <div><span class="acard-status ${c.status || 'approved'}">${c.status || 'approved'}</span></div>
+      <div class="acard-meta">From <b>${esc(c.from_name)}</b> → To <b>${esc(c.to_name)}</b> · ${new Date(c.created_at * 1000).toLocaleString()}</div>
+      <div class="acard-body">${esc(c.content)}</div>
+      <div class="acard-acts">
+        ${c.status !== 'approved' ? `<button class="btn-approve" onclick="adminApprove('${c.id}')">✓ Approve</button>` : ''}
+        ${c.status !== 'rejected' ? `<button class="btn-reject"  onclick="adminReject('${c.id}')">✕ Reject</button>` : ''}
+        <button class="btn-adel" onclick="adminDelete('${c.id}')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function loadAdminReports() {
+  const el = document.getElementById('adminReportsList');
+  el.innerHTML = '<div class="empty-st"><div class="emt-s">Loading...</div></div>';
+  const d = await adminFetch('/api/admin/reports');
+  if (!d.reports || d.reports.length === 0) {
+    el.innerHTML = '<div class="empty-st"><div class="emt-i">✓</div><div class="emt-s">No reports</div></div>';
+    return;
+  }
+  el.innerHTML = d.reports.map(r => `
+    <div class="acard" id="ar-${r.id}" style="${r.read_at ? 'opacity:.6' : ''}">
+      ${!r.read_at ? '<span class="acard-status pending">New</span>' : '<span class="acard-status approved">Read</span>'}
+      <div class="acard-meta"><b>${esc(r.reporter_name || '?')}</b> reported <b>${esc(r.reported_name || '?')}</b> · ${new Date(r.created_at * 1000).toLocaleString()}</div>
+      <div class="acard-body">${esc(r.reason || 'No reason given')}</div>
+      <div class="acard-acts">
+        ${!r.read_at ? `<button class="btn-approve" onclick="adminMarkRead('${r.id}')">✓ Mark read</button>` : ''}
+        ${!r.is_banned
+          ? `<button class="btn-ban" onclick="adminBan('${r.reported_account}','${esc(r.reported_name || '')}','${r.id}')">🚫 Ban user</button>`
+          : `<button class="btn-reject" onclick="adminUnban('${r.reported_account}')">↩ Unban</button>`}
+      </div>
+    </div>`).join('');
+}
+
+async function adminApprove(id) {
+  await adminFetch('/api/admin/confessions/' + id + '/approve', { method: 'POST' });
+  document.getElementById('ac-' + id)?.remove();
+  loadAdminPending();
+}
+
+async function adminReject(id) {
+  await adminFetch('/api/admin/confessions/' + id + '/reject', { method: 'POST' });
+  document.getElementById('ac-' + id)?.remove();
+}
+
+async function adminDelete(id) {
+  if (!confirm('Delete this confession permanently?')) return;
+  await adminFetch('/api/admin/confessions/' + id, { method: 'DELETE' });
+  document.getElementById('ac-' + id)?.remove();
+}
+
+async function adminMarkRead(id) {
+  await adminFetch('/api/admin/reports/' + id + '/read', { method: 'POST' });
+  loadAdminReports();
+}
+
+async function adminBan(accountId, name, reportId) {
+  if (!confirm('Ban ' + name + '? They will be immediately signed out.')) return;
+  const d = await adminFetch('/api/admin/ban/' + accountId, { method: 'POST' });
+  if (d.success) { alert(name + ' has been banned.'); loadAdminReports(); }
+  else alert(d.error || 'Error');
+}
+
+async function adminUnban(accountId) {
+  await adminFetch('/api/admin/unban/' + accountId, { method: 'POST' });
+  loadAdminReports();
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
