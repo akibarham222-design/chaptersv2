@@ -734,7 +734,7 @@ const socket = io();
 socket.on('connect', () => socket.emit('auth', { token: TOKEN }));
 socket.on('auth_error', () => { localStorage.removeItem('chapters_token'); window.location.href='/auth.html'; });
 socket.on('authed', () => {});
-socket.on('online_count', c => { document.getElementById('onlineCount').textContent = c; });
+socket.on('online_count', c => { document.getElementById('onlineCount').textContent = Math.max(2, parseInt(c) + 1); });
 socket.on('history', h => { S.history = h; if (S.view==='history') renderHistory(); });
 socket.on('matched', ({ chapter, myName, theirName, pairRef, pairBond }) => {
   clearTimeout(_botTimer); _botTimer = null;
@@ -919,9 +919,9 @@ function sendSongMsg(i){
 }
 
 // ── BOT ENGINE ────────────────────────────────────────────────────────────────
-const BOT = { active:false, typingTimer:null, msgCount:0, lastTopic:'', userName:'' };
+const BOT = { active:false, typingTimer:null, probeTimer:null, msgCount:0, lastTopic:'', sentCount:0 };
 
-// Topics the user might be talking about
+// Topic detection
 function bTopic(msg) {
   const m = msg.toLowerCase();
   const h = (...w) => w.some(x => m.includes(x));
@@ -951,53 +951,85 @@ function bTopic(msg) {
   return 'random';
 }
 
-// Build reply that acknowledges what user said
+// Main reply bank
+const BR = {
+  bot:      ["lmaoo no?? why would a bot be on here 💀","bro i promise im real... unfortunately 😭","if i was a bot id at least be more interesting ngl 💀","omg not the bot accusations 😭 im just a person","nooo lol im actual human what 💀"],
+  greet:    ["heyyy finally 👀 wsp","omg hi!! how r u","heyy!! what r u up to rn","yo finally someone 😭 hi","hiiii omg wsp"],
+  howru:    ["ngl kinda tired but okay... u?","lowkey vibing rn wbu","honestly just existing 💀 u?","so-so ngl had a whole day... wbu","not bad not great wbu tho"],
+  asl:      ["f/20/online lol u?","m/19/my room 💀 u?","19 f and the internet lol u?","20 m somewhere boring u?"],
+  name:     ["keeping it mysterious 👀 u tho?","ngl i kinda like the name this app gave me 😭","just a person on the internet lol wbu","u can call me whatever lol"],
+  location: ["somewhere on earth 🌍 u?","just vibing in my room 💀 where u from?","the internet basically lol... where r u from tho","a place too boring to mention 😭 u?"],
+  age:      ["20! u?","just turned 20 💀 u?","19 wbu?","20 here wbu"],
+  sad:      ["omg nooo 😭 wanna talk about it?","aww whats going on?? im here 👀","hey its okay... wsp","omg r u okay tho?? im listening 💙"],
+  happy:    ["OMGG thats so good 😭✨","wait tell me everything 👀","yesss thats amazing!! wsp","omg thats actually so wholesome 🥺"],
+  bored:    ["SAME omg literally why im here 💀","bro same ive been scrolling for an hour 😭","same... what do u do when ur bored normally","lol same why are we like this 😭"],
+  music:    ["omg yes what do u listen to 👀","ngl music is my whole personality 💀 ur into what genre","fr whats ur current fav song?? tell me","lowkey been on a music spiral all day... wbu"],
+  movie:    ["omg yes what genre tho 👀","ngl i have terrible taste in movies 💀 u?","lowkey rewatching the same show for weeks 😭","omg any recs?? im so bored of my watchlist"],
+  food:     ["omg dont talk about food im starving 😭","ngl i eat the same 3 meals everyday 💀 u?","bro food is the only thing getting me through rn","omg whats ur fav food?? super important 👀"],
+  school:   ["omg dont remind me 😭 school is so draining","ngl im procrastinating on smth rn 💀","ugh same what r u studying tho","school is a concept i refuse 💀"],
+  work:     ["omg work?? adulting is not for me 💀","ngl i should be working rn 😭","work is such a vibe killer... what do u do tho","bro same the grind never stops 😭"],
+  sleep:    ["omg same i never sleep at normal times 💀","ngl its giving avoid-tomorrow energy 😭","same... sleep is a privilege fr","why do we do this to ourselves 💀"],
+  bye:      ["aww nooo already?? 😭 it was nice talking to u","noo dont go 😭 okay fine... take care tho!!","this was actually so fun bye 💀","omg come back sometime 🥺 bye!!"],
+  thanks:   ["omg of course!! 🥺","aww no worries bestie!!","hehe anytime 😌","omg stop ur so sweet 🥺"],
+  laugh:    ["LMAOOO 💀","omg stop 😭","bro why 😭","wait thats actually so funny 💀","okay that got me 💀"],
+  love:     ["omg spill 👀 whats the situation","wait wait wait say more 😭","ngl love stuff hits different at night... wsp","omg are u okay tho??"],
+  gaming:   ["omg yes what do u play 👀","ngl i game way too much 💀 u?","YESSS what game rn","omg we might actually get along 💀"],
+  short:    ["omg go on 👀","wait say more 💀","ngl need more context lol","hm okay... and?? 👀","fr tell me more"],
+  question: ["omg good question ngl... idk u?","hmm honestly it depends... what do u think","fr i wonder about that too tbh","idk what do u think tho"],
+  random:   ["omg ngl thats actually interesting 👀","wait fr?? tell me more","no bc i feel that lowkey","thats such a vibe tbh... wbu tho","okay but wait — say more 👀"],
+};
+
+// Proactive conversation starters — bot sends these unprompted to keep convo alive
+const PROBES = [
+  "wait can i ask u something random 👀",
+  "okay so genuine question — do u believe in soulmates or nah",
+  "ngl what made u download this app lol",
+  "okay hot take — would u rather know when ur gonna die or how",
+  "wait what song r u listening to rn if anything",
+  "omg random but whats ur love language lol",
+  "okay be honest — are u a night person or morning person",
+  "wait do u journal or is that too much effort 😭",
+  "ngl whats been the best part of ur week so far",
+  "okay this or that — beach or mountains??",
+  "random but what show r u watching rn if any",
+  "wait do u have a comfort movie?? like one u always go back to",
+  "okay genuine question — do u think strangers can actually connect or is it all surface level",
+  "ngl what do u think about this app lol like why r u actually here",
+  "wait if u could be anywhere rn where would it be",
+  "omg do u have any hidden talents lol",
+  "okay real talk — whats something ur scared to admit u like",
+  "wait whats the last thing that genuinely made u laugh",
+  "ngl whats on ur mind rn like actually",
+  "okay if ur life had a soundtrack whats the current song playing",
+];
+
+function bPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
 function bReply(userMsg, topic) {
-  const m = userMsg.toLowerCase();
-
-  // Extract key words to reference back
-  function echo() {
-    // Grab a meaningful word from their message to echo back
+  let reply = bPick(BR[topic] || BR.random);
+  if (topic === BOT.lastTopic && BOT.msgCount > 2) {
+    const bridges = ["ngl same honestly like ","fr especially the ","omg yes especially ","wait same like "];
     const words = userMsg.trim().split(/\s+/).filter(w => w.length > 3 && !['that','this','like','just','with','have','dont','know','been','what','when','where','your','from','about','they','them'].includes(w.toLowerCase()));
-    return words.length ? words[Math.floor(Math.random() * Math.min(words.length, 3))] : '';
+    if (words.length && Math.random() < 0.25) {
+      reply = bPick(bridges) + words[Math.floor(Math.random()*Math.min(words.length,3))] + ' part 💀... ' + reply;
+    }
   }
-
-  const replies = {
-    bot:     ["lmaoo no?? why would a bot be on here 💀","bro i promise im real... unfortunately 😭","if i was a bot id at least be more interesting ngl 💀","omg not the bot accusations 😭 im just a person","nooo lol im actual human what 💀"],
-    greet:   ["heyyy finally 👀 wsp","omg hi!! how r u","heyy!! what r u up to","yo finally someone 😭 hi","hiiii omg wsp"],
-    howru:   ["ngl kinda tired but okay... u?","lowkey vibing rn wbu","honestly just existing 💀 u?","so-so ngl had a whole day... wbu","not bad not great wbu tho"],
-    asl:     ["f/20/online lol u?","m/19/my room 💀 u?","19 f and the internet lol u?","20 m somewhere boring u?"],
-    name:    ["keeping it mysterious 👀 u tho?","ngl i kinda like the name this app gave me 😭","just a person on the internet lol wbu","u can call me whatever lol"],
-    location:["somewhere on earth 🌍 u?","just vibing in my room 💀 where u from?","the internet basically lol... where r u from tho","a place too boring to mention 😭 u?"],
-    age:     ["20! u?","just turned 20 💀 u?","19 wbu?","20 here wbu"],
-    sad:     ["omg nooo 😭 wanna talk about it?","aww whats going on?? im here 👀","hey its okay... wsp","omg r u okay tho?? im listening"],
-    happy:   ["OMGG thats so good 😭✨","wait tell me everything 👀","yesss thats amazing!! wsp","omg thats actually so wholesome 🥺"],
-    bored:   ["SAME omg literally why im here 💀","bro same ive been scrolling for an hour 😭","same... what do u do when ur bored normally","lol same why are we like this 😭"],
-    music:   ["omg yes what do u listen to 👀","ngl music is my whole personality 💀 ur into what genre","fr whats ur current fav song??","lowkey been on a music spiral all day... wbu"],
-    movie:   ["omg yes what genre tho 👀","ngl i have terrible taste in movies 💀 u?","lowkey rewatching the same show for weeks 😭","omg any recs?? im so bored of my watchlist"],
-    food:    ["omg dont talk about food im starving 😭","ngl i eat the same 3 meals everyday 💀 u?","bro food is the only thing getting me through rn","omg whats ur fav food?? super important 👀"],
-    school:  ["omg dont remind me 😭 school is so draining","ngl im procrastinating on smth rn 💀","ugh same what r u studying tho","school is a concept i refuse 💀"],
-    work:    ["omg work?? adulting is not for me 💀","ngl i should be working rn 😭","work is such a vibe killer... what do u do tho","bro same the grind never stops 😭"],
-    sleep:   ["omg same i never sleep at normal times 💀","ngl its giving avoid-tomorrow energy 😭","same... sleep is a privilege fr","why do we do this to ourselves 💀"],
-    bye:     ["aww nooo already?? 😭 it was nice talking to u","noo dont go 😭 okay fine... take care tho!!","this was actually so fun bye 💀","omg come back sometime 🥺 bye!!"],
-    thanks:  ["omg of course!! 🥺","aww no worries bestie!!","hehe anytime 😌","omg stop ur so sweet 🥺"],
-    laugh:   ["LMAOOO 💀","omg stop 😭","bro why 😭","wait thats actually so funny 💀","okay that got me 💀"],
-    love:    ["omg spill 👀 whats the situation","wait wait wait say more 😭","ngl love stuff hits different at night... wsp","omg are u okay tho??"],
-    gaming:  ["omg yes what do u play 👀","ngl i game way too much 💀 u?","YESSS what game rn","omg we might actually get along 💀"],
-    short:   ["omg go on 👀","wait say more 💀","ngl need more context lol","hm okay... and?? 👀","fr tell me more"],
-    question:["omg good question ngl... idk u?","hmm honestly it depends... what do u think","fr i wonder about that too tbh","idk what do u think tho"],
-    random:  ["omg ngl thats actually interesting 👀","wait fr?? tell me more","no bc i feel that lowkey","thats such a vibe tbh... wbu tho","okay but wait — say more 👀"],
-  };
-
-  let reply = (replies[topic] || replies.random)[Math.floor(Math.random() * (replies[topic] || replies.random).length)];
-
-  // If same topic as before, occasionally echo a word from their message
-  if (topic === BOT.lastTopic && BOT.msgCount > 1 && echo()) {
-    const bridges = ["ngl same honestly like", "fr especially the", "omg yes the", "wait the"];
-    if (Math.random() < 0.3) reply = bridges[Math.floor(Math.random()*bridges.length)] + ' ' + echo() + ' part 💀... ' + reply;
-  }
-
   return reply;
+}
+
+// Schedule a proactive probe if user goes quiet for 12-20s
+function bScheduleProbe() {
+  clearTimeout(BOT.probeTimer);
+  if (!BOT.active) return;
+  const delay = 12000 + Math.random() * 8000; // 12–20 seconds
+  BOT.probeTimer = setTimeout(() => {
+    if (!BOT.active) return;
+    // Only probe if bot has sent fewer than 25 messages total
+    if (BOT.sentCount < 25) {
+      botSend(bPick(PROBES));
+      bScheduleProbe(); // schedule next probe after this one
+    }
+  }, delay);
 }
 
 const BOT_NAMES = ['Isolde','Cressida','Rosalind','Ophelia','Beatrice','Cordelia','Lysander','Dorian','Leander','Phineas','Caspian','Auberon'];
@@ -1012,7 +1044,7 @@ function botConnect() {
   if (S.connected || S.view !== 'waiting') return;
   socket.emit('cancel_search');
   const names = [...BOT_NAMES].sort(() => Math.random()-.5);
-  BOT.active = true; BOT.msgCount = 0; BOT.lastTopic = '';
+  BOT.active = true; BOT.msgCount = 0; BOT.sentCount = 0; BOT.lastTopic = '';
   S.connected = true; S.myName = names[0]; S.theirName = names[1];
   document.getElementById('chatChapterNum').textContent = toRoman(Math.floor(Math.random()*80)+1);
   document.getElementById('myNamePlate').textContent = names[0];
@@ -1021,9 +1053,13 @@ function botConnect() {
   clearMsgs(); closeGamePanel();
   showView('reveal');
   const refs = ['met by chance','found each other','crossed paths','arrived together'];
-  playReveal(names[0], names[1], refs[Math.floor(Math.random()*refs.length)], BOT_BONDS[Math.floor(Math.random()*BOT_BONDS.length)]);
+  playReveal(names[0], names[1], bPick(refs), bPick(BOT_BONDS));
   const openers = ['heyyy','hi omg finally someone 😭','hey!! 👀','yo wsp','omg hi','heyy','finally lol hi'];
-  setTimeout(() => botSend(openers[Math.floor(Math.random()*openers.length)]), 3500 + Math.random()*1800);
+  setTimeout(() => {
+    botSend(bPick(openers));
+    // Start probing after opener
+    bScheduleProbe();
+  }, 3500 + Math.random()*1800);
 }
 
 function botSend(text) {
@@ -1036,24 +1072,30 @@ function botSend(text) {
     hideTyping();
     addMsg('stranger', text);
     BOT.msgCount++;
+    BOT.sentCount++;
   }, delay);
 }
 
 function botReply(userMsg) {
   if (!BOT.active) return;
+  // Reset probe timer — user is active
+  clearTimeout(BOT.probeTimer);
   const topic = bTopic(userMsg);
-  const thinkDelay = 1100 + Math.min(userMsg.length * 22, 1200) + Math.random()*600;
+  const thinkDelay = 1000 + Math.min(userMsg.length * 20, 1200) + Math.random()*600;
   setTimeout(() => {
     if (!BOT.active) return;
     const reply = bReply(userMsg, topic);
     BOT.lastTopic = topic;
     botSend(reply);
+    // Reschedule probe after replying — keep convo alive if user goes quiet again
+    bScheduleProbe();
   }, thinkDelay);
 }
 
 function botLeave() {
-  BOT.active = false; BOT.msgCount = 0; BOT.lastTopic = '';
+  BOT.active = false; BOT.msgCount = 0; BOT.sentCount = 0; BOT.lastTopic = '';
   clearTimeout(BOT.typingTimer);
+  clearTimeout(BOT.probeTimer);
   hideTyping();
 }
 
@@ -1401,238 +1443,210 @@ function handleGameAction(data){
   else if(data.type==='race_roll')handleRaceAction({subtype:'roll',val:data.val});
 }
 
-// ── MUSIC PLAYER — Web Audio API ────────────────────────────────────────────
+// ── MUSIC PLAYER ─────────────────────────────────────────────────────────────
+// All tracks CC BY licensed — Josh Woodward (joshwoodward.com)
+// Free to use with attribution: "Music by Josh Woodward. Free download: joshwoodward.com"
+// Pixabay CC0 vocal tracks as fallback (zero restrictions, public domain)
 const MP_TRACKS = [
-  { title: 'Still Pages',     artist: 'Ambient · Soft',     root: 261.6, mode: 'major' },
-  { title: 'Midnight Drift',  artist: 'Ambient · Night',    root: 220.0, mode: 'minor' },
-  { title: 'Between Words',   artist: 'Piano · Gentle',     root: 293.7, mode: 'major' },
-  { title: 'Soft Exhale',     artist: 'Ambient · Warm',     root: 246.9, mode: 'minor' },
-  { title: 'Glass Hours',     artist: 'Piano · Minimal',    root: 329.6, mode: 'major' },
-  { title: 'Before the Rain', artist: 'Cinematic · Quiet',  root: 196.0, mode: 'minor' },
-  { title: 'Dusk Letter',     artist: 'Ambient · Dreamy',   root: 277.2, mode: 'major' },
-  { title: 'Ghost Frequency', artist: 'Ambient · Deep',     root: 174.6, mode: 'minor' },
-  { title: 'Open Window',     artist: 'Piano · Serene',     root: 311.1, mode: 'major' },
-  { title: 'Unread Draft',    artist: 'Lo-fi · Calm',       root: 233.1, mode: 'minor' },
+  {
+    title:  'Airplane',
+    artist: 'Josh Woodward · Acoustic Pop',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-Airplane.mp3',
+    alt:    'https://cdn.pixabay.com/download/audio/2022/10/25/audio_946b106045.mp3'
+  },
+  {
+    title:  'Swansong',
+    artist: 'Josh Woodward · Indie Folk',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-Swansong.mp3',
+    alt:    'https://cdn.pixabay.com/download/audio/2022/08/02/audio_884fe92c21.mp3'
+  },
+  {
+    title:  'The Simple Life',
+    artist: 'Josh Woodward · Chill Acoustic',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-TheSimpleLife.mp3',
+    alt:    'https://cdn.pixabay.com/download/audio/2022/05/16/audio_6bd2f53596.mp3'
+  },
+  {
+    title:  'Dirty Hands',
+    artist: 'Josh Woodward · Folk Pop',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-DirtyHands.mp3',
+    alt:    null
+  },
+  {
+    title:  'You and I Both Know',
+    artist: 'Josh Woodward · Soft Indie',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-YouAndIBothKnow.mp3',
+    alt:    null
+  },
+  {
+    title:  'Wake Up',
+    artist: 'Josh Woodward · Acoustic Pop',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-WakeUp.mp3',
+    alt:    null
+  },
+  {
+    title:  'Ashes',
+    artist: 'Josh Woodward · Chill Vocal',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-Ashes.mp3',
+    alt:    null
+  },
+  {
+    title:  'Go to Hell',
+    artist: 'Josh Woodward · Indie Pop',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-GoToHell.mp3',
+    alt:    null
+  },
+  {
+    title:  'Ready the Throne',
+    artist: 'Josh Woodward · Soft Rock',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-ReadyTheThrone.mp3',
+    alt:    null
+  },
+  {
+    title:  'Raindrops',
+    artist: 'Josh Woodward · Chill Acoustic',
+    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-Raindrops.mp3',
+    alt:    null
+  },
 ];
 
 const MP = {
-  ctx: null, master: null, comp: null,
-  nodes: [], trackIdx: 0, playing: false,
-  open: false, expanded: false, headShown: false,
-  progTimer: null, startedAt: 0, TRACK_LEN: 75
+  audio: null, idx: -1, open: false, expanded: false,
+  headShown: false, progTimer: null, triedAlt: false
 };
 
-function mpCtx() {
-  if (!MP.ctx) {
-    MP.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // Compressor — makes everything loud & consistent
-    MP.comp = MP.ctx.createDynamicsCompressor();
-    MP.comp.threshold.value = -18;
-    MP.comp.knee.value = 6;
-    MP.comp.ratio.value = 4;
-    MP.comp.attack.value = 0.003;
-    MP.comp.release.value = 0.25;
-    MP.comp.connect(MP.ctx.destination);
-    // Master gain
-    MP.master = MP.ctx.createGain();
-    MP.master.connect(MP.comp);
-  }
-  if (MP.ctx.state === 'suspended') MP.ctx.resume();
-  return MP.ctx;
-}
+function mpAudio() {
+  if (MP.audio) return MP.audio;
+  const a = new Audio();
+  a.preload = 'none';
+  a.crossOrigin = 'anonymous';
+  a.volume = (parseInt(document.getElementById('mpVol')?.value || 40)) / 100;
 
-function mpKill() {
-  MP.nodes.forEach(n => { try { n.stop(0); } catch(e){} });
-  MP.nodes = [];
-  clearInterval(MP.progTimer);
-  MP.playing = false;
-}
-
-// Make an oscillator that auto-cleans up
-function mpOsc(ctx, freq, type, startT, stopT, gainVal, connectTo) {
-  const o = ctx.createOscillator();
-  const g = ctx.createGain();
-  o.type = type;
-  o.frequency.value = freq;
-  g.gain.setValueAtTime(0.0001, startT);
-  g.gain.linearRampToValueAtTime(gainVal, startT + 0.08);
-  if (stopT) g.gain.exponentialRampToValueAtTime(0.0001, stopT);
-  o.connect(g); g.connect(connectTo);
-  o.start(startT);
-  if (stopT) o.stop(stopT + 0.05);
-  MP.nodes.push(o);
-  return o;
-}
-
-function mpPlayTrack(idx) {
-  const ctx = mpCtx();
-  mpKill();
-  idx = ((idx % MP_TRACKS.length) + MP_TRACKS.length) % MP_TRACKS.length;
-  MP.trackIdx = idx;
-  const t = MP_TRACKS[idx];
-  const vol = Math.max(0.05, (parseInt(document.getElementById('mpVol')?.value || 35)) / 100);
-
-  MP.master.gain.setValueAtTime(0.0001, ctx.currentTime);
-  MP.master.gain.linearRampToValueAtTime(vol, ctx.currentTime + 2);
-
-  const now = ctx.currentTime;
-
-  // Pentatonic scale: major = [1, 1.122, 1.26, 1.498, 1.682], minor = [1, 1.189, 1.335, 1.498, 1.782]
-  const intervals = t.mode === 'major'
-    ? [1, 1.122, 1.26, 1.498, 1.682, 2, 2.244]
-    : [1, 1.189, 1.335, 1.498, 1.782, 2, 2.378];
-  const root = t.root;
-
-  // ── PAD: Slow evolving chords (triangle wave = warm, audible)
-  const chordNotes = [0, 2, 4].map(i => root * intervals[i]);
-  chordNotes.forEach((freq, ci) => {
-    for (let oct = 0; oct < 2; oct++) {
-      const f = freq * (oct === 0 ? 1 : 2);
-      const g = ci === 0 ? 0.22 : 0.12;
-      const o = ctx.createOscillator();
-      const gn = ctx.createGain();
-      const filt = ctx.createBiquadFilter();
-      o.type = 'triangle';
-      o.frequency.value = f;
-      // Slow vibrato
-      const lfo = ctx.createOscillator();
-      const lfoG = ctx.createGain();
-      lfo.frequency.value = 0.15 + ci * 0.07;
-      lfoG.gain.value = 0.8;
-      lfo.connect(lfoG); lfoG.connect(o.frequency);
-      lfo.start(now);
-      MP.nodes.push(lfo);
-      filt.type = 'lowpass'; filt.frequency.value = 900; filt.Q.value = 0.7;
-      gn.gain.setValueAtTime(0.0001, now);
-      gn.gain.linearRampToValueAtTime(g, now + 3);
-      o.connect(filt); filt.connect(gn); gn.connect(MP.master);
-      o.start(now);
-      MP.nodes.push(o);
+  a.addEventListener('canplay',  () => { mpStatus(''); a.play().catch(() => mpStatus('Tap ▶ to play')); });
+  a.addEventListener('playing',  () => { mpSetBtn(true); mpStartProg(); mpStatus(''); });
+  a.addEventListener('waiting',  () => mpStatus('Loading...'));
+  a.addEventListener('ended',    () => { clearInterval(MP.progTimer); setTimeout(() => mpPlay(MP.idx + 1), 600); });
+  a.addEventListener('error',    () => {
+    const t = MP_TRACKS[MP.idx];
+    if (t && t.alt && !MP.triedAlt) {
+      MP.triedAlt = true;
+      mpStatus('Trying backup...');
+      a.src = t.alt; a.load();
+    } else {
+      mpStatus('Skipping...');
+      clearInterval(MP.progTimer);
+      setTimeout(() => { MP.triedAlt = false; mpPlay(MP.idx + 1); }, 900);
     }
   });
 
-  // ── MELODY: Spaced-out pentatonic notes (clear & audible)
-  let t0 = now + 1.2;
-  const noteDurations = [1.8, 2.2, 1.4, 2.6, 1.6];
-  const noteGaps = [2.5, 3.2, 2.0, 3.8, 2.8, 4.2, 2.2, 3.5];
-  let ni = 0, gi = 0;
-  while (t0 < now + MP.TRACK_LEN - 4) {
-    const scaleDeg = Math.floor(Math.random() * intervals.length);
-    const octave = Math.random() < 0.25 ? 2 : 1;
-    const freq = root * intervals[scaleDeg] * octave;
-    const dur = noteDurations[ni % noteDurations.length];
-    mpOsc(ctx, freq, 'triangle', t0, t0 + dur, 0.28, MP.master);
-    // Subtle octave shimmer
-    if (Math.random() < 0.3) mpOsc(ctx, freq * 2, 'sine', t0, t0 + dur * 0.6, 0.06, MP.master);
-    t0 += noteGaps[gi % noteGaps.length] + (Math.random() - 0.5) * 0.8;
-    ni++; gi++;
-  }
+  MP.audio = a;
+  return a;
+}
 
-  // ── BASS: Root note pulses (low, warm)
-  [0, 2, 4, 6, 8, 10, 12, 15, 18, 22].forEach(offset => {
-    const bt = now + offset * 4.5;
-    if (bt >= now + MP.TRACK_LEN - 3) return;
-    mpOsc(ctx, root * 0.5, 'sine', bt, bt + 3.5, 0.35, MP.master);
-  });
+function mpPlay(i) {
+  i = ((i % MP_TRACKS.length) + MP_TRACKS.length) % MP_TRACKS.length;
+  MP.idx = i;
+  MP.triedAlt = false;
+  const t = MP_TRACKS[i];
 
-  // Update UI
   document.getElementById('mpTrackName').textContent = t.title;
   document.getElementById('mpTrackArtist').textContent = t.artist;
-  document.getElementById('mpPlayBtn').textContent = '⏸';
-  document.getElementById('mpPlayBtn').classList.add('on');
-  document.getElementById('mpToggleBtn').classList.add('on');
+  mpStatus('Loading...');
+  mpSetBtn(false);
   document.querySelectorAll('#mpResults .mp-r').forEach((el, j) => {
-    el.classList.toggle('on', j === idx);
+    el.classList.toggle('on', j === i);
     const pi = document.getElementById('mpi' + j);
-    if (pi) pi.textContent = j === idx ? '▶' : '▷';
+    if (pi) pi.textContent = j === i ? '▶' : '▷';
   });
 
-  MP.playing = true;
-  MP.startedAt = ctx.currentTime;
+  const a = mpAudio();
+  a.pause();
+  a.src = t.src;
+  a.volume = (parseInt(document.getElementById('mpVol')?.value || 40)) / 100;
+  a.load();
+}
 
+function mpSetBtn(playing) {
+  const pb = document.getElementById('mpPlayBtn');
+  const tb = document.getElementById('mpToggleBtn');
+  if (pb) { pb.textContent = playing ? '⏸' : '▶'; pb.classList.toggle('on', playing); }
+  if (tb) tb.classList.toggle('on', playing);
+}
+
+function mpStatus(msg) {
+  const el = document.getElementById('mpStatus');
+  if (el) el.textContent = msg;
+}
+
+function mpStartProg() {
   clearInterval(MP.progTimer);
   MP.progTimer = setInterval(() => {
-    if (!MP.playing) return;
-    const elapsed = MP.ctx.currentTime - MP.startedAt;
-    const pct = Math.min((elapsed / MP.TRACK_LEN) * 100, 100);
+    const a = MP.audio;
+    if (!a || !a.duration) return;
     const fill = document.getElementById('mpProgressFill');
-    if (fill) fill.style.width = pct + '%';
-    if (elapsed >= MP.TRACK_LEN) {
-      clearInterval(MP.progTimer);
-      // Fade then next
-      MP.master.gain.setTargetAtTime(0.0001, MP.ctx.currentTime, 1.2);
-      setTimeout(() => mpPlayTrack(MP.trackIdx + 1), 2000);
-    }
+    if (fill) fill.style.width = ((a.currentTime / a.duration) * 100) + '%';
   }, 400);
 }
 
 function mpTogglePlay() {
-  if (MP.playing) {
-    mpKill();
-    if (MP.master) MP.master.gain.setValueAtTime(0.0001, MP.ctx.currentTime);
-    document.getElementById('mpPlayBtn').textContent = '▶';
-    document.getElementById('mpPlayBtn').classList.remove('on');
-    document.getElementById('mpToggleBtn').classList.remove('on');
-  } else {
-    mpPlayTrack(MP.trackIdx);
-  }
+  const a = mpAudio();
+  if (!a.src || MP.idx < 0) { mpPlay(0); return; }
+  if (a.paused) { a.play().catch(() => mpStatus('Tap ▶ to play')); }
+  else { a.pause(); clearInterval(MP.progTimer); mpSetBtn(false); }
 }
 
-function mpNext() { mpPlayTrack(MP.trackIdx + 1); }
+function mpNext() { mpPlay(MP.idx + 1); }
 
-function mpSeek(e) { mpPlayTrack(MP.trackIdx); }
+function mpSeek(e) {
+  const a = MP.audio;
+  if (!a || !a.duration) return;
+  const rect = document.getElementById('mpProgress').getBoundingClientRect();
+  a.currentTime = ((e.clientX - rect.left) / rect.width) * a.duration;
+}
 
 function mpSetVol(v) {
   document.getElementById('mpVolVal').textContent = v;
-  if (MP.master && MP.ctx) {
-    const vol = Math.max(0.0001, parseInt(v) / 100);
-    MP.master.gain.setTargetAtTime(vol, MP.ctx.currentTime, 0.1);
-  }
+  if (MP.audio) MP.audio.volume = parseInt(v) / 100;
 }
 
 function mpRenderPlaylist() {
   const re = document.getElementById('mpResults');
   if (!re || re.children.length > 0) return;
-  re.innerHTML = MP_TRACKS.map((t, i) => `
-    <div class="mp-r" data-i="${i}">
+  re.innerHTML = MP_TRACKS.map((t, i) =>
+    `<div class="mp-r" data-i="${i}">
       <span class="mp-rpi" id="mpi${i}">▷</span>
       <div class="mp-ri"><div class="mp-rt">${t.title}</div><div class="mp-ra">${t.artist}</div></div>
     </div>`).join('');
   re.querySelectorAll('.mp-r').forEach(el =>
-    el.addEventListener('click', () => mpPlayTrack(parseInt(el.dataset.i)))
+    el.addEventListener('click', () => mpPlay(parseInt(el.dataset.i)))
   );
 }
 
 function togglePlayer() {
-  const el = document.getElementById('mp');
-  const app = document.getElementById('app');
+  const el = document.getElementById('mp'), app = document.getElementById('app');
   if (!MP.open) {
     if (!MP.headShown && !localStorage.getItem('chapters_mp_head')) {
       document.getElementById('mpHeadOv').style.display = 'flex';
-      MP.headShown = true;
-      return;
+      MP.headShown = true; return;
     }
     MP.open = true;
     el.classList.add('mini');
     document.getElementById('mpToggleBtn').classList.add('on');
     app.classList.add('mp-on');
     mpRenderPlaylist();
-    mpPlayTrack(0);
+    mpPlay(0);
   } else if (!MP.expanded) {
     el.classList.remove('mini'); el.classList.add('open');
-    MP.expanded = true;
-    app.classList.add('mp-expanded');
+    MP.expanded = true; app.classList.add('mp-expanded');
     mpRenderPlaylist();
   } else {
     el.classList.remove('open'); el.classList.add('mini');
-    MP.expanded = false;
-    app.classList.remove('mp-expanded');
+    MP.expanded = false; app.classList.remove('mp-expanded');
   }
 }
 
 function togglePlayerExpand() {
-  const el = document.getElementById('mp');
-  const app = document.getElementById('app');
+  const el = document.getElementById('mp'), app = document.getElementById('app');
   if (!MP.open) return;
   if (MP.expanded) {
     el.classList.remove('open'); el.classList.add('mini');
@@ -1647,14 +1661,14 @@ function togglePlayerExpand() {
 function mpHeadConfirm() {
   const ov = document.getElementById('mpHeadOv');
   ov.style.opacity = '0'; ov.style.transition = 'opacity .35s';
-  setTimeout(() => { ov.style.display = 'none'; ov.style.opacity = ''; ov.style.transition = ''; }, 380);
+  setTimeout(() => { ov.style.display='none'; ov.style.opacity=''; ov.style.transition=''; }, 380);
   localStorage.setItem('chapters_mp_head', '1');
   MP.open = true;
   document.getElementById('mp').classList.add('mini');
   document.getElementById('mpToggleBtn').classList.add('on');
   document.getElementById('app').classList.add('mp-on');
   mpRenderPlaylist();
-  mpPlayTrack(0);
+  mpPlay(0);
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
