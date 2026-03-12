@@ -684,7 +684,7 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
       <div class="mp-ico">🎧</div>
       <div class="mp-np">
         <div class="mp-tn" id="mpTrackName"><span class="mp-idle">Chapters Atmosphere</span></div>
-        <div class="mp-ta" id="mpTrackArtist"><span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;opacity:.5;">Free to use · Calm</span></div>
+        <div class="mp-ta" id="mpTrackArtist"><span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;opacity:.5;">Chill songs · Free use</span></div>
         <div id="mpStatus" style="font-size:10px;color:var(--amber);min-height:13px;"></div>
       </div>
     </div>
@@ -692,6 +692,7 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
       <button class="mpbtn" id="mpPlayBtn" onclick="event.stopPropagation();mpTogglePlay()">▶</button>
       <button class="mpbtn" onclick="event.stopPropagation();mpNext()">⏭</button>
       <span class="mp-chev">▲</span>
+      <button class="mpbtn" onclick="event.stopPropagation();mpClose()" title="Close player" style="margin-left:4px;opacity:.6;font-size:14px;">✕</button>
     </div>
   </div>
   <div class="mp-prog" id="mpProgress" onclick="mpSeek(event)">
@@ -1444,99 +1445,71 @@ function handleGameAction(data){
 }
 
 // ── MUSIC PLAYER ─────────────────────────────────────────────────────────────
-// All tracks CC BY licensed — Josh Woodward (joshwoodward.com)
-// Free to use with attribution: "Music by Josh Woodward. Free download: joshwoodward.com"
-// Pixabay CC0 vocal tracks as fallback (zero restrictions, public domain)
+// Josh Woodward CC BY — free forever, vocals, chill indie/acoustic/pop
+// joshwoodward.com  |  "Music by Josh Woodward. Free download: joshwoodward.com"
 const MP_TRACKS = [
-  {
-    title:  'Airplane',
-    artist: 'Josh Woodward · Acoustic Pop',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-Airplane.mp3',
-    alt:    'https://cdn.pixabay.com/download/audio/2022/10/25/audio_946b106045.mp3'
-  },
-  {
-    title:  'Swansong',
-    artist: 'Josh Woodward · Indie Folk',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-Swansong.mp3',
-    alt:    'https://cdn.pixabay.com/download/audio/2022/08/02/audio_884fe92c21.mp3'
-  },
-  {
-    title:  'The Simple Life',
-    artist: 'Josh Woodward · Chill Acoustic',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-TheSimpleLife.mp3',
-    alt:    'https://cdn.pixabay.com/download/audio/2022/05/16/audio_6bd2f53596.mp3'
-  },
-  {
-    title:  'Dirty Hands',
-    artist: 'Josh Woodward · Folk Pop',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-DirtyHands.mp3',
-    alt:    null
-  },
-  {
-    title:  'You and I Both Know',
-    artist: 'Josh Woodward · Soft Indie',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-YouAndIBothKnow.mp3',
-    alt:    null
-  },
-  {
-    title:  'Wake Up',
-    artist: 'Josh Woodward · Acoustic Pop',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-WakeUp.mp3',
-    alt:    null
-  },
-  {
-    title:  'Ashes',
-    artist: 'Josh Woodward · Chill Vocal',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-Ashes.mp3',
-    alt:    null
-  },
-  {
-    title:  'Go to Hell',
-    artist: 'Josh Woodward · Indie Pop',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-GoToHell.mp3',
-    alt:    null
-  },
-  {
-    title:  'Ready the Throne',
-    artist: 'Josh Woodward · Soft Rock',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-ReadyTheThrone.mp3',
-    alt:    null
-  },
-  {
-    title:  'Raindrops',
-    artist: 'Josh Woodward · Chill Acoustic',
-    src:    'https://www.joshwoodward.com/mp3/JoshWoodward-Raindrops.mp3',
-    alt:    null
-  },
+  { title: 'Airplane',           artist: 'Josh Woodward · Acoustic Pop',  src: 'https://www.joshwoodward.com/mp3/JoshWoodward-Airplane.mp3' },
+  { title: 'Swansong',           artist: 'Josh Woodward · Indie Folk',     src: 'https://www.joshwoodward.com/mp3/JoshWoodward-Swansong.mp3' },
+  { title: 'The Simple Life',    artist: 'Josh Woodward · Chill Acoustic', src: 'https://www.joshwoodward.com/mp3/JoshWoodward-TheSimpleLife.mp3' },
+  { title: 'You And I Both Know',artist: 'Josh Woodward · Soft Indie',     src: 'https://www.joshwoodward.com/mp3/JoshWoodward-YouAndIBothKnow.mp3' },
+  { title: 'Wake Up',            artist: 'Josh Woodward · Acoustic Pop',   src: 'https://www.joshwoodward.com/mp3/JoshWoodward-WakeUp.mp3' },
+  { title: 'Ashes',              artist: 'Josh Woodward · Chill Vocal',    src: 'https://www.joshwoodward.com/mp3/JoshWoodward-Ashes.mp3' },
+  { title: 'Dirty Hands',        artist: 'Josh Woodward · Folk Pop',       src: 'https://www.joshwoodward.com/mp3/JoshWoodward-DirtyHands.mp3' },
+  { title: 'Go To Hell',         artist: 'Josh Woodward · Indie Pop',      src: 'https://www.joshwoodward.com/mp3/JoshWoodward-GoToHell.mp3' },
+  { title: 'Ready The Throne',   artist: 'Josh Woodward · Soft Rock',      src: 'https://www.joshwoodward.com/mp3/JoshWoodward-ReadyTheThrone.mp3' },
+  { title: 'Raindrops',          artist: 'Josh Woodward · Chill Acoustic', src: 'https://www.joshwoodward.com/mp3/JoshWoodward-Raindrops.mp3' },
 ];
 
 const MP = {
-  audio: null, idx: -1, open: false, expanded: false,
-  headShown: false, progTimer: null, triedAlt: false
+  audio: null, idx: -1,
+  open: false, expanded: false, headShown: false,
+  progTimer: null, playing: false, loaded: false
 };
 
 function mpAudio() {
   if (MP.audio) return MP.audio;
   const a = new Audio();
-  a.preload = 'none';
-  a.crossOrigin = 'anonymous';
-  a.volume = (parseInt(document.getElementById('mpVol')?.value || 40)) / 100;
+  a.preload = 'auto';
+  // NO crossOrigin — causes CORS failures on external hosts
 
-  a.addEventListener('canplay',  () => { mpStatus(''); a.play().catch(() => mpStatus('Tap ▶ to play')); });
-  a.addEventListener('playing',  () => { mpSetBtn(true); mpStartProg(); mpStatus(''); });
-  a.addEventListener('waiting',  () => mpStatus('Loading...'));
-  a.addEventListener('ended',    () => { clearInterval(MP.progTimer); setTimeout(() => mpPlay(MP.idx + 1), 600); });
-  a.addEventListener('error',    () => {
-    const t = MP_TRACKS[MP.idx];
-    if (t && t.alt && !MP.triedAlt) {
-      MP.triedAlt = true;
-      mpStatus('Trying backup...');
-      a.src = t.alt; a.load();
-    } else {
-      mpStatus('Skipping...');
-      clearInterval(MP.progTimer);
-      setTimeout(() => { MP.triedAlt = false; mpPlay(MP.idx + 1); }, 900);
-    }
+  // canplaythrough = browser has enough data to play without stopping
+  // Use 'once' flag pattern to prevent double-fire
+  a.addEventListener('canplaythrough', () => {
+    if (MP.loaded) return; // already started playing this track
+    MP.loaded = true;
+    mpStatus('');
+    const p = a.play();
+    if (p && p.catch) p.catch(() => { mpSetBtn(false); mpStatus('Tap ▶ to play'); });
+  });
+
+  a.addEventListener('playing', () => {
+    MP.playing = true;
+    mpSetBtn(true);
+    mpStartProg();
+    mpStatus('');
+  });
+
+  a.addEventListener('pause', () => {
+    MP.playing = false;
+    mpSetBtn(false);
+    clearInterval(MP.progTimer);
+  });
+
+  a.addEventListener('waiting', () => mpStatus('Buffering...'));
+
+  a.addEventListener('ended', () => {
+    MP.playing = false;
+    clearInterval(MP.progTimer);
+    const fill = document.getElementById('mpProgressFill');
+    if (fill) fill.style.width = '0%';
+    setTimeout(() => mpPlay(MP.idx + 1), 800);
+  });
+
+  a.addEventListener('error', () => {
+    // Skip bad track, don't loop endlessly
+    mpStatus('');
+    clearInterval(MP.progTimer);
+    setTimeout(() => mpPlay(MP.idx + 1), 1000);
   });
 
   MP.audio = a;
@@ -1544,11 +1517,23 @@ function mpAudio() {
 }
 
 function mpPlay(i) {
-  i = ((i % MP_TRACKS.length) + MP_TRACKS.length) % MP_TRACKS.length;
-  MP.idx = i;
-  MP.triedAlt = false;
-  const t = MP_TRACKS[i];
+  const tracks = MP_TRACKS;
+  i = ((i % tracks.length) + tracks.length) % tracks.length;
 
+  // Prevent infinite skip loop — if we've looped through all tracks, stop
+  if (!MP._skipCount) MP._skipCount = 0;
+  MP._skipCount++;
+  if (MP._skipCount > tracks.length) {
+    MP._skipCount = 0;
+    mpStatus('No tracks available right now');
+    return;
+  }
+
+  MP.idx = i;
+  MP.loaded = false; // reset canplaythrough guard
+  const t = tracks[i];
+
+  // Update UI
   document.getElementById('mpTrackName').textContent = t.title;
   document.getElementById('mpTrackArtist').textContent = t.artist;
   mpStatus('Loading...');
@@ -1562,7 +1547,7 @@ function mpPlay(i) {
   const a = mpAudio();
   a.pause();
   a.src = t.src;
-  a.volume = (parseInt(document.getElementById('mpVol')?.value || 40)) / 100;
+  a.volume = parseInt(document.getElementById('mpVol')?.value || 40) / 100;
   a.load();
 }
 
@@ -1580,22 +1565,30 @@ function mpStatus(msg) {
 
 function mpStartProg() {
   clearInterval(MP.progTimer);
+  MP._skipCount = 0; // successfully playing — reset skip guard
   MP.progTimer = setInterval(() => {
     const a = MP.audio;
     if (!a || !a.duration) return;
     const fill = document.getElementById('mpProgressFill');
     if (fill) fill.style.width = ((a.currentTime / a.duration) * 100) + '%';
-  }, 400);
+  }, 500);
 }
 
 function mpTogglePlay() {
   const a = mpAudio();
-  if (!a.src || MP.idx < 0) { mpPlay(0); return; }
-  if (a.paused) { a.play().catch(() => mpStatus('Tap ▶ to play')); }
-  else { a.pause(); clearInterval(MP.progTimer); mpSetBtn(false); }
+  if (MP.idx < 0 || !a.src) { mpPlay(0); return; }
+  if (a.paused) {
+    const p = a.play();
+    if (p && p.catch) p.catch(() => mpStatus('Tap ▶ to play'));
+  } else {
+    a.pause();
+  }
 }
 
-function mpNext() { mpPlay(MP.idx + 1); }
+function mpNext() {
+  MP._skipCount = 0;
+  mpPlay(MP.idx + 1);
+}
 
 function mpSeek(e) {
   const a = MP.audio;
@@ -1618,23 +1611,39 @@ function mpRenderPlaylist() {
       <div class="mp-ri"><div class="mp-rt">${t.title}</div><div class="mp-ra">${t.artist}</div></div>
     </div>`).join('');
   re.querySelectorAll('.mp-r').forEach(el =>
-    el.addEventListener('click', () => mpPlay(parseInt(el.dataset.i)))
+    el.addEventListener('click', () => { MP._skipCount = 0; mpPlay(parseInt(el.dataset.i)); })
   );
+}
+
+function mpClose() {
+  // Stop audio, hide player
+  const a = MP.audio;
+  if (a) { a.pause(); }
+  clearInterval(MP.progTimer);
+  MP.playing = false; MP.open = false; MP.expanded = false;
+  const el = document.getElementById('mp');
+  const app = document.getElementById('app');
+  el.classList.remove('mini','open');
+  app.classList.remove('mp-on','mp-expanded');
+  document.getElementById('mpToggleBtn').classList.remove('on');
+  mpSetBtn(false);
 }
 
 function togglePlayer() {
   const el = document.getElementById('mp'), app = document.getElementById('app');
   if (!MP.open) {
-    if (!MP.headShown && !localStorage.getItem('chapters_mp_head')) {
+    // Show headphone overlay on EVERY first open per session (not per account)
+    if (!MP.headShown) {
       document.getElementById('mpHeadOv').style.display = 'flex';
-      MP.headShown = true; return;
+      MP.headShown = true;
+      return;
     }
     MP.open = true;
     el.classList.add('mini');
     document.getElementById('mpToggleBtn').classList.add('on');
     app.classList.add('mp-on');
     mpRenderPlaylist();
-    mpPlay(0);
+    if (MP.idx < 0) mpPlay(0);
   } else if (!MP.expanded) {
     el.classList.remove('mini'); el.classList.add('open');
     MP.expanded = true; app.classList.add('mp-expanded');
@@ -1662,7 +1671,6 @@ function mpHeadConfirm() {
   const ov = document.getElementById('mpHeadOv');
   ov.style.opacity = '0'; ov.style.transition = 'opacity .35s';
   setTimeout(() => { ov.style.display='none'; ov.style.opacity=''; ov.style.transition=''; }, 380);
-  localStorage.setItem('chapters_mp_head', '1');
   MP.open = true;
   document.getElementById('mp').classList.add('mini');
   document.getElementById('mpToggleBtn').classList.add('on');
