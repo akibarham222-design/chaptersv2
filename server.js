@@ -827,13 +827,13 @@ function inAppAdminAuth(req, res, next) {
 }
 
 // Get pending confessions (admin only)
-app.get('/api/admin/confessions/pending', authMiddleware, inAppAdminAuth, (req, res) => {
+app.get('/api/admin/confessions/pending', inAppAdminAuth, (req, res) => {
   const rows = db.prepare(`SELECT * FROM confessions WHERE status = 'pending' ORDER BY created_at ASC`).all();
   res.json({ confessions: rows });
 });
 
 // Get all confessions (admin sees all)
-app.get('/api/admin/confessions/all', authMiddleware, inAppAdminAuth, (req, res) => {
+app.get('/api/admin/confessions/all', inAppAdminAuth, (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = 30;
   const offset = (page - 1) * limit;
@@ -843,7 +843,7 @@ app.get('/api/admin/confessions/all', authMiddleware, inAppAdminAuth, (req, res)
 });
 
 // Approve confession
-app.post('/api/admin/confessions/:id/approve', authMiddleware, inAppAdminAuth, (req, res) => {
+app.post('/api/admin/confessions/:id/approve', inAppAdminAuth, (req, res) => {
   db.prepare(`UPDATE confessions SET status = 'approved' WHERE id = ?`).run(req.params.id);
   // Broadcast to all connected clients
   io.emit('new_confession');
@@ -851,19 +851,19 @@ app.post('/api/admin/confessions/:id/approve', authMiddleware, inAppAdminAuth, (
 });
 
 // Reject confession
-app.post('/api/admin/confessions/:id/reject', authMiddleware, inAppAdminAuth, (req, res) => {
+app.post('/api/admin/confessions/:id/reject', inAppAdminAuth, (req, res) => {
   db.prepare(`UPDATE confessions SET status = 'rejected' WHERE id = ?`).run(req.params.id);
   res.json({ success: true });
 });
 
 // Delete confession
-app.delete('/api/admin/confessions/:id', authMiddleware, inAppAdminAuth, (req, res) => {
+app.delete('/api/admin/confessions/:id', inAppAdminAuth, (req, res) => {
   db.prepare(`DELETE FROM confessions WHERE id = ?`).run(req.params.id);
   res.json({ success: true });
 });
 
 // Get reports (in-app)
-app.get('/api/admin/reports', authMiddleware, inAppAdminAuth, (req, res) => {
+app.get('/api/admin/reports', inAppAdminAuth, (req, res) => {
   const reports = db.prepare(`
     SELECT r.*,
       rep.username as reporter_name,
@@ -879,7 +879,7 @@ app.get('/api/admin/reports', authMiddleware, inAppAdminAuth, (req, res) => {
 });
 
 // Ban user (in-app)
-app.post('/api/admin/ban/:accountId', authMiddleware, inAppAdminAuth, (req, res) => {
+app.post('/api/admin/ban/:accountId', inAppAdminAuth, (req, res) => {
   const acc = db.prepare(`SELECT * FROM accounts WHERE id = ?`).get(req.params.accountId);
   if (!acc) return res.status(404).json({ error: 'User not found.' });
   if (acc.is_admin) return res.status(400).json({ error: 'Cannot ban admin.' });
@@ -889,13 +889,13 @@ app.post('/api/admin/ban/:accountId', authMiddleware, inAppAdminAuth, (req, res)
 });
 
 // Unban user (in-app)
-app.post('/api/admin/unban/:accountId', authMiddleware, inAppAdminAuth, (req, res) => {
+app.post('/api/admin/unban/:accountId', inAppAdminAuth, (req, res) => {
   db.prepare(`DELETE FROM banned_accounts WHERE account_id = ?`).run(req.params.accountId);
   res.json({ success: true });
 });
 
 // Mark report read (in-app)
-app.post('/api/admin/reports/:id/read', authMiddleware, inAppAdminAuth, (req, res) => {
+app.post('/api/admin/reports/:id/read', inAppAdminAuth, (req, res) => {
   db.prepare(`UPDATE reports SET read_at = strftime('%s','now') WHERE id = ?`).run(req.params.id);
   res.json({ success: true });
 });
