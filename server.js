@@ -1,6 +1,3 @@
-process.on('uncaughtException', err => { console.error('CRASH:', err); process.exit(1); });
-process.on('unhandledRejection', err => { console.error('UNHANDLED:', err); });
-
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -9,24 +6,14 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
 
-// Allow same-origin connections in production; explicit override via ALLOWED_ORIGIN env var.
-// origin: true = reflect request origin (safe — auth is token-based, not cookie-based)
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || true;
+// Only allow connections from our own domain — prevents other sites hijacking user sockets
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || (process.env.NODE_ENV === 'production' ? false : 'http://localhost:3000');
 const io = new Server(server, {
-  cors: {
-    origin: ALLOWED_ORIGIN,
-    methods: ['GET', 'POST'],
-    credentials: false
-  },
-  transports: ['polling', 'websocket'],
-  allowUpgrades: true,
-  pingTimeout: 60000,
-  pingInterval: 25000
+  cors: { origin: ALLOWED_ORIGIN, methods: ['GET','POST'] }
 });
 
 app.use(express.json({ limit: '50kb' }));
@@ -41,11 +28,10 @@ app.use((req, res, next) => {
   // Fix 3: Content-Security-Policy — restricts scripts/styles/connections to trusted sources only
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.socket.io",
+    "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' wss: ws: https://itunes.apple.com https://oauth2.googleapis.com https://www.googleapis.com",
-    "media-src 'self' https://assets.mixkit.co",
     "img-src 'self' data: https:",
     "frame-ancestors 'none'"
   ].join('; '));
@@ -131,7 +117,7 @@ function pickTwoNames() {
 
 // ─── Database ─────────────────────────────────────────────────────────────────
 
-const db = new Database(path.join(__dirname, 'chapters.db'));
+const db = new Database('chapters.db');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS accounts (
@@ -689,8 +675,6 @@ setInterval(() => {
   db.prepare('DELETE FROM auth_tokens WHERE expires_at < ?').run(now);
 }, 24 * 60 * 60 * 1000);
 
-app.get('/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
-
 // ─── Admin Routes ─────────────────────────────────────────────────────────────
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'chapters-admin-2024';
@@ -703,6 +687,8 @@ const adminLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+const crypto = require('crypto');
 
 function adminAuth(req, res, next) {
   const pass = req.headers['x-admin-password'] || '';
