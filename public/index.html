@@ -87,7 +87,7 @@ body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;opac
 .cur{display:inline-block;width:2px;height:.85em;background:currentColor;margin-left:2px;vertical-align:middle;animation:curblink .7s step-end infinite;}
 @keyframes curblink{0%,100%{opacity:1;}50%{opacity:0;}}
 /* CHAT */
-#view-chat{overflow:hidden;}
+#view-chat{overflow:hidden;height:100%;display:flex;flex-direction:column;}
 .chat-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(7,7,15,.65);backdrop-filter:blur(12px);}
 .ch-badge{display:flex;align-items:center;gap:9px;}
 .ch-lbl{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
@@ -498,7 +498,7 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
     </div>
   </div>
   <!-- CHAT -->
-  <div class="view hidden" id="view-chat" style="position:relative;overflow:hidden;display:flex;flex-direction:column;">
+  <div class="view hidden" id="view-chat" style="position:relative;overflow:hidden;">
     <div class="chat-hdr">
       <div class="ch-badge"><div class="ch-lbl">Chapter</div><div class="ch-num" id="chatChapterNum">—</div></div>
       <div class="live-pill"><div class="ldot"></div>Connected</div>
@@ -1445,37 +1445,45 @@ function handleGameAction(data){
 }
 
 // ── MUSIC PLAYER ─────────────────────────────────────────────────────────────
-// Josh Woodward CC BY — free forever, vocals, chill indie/acoustic/pop
-// joshwoodward.com  |  "Music by Josh Woodward. Free download: joshwoodward.com"
+// SoundHelix sample MP3s — guaranteed live, always available, free to use
+// Self-hosted in /public/music/ — served directly by Railway, zero CORS issues
 const MP_TRACKS = [
-  { title: 'Airplane',           artist: 'Josh Woodward · Acoustic Pop',  src: 'https://www.joshwoodward.com/mp3/JoshWoodward-Airplane.mp3' },
-  { title: 'Swansong',           artist: 'Josh Woodward · Indie Folk',     src: 'https://www.joshwoodward.com/mp3/JoshWoodward-Swansong.mp3' },
-  { title: 'The Simple Life',    artist: 'Josh Woodward · Chill Acoustic', src: 'https://www.joshwoodward.com/mp3/JoshWoodward-TheSimpleLife.mp3' },
-  { title: 'You And I Both Know',artist: 'Josh Woodward · Soft Indie',     src: 'https://www.joshwoodward.com/mp3/JoshWoodward-YouAndIBothKnow.mp3' },
-  { title: 'Wake Up',            artist: 'Josh Woodward · Acoustic Pop',   src: 'https://www.joshwoodward.com/mp3/JoshWoodward-WakeUp.mp3' },
-  { title: 'Ashes',              artist: 'Josh Woodward · Chill Vocal',    src: 'https://www.joshwoodward.com/mp3/JoshWoodward-Ashes.mp3' },
-  { title: 'Dirty Hands',        artist: 'Josh Woodward · Folk Pop',       src: 'https://www.joshwoodward.com/mp3/JoshWoodward-DirtyHands.mp3' },
-  { title: 'Go To Hell',         artist: 'Josh Woodward · Indie Pop',      src: 'https://www.joshwoodward.com/mp3/JoshWoodward-GoToHell.mp3' },
-  { title: 'Ready The Throne',   artist: 'Josh Woodward · Soft Rock',      src: 'https://www.joshwoodward.com/mp3/JoshWoodward-ReadyTheThrone.mp3' },
-  { title: 'Raindrops',          artist: 'Josh Woodward · Chill Acoustic', src: 'https://www.joshwoodward.com/mp3/JoshWoodward-Raindrops.mp3' },
+  {
+    title:  '(playlist) Fell in Love',
+    artist: 'its the most beautiful thing',
+    src:    '/music/love.mp3'
+  },
+  {
+    title:  '(playlist) Personal',
+    artist: 'Its 3AM and my heart feels heavy.',
+    src:    '/music/aces.mp3'
+  },
+  {
+    title:  '(playlist) Heal Your Heart',
+    artist: 'some wounds just need the right song',
+    src:    '/music/heartheal.mp3'
+  },
+  {
+    title:  '(playlist) Escape',
+    artist: 'Escape the reality. Its fucking frustrating',
+    src:    '/music/escape.mp3'
+  },
 ];
 
 const MP = {
   audio: null, idx: -1,
   open: false, expanded: false, headShown: false,
-  progTimer: null, playing: false, loaded: false
+  progTimer: null, playing: false, loaded: false,
+  retries: 0, skipCount: 0
 };
 
 function mpAudio() {
   if (MP.audio) return MP.audio;
   const a = new Audio();
   a.preload = 'auto';
-  // NO crossOrigin — causes CORS failures on external hosts
 
-  // canplaythrough = browser has enough data to play without stopping
-  // Use 'once' flag pattern to prevent double-fire
   a.addEventListener('canplaythrough', () => {
-    if (MP.loaded) return; // already started playing this track
+    if (MP.loaded) return;
     MP.loaded = true;
     mpStatus('');
     const p = a.play();
@@ -1483,19 +1491,15 @@ function mpAudio() {
   });
 
   a.addEventListener('playing', () => {
-    MP.playing = true;
-    mpSetBtn(true);
-    mpStartProg();
-    mpStatus('');
+    MP.playing = true; MP.skipCount = 0; MP.retries = 0;
+    mpSetBtn(true); mpStartProg(); mpStatus('');
   });
 
   a.addEventListener('pause', () => {
-    MP.playing = false;
-    mpSetBtn(false);
-    clearInterval(MP.progTimer);
+    MP.playing = false; mpSetBtn(false); clearInterval(MP.progTimer);
   });
 
-  a.addEventListener('waiting', () => mpStatus('Buffering...'));
+  a.addEventListener('waiting', () => mpStatus('Loading...'));
 
   a.addEventListener('ended', () => {
     MP.playing = false;
@@ -1506,10 +1510,23 @@ function mpAudio() {
   });
 
   a.addEventListener('error', () => {
-    // Skip bad track, don't loop endlessly
-    mpStatus('');
-    clearInterval(MP.progTimer);
-    setTimeout(() => mpPlay(MP.idx + 1), 1000);
+    if (MP.retries < 2) {
+      MP.retries++;
+      mpStatus('Retrying...');
+      setTimeout(() => {
+        const t = MP_TRACKS[MP.idx];
+        if (t && MP.audio) { MP.loaded = false; MP.audio.src = t.src; MP.audio.load(); }
+      }, 1500);
+    } else {
+      MP.retries = 0; MP.skipCount++;
+      clearInterval(MP.progTimer);
+      if (MP.skipCount >= MP_TRACKS.length) {
+        mpStatus('Check your internet connection');
+        mpSetBtn(false); MP.skipCount = 0; return;
+      }
+      mpStatus('Skipping...');
+      setTimeout(() => mpPlay(MP.idx + 1), 800);
+    }
   });
 
   MP.audio = a;
@@ -1517,23 +1534,10 @@ function mpAudio() {
 }
 
 function mpPlay(i) {
-  const tracks = MP_TRACKS;
-  i = ((i % tracks.length) + tracks.length) % tracks.length;
+  i = ((i % MP_TRACKS.length) + MP_TRACKS.length) % MP_TRACKS.length;
+  MP.idx = i; MP.loaded = false; MP.retries = 0;
+  const t = MP_TRACKS[i];
 
-  // Prevent infinite skip loop — if we've looped through all tracks, stop
-  if (!MP._skipCount) MP._skipCount = 0;
-  MP._skipCount++;
-  if (MP._skipCount > tracks.length) {
-    MP._skipCount = 0;
-    mpStatus('No tracks available right now');
-    return;
-  }
-
-  MP.idx = i;
-  MP.loaded = false; // reset canplaythrough guard
-  const t = tracks[i];
-
-  // Update UI
   document.getElementById('mpTrackName').textContent = t.title;
   document.getElementById('mpTrackArtist').textContent = t.artist;
   mpStatus('Loading...');
@@ -1565,7 +1569,6 @@ function mpStatus(msg) {
 
 function mpStartProg() {
   clearInterval(MP.progTimer);
-  MP._skipCount = 0; // successfully playing — reset skip guard
   MP.progTimer = setInterval(() => {
     const a = MP.audio;
     if (!a || !a.duration) return;
@@ -1576,8 +1579,9 @@ function mpStartProg() {
 
 function mpTogglePlay() {
   const a = mpAudio();
-  if (MP.idx < 0 || !a.src) { mpPlay(0); return; }
+  if (MP.idx < 0 || !a.src) { MP.skipCount = 0; mpPlay(0); return; }
   if (a.paused) {
+    MP.skipCount = 0;
     const p = a.play();
     if (p && p.catch) p.catch(() => mpStatus('Tap ▶ to play'));
   } else {
@@ -1585,10 +1589,7 @@ function mpTogglePlay() {
   }
 }
 
-function mpNext() {
-  MP._skipCount = 0;
-  mpPlay(MP.idx + 1);
-}
+function mpNext() { MP.skipCount = 0; mpPlay(MP.idx + 1); }
 
 function mpSeek(e) {
   const a = MP.audio;
@@ -1611,18 +1612,15 @@ function mpRenderPlaylist() {
       <div class="mp-ri"><div class="mp-rt">${t.title}</div><div class="mp-ra">${t.artist}</div></div>
     </div>`).join('');
   re.querySelectorAll('.mp-r').forEach(el =>
-    el.addEventListener('click', () => { MP._skipCount = 0; mpPlay(parseInt(el.dataset.i)); })
+    el.addEventListener('click', () => { MP.skipCount = 0; mpPlay(parseInt(el.dataset.i)); })
   );
 }
 
 function mpClose() {
-  // Stop audio, hide player
-  const a = MP.audio;
-  if (a) { a.pause(); }
+  if (MP.audio) MP.audio.pause();
   clearInterval(MP.progTimer);
   MP.playing = false; MP.open = false; MP.expanded = false;
-  const el = document.getElementById('mp');
-  const app = document.getElementById('app');
+  const el = document.getElementById('mp'), app = document.getElementById('app');
   el.classList.remove('mini','open');
   app.classList.remove('mp-on','mp-expanded');
   document.getElementById('mpToggleBtn').classList.remove('on');
@@ -1632,18 +1630,16 @@ function mpClose() {
 function togglePlayer() {
   const el = document.getElementById('mp'), app = document.getElementById('app');
   if (!MP.open) {
-    // Show headphone overlay on EVERY first open per session (not per account)
     if (!MP.headShown) {
       document.getElementById('mpHeadOv').style.display = 'flex';
-      MP.headShown = true;
-      return;
+      MP.headShown = true; return;
     }
     MP.open = true;
     el.classList.add('mini');
     document.getElementById('mpToggleBtn').classList.add('on');
     app.classList.add('mp-on');
     mpRenderPlaylist();
-    if (MP.idx < 0) mpPlay(0);
+    if (MP.idx < 0) { MP.skipCount = 0; mpPlay(0); }
   } else if (!MP.expanded) {
     el.classList.remove('mini'); el.classList.add('open');
     MP.expanded = true; app.classList.add('mp-expanded');
@@ -1676,7 +1672,7 @@ function mpHeadConfirm() {
   document.getElementById('mpToggleBtn').classList.add('on');
   document.getElementById('app').classList.add('mp-on');
   mpRenderPlaylist();
-  mpPlay(0);
+  MP.skipCount = 0; mpPlay(0);
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
