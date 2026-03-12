@@ -626,6 +626,26 @@ io.on('connection', (socket) => {
     socket.emit('report_result', { success: true });
   });
 
+  // ── Game relay events (server just forwards, no state validation) ────────
+  socket.on('game_invite', ({ gameType }) => {
+    const chat = activeChats.get(socket.id);
+    if (!chat) return;
+    const p = io.sockets.sockets.get(chat.partnerId);
+    if (p?.connected) p.emit('game_invite', { gameType });
+  });
+  socket.on('game_response', ({ accepted, gameType }) => {
+    const chat = activeChats.get(socket.id);
+    if (!chat) return;
+    const p = io.sockets.sockets.get(chat.partnerId);
+    if (p?.connected) p.emit('game_response', { accepted, gameType });
+  });
+  socket.on('game_action', (data) => {
+    const chat = activeChats.get(socket.id);
+    if (!chat) return;
+    const p = io.sockets.sockets.get(chat.partnerId);
+    if (p?.connected) p.emit('game_action', data);
+  });
+
   socket.on('leave_chat', () => handleLeave(socket));
   socket.on('cancel_search', () => { const i = waitingQueue.findIndex(q => q.socketId === socket.id); if (i !== -1) waitingQueue.splice(i, 1); socket.emit('search_cancelled'); });
   socket.on('get_history', () => { if (socket.accountId) socket.emit('history', getHistory(socket.accountId)); });
