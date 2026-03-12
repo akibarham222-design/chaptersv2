@@ -142,10 +142,19 @@ input::placeholder{color:var(--muted);font-style:italic;}
 @media(max-width:768px){
   .page{grid-template-columns:1fr;}
   .left-panel{display:none;}
-  .right-panel{padding:32px 24px;align-items:flex-start;padding-top:44px;}
+  .right-panel{padding:32px 24px;align-items:flex-start;padding-top:44px;min-height:100dvh;}
   .mob-logo{display:block;}
 }
 @media(max-width:480px){.right-panel{padding:28px 20px;}.form-wrap{max-width:100%;}.form-heading{font-size:30px;}}
+@media(max-height:620px) and (max-width:768px){
+  /* Short phones — tighten vertical spacing so form fits without scroll */
+  .form-heading{font-size:26px;margin-bottom:2px;}
+  .form-sub{margin-bottom:12px;}
+  .field{margin-bottom:9px;}
+  .captcha-block{margin:10px 0 8px;}
+  .mob-logo{margin-bottom:16px;}
+  .right-panel{padding-top:28px;}
+}
 </style>
 </head>
 <body>
@@ -255,16 +264,86 @@ input::placeholder{color:var(--muted);font-style:italic;}
         <div class="screen-icon" style="font-size:42px;">✦</div>
         <div class="screen-title" id="successTitle">Your story begins.</div>
         <div class="screen-body" id="successBody">Welcome to Chapters.</div>
-        <button class="btn-enter" onclick="enterApp()">Open Chapters →</button>
+        <div style="width:180px;height:2px;background:var(--b1);border-radius:2px;overflow:hidden;margin-top:8px;">
+          <div id="successBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--violet),var(--teal));transition:width 1.5s linear;border-radius:2px;"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Taking you there...</div>
+        <button id="successFallback" class="btn-enter" onclick="goToApp()" style="display:none;margin-top:12px;">Open Chapters →</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// KEY FIX: this flag prevents auto-redirect from firing when we just handled OAuth/login
-let _skipAutoRedirect = false;
+// ── Core UI helpers — defined FIRST so handleParams() can call them ─────────
+const SCREEN_IDS = ['screenVerify','screenVerified','screenVerifyFail','screenSuccess'];
 
+function showScreen(id) {
+  ['form-join','form-enter','authTabs'].forEach(x => {
+    document.getElementById(x).style.display = 'none';
+  });
+  SCREEN_IDS.forEach(sid => {
+    const el = document.getElementById(sid);
+    if (el) { el.style.display = 'none'; el.classList.remove('show'); }
+  });
+  const target = document.getElementById(id);
+  if (!target) return;
+  target.style.display = 'flex';
+  // Double-rAF ensures the display:flex is painted before CSS transition kicks in
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    target.classList.add('show');
+    if (id === 'screenSuccess') {
+      const b = document.getElementById('successBar');
+      if (b) b.style.width = '100%';
+    }
+  }));
+}
+
+function goToApp() { window.location.replace('/'); }
+
+function showSuccess(title, body) {
+  document.getElementById('successTitle').textContent = title;
+  document.getElementById('successBody').textContent = body;
+  showScreen('screenSuccess');
+  // Show fallback button after 2s in case auto-redirect is slow
+  setTimeout(() => {
+    const fb = document.getElementById('successFallback');
+    if (fb) fb.style.display = 'inline-block';
+  }, 2000);
+  // Auto-redirect after 1.5s
+  setTimeout(goToApp, 1500);
+}
+
+// ── Handle OAuth / verify params in URL ─────────────────────────────────────
+(function handleParams() {
+  const p = new URLSearchParams(window.location.search);
+  const tok = p.get('oauth_token'), usr = p.get('oauth_user');
+  if (tok && usr) {
+    localStorage.setItem('chapters_token', tok);
+    localStorage.setItem('chapters_username', usr);
+    history.replaceState({}, '', '/auth.html');
+    showSuccess('Welcome, ' + usr + '.', 'Your anthology is ready.');
+    return;
+  }
+  const err = p.get('oauth_error');
+  if (err) {
+    history.replaceState({}, '', '/auth.html');
+    switchTab('enter');
+    showErr('log-err', decodeURIComponent(err));
+    return;
+  }
+  if (p.get('verified') === 'success') { showScreen('screenVerified'); history.replaceState({}, '', '/auth.html'); return; }
+  if (p.get('verified') === 'fail')    { showScreen('screenVerifyFail'); history.replaceState({}, '', '/auth.html'); return; }
+  // Already logged in → go straight to app
+  const existing = localStorage.getItem('chapters_token');
+  if (existing) {
+    fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + existing } })
+      .then(r => { if (r.ok) goToApp(); })
+      .catch(() => {});
+  }
+})();
+
+// ── Quotes ──────────────────────────────────────────────────────────────────
 const PANEL_QUOTES = [
   {text:"Strangers pass. Conversations stay.",source:"Chapters"},
   {text:"There is no greater agony than bearing an untold story inside you.",source:"Maya Angelou"},
@@ -288,154 +367,136 @@ const LINES = [
   "It does not do to dwell on dreams and forget to live.",
   "The most important things are the hardest things to say.",
   "Fiction is the lie through which we tell the truth.",
-  "To be or not to be, that is the question.",
   "Not all those who wander are lost.",
   "For small creatures such as we, the vastness is bearable only through love.",
   "Without music, life would be a mistake.",
   "Memory is the diary we all carry about with us.",
 ];
-
-let currentLine='',captchaPassed=false,panelIdx=0,pendingEmail='';
-
-(function handleParams(){
-  const p=new URLSearchParams(window.location.search);
-  if(p.get('oauth_token')&&p.get('oauth_user')){
-    _skipAutoRedirect=true;
-    const t=p.get('oauth_token'),u=p.get('oauth_user');
-    localStorage.setItem('chapters_token',t);
-    localStorage.setItem('chapters_username',u);
-    document.getElementById('successTitle').textContent='Welcome, '+u+'.';
-    document.getElementById('successBody').textContent='Your anthology is ready.';
-    showScreen('screenSuccess');
-    history.replaceState({},'','/auth.html');
-    return;
-  }
-  if(p.get('oauth_error')){switchTab('enter');showErr('log-err',decodeURIComponent(p.get('oauth_error')));history.replaceState({},'','/auth.html');return;}
-  if(p.get('verified')==='success'){showScreen('screenVerified');history.replaceState({},'','/auth.html');return;}
-  if(p.get('verified')==='fail'){showScreen('screenVerifyFail');history.replaceState({},'','/auth.html');return;}
-})();
-
-let pqi=0;
-function rotatePanelQuote(){
-  const q=PANEL_QUOTES[pqi%PANEL_QUOTES.length];
-  document.getElementById('panelQuote').textContent=q.text;
-  document.getElementById('panelSource').textContent='— '+q.source;
-  pqi++;
+let currentLine = '', captchaPassed = false, pendingEmail = '';
+let pqi = 0;
+function rotatePanelQuote() {
+  const q = PANEL_QUOTES[pqi++ % PANEL_QUOTES.length];
+  document.getElementById('panelQuote').textContent = q.text;
+  document.getElementById('panelSource').textContent = '— ' + q.source;
 }
-rotatePanelQuote();setInterval(rotatePanelQuote,9000);
+rotatePanelQuote();
+setInterval(rotatePanelQuote, 9000);
 
-const SCREEN_IDS=['screenVerify','screenVerified','screenVerifyFail','screenSuccess'];
-function showScreen(id){
-  document.getElementById('form-join').style.display='none';
-  document.getElementById('form-enter').style.display='none';
-  document.getElementById('authTabs').style.display='none';
-  SCREEN_IDS.forEach(s=>{const el=document.getElementById(s);el.style.display='none';el.classList.remove('show');});
-  const t=document.getElementById(id);t.style.display='flex';t.classList.add('show');
-}
-function switchTab(tab){
-  document.getElementById('authTabs').style.display='flex';
-  SCREEN_IDS.forEach(s=>{const el=document.getElementById(s);el.style.display='none';el.classList.remove('show');});
-  document.getElementById('tab-join').classList.toggle('active',tab==='join');
-  document.getElementById('tab-enter').classList.toggle('active',tab==='enter');
-  document.getElementById('form-join').style.display=tab==='join'?'block':'none';
-  document.getElementById('form-enter').style.display=tab==='enter'?'block':'none';
+// ── UI ───────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('authTabs').style.display = 'flex';
+  SCREEN_IDS.forEach(sid => {
+    const el = document.getElementById(sid);
+    if (el) { el.style.display = 'none'; el.classList.remove('show'); }
+  });
+  document.getElementById('tab-join').classList.toggle('active', tab === 'join');
+  document.getElementById('tab-enter').classList.toggle('active', tab === 'enter');
+  document.getElementById('form-join').style.display  = tab === 'join'  ? 'block' : 'none';
+  document.getElementById('form-enter').style.display = tab === 'enter' ? 'block' : 'none';
   clearErrors();
 }
+function clearErrors() { ['reg-err','log-err'].forEach(id => document.getElementById(id).classList.remove('show')); }
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('show'); }
 
-function newCaptcha(){
-  captchaPassed=false;currentLine=LINES[Math.floor(Math.random()*LINES.length)];
-  renderChars(currentLine,'');
-  const inp=document.getElementById('captchaInput');inp.value='';inp.className='captcha-inp';
-  document.getElementById('captchaFill').style.width='0%';document.getElementById('captchaFill').classList.remove('done');
-  document.getElementById('captchaStatus').textContent='';document.getElementById('captchaStatus').className='captcha-status';
+// ── Captcha ──────────────────────────────────────────────────────────────────
+function newCaptcha() {
+  captchaPassed = false;
+  currentLine = LINES[Math.floor(Math.random() * LINES.length)];
+  renderChars(currentLine, '');
+  const inp = document.getElementById('captchaInput');
+  inp.value = ''; inp.className = 'captcha-inp';
+  document.getElementById('captchaFill').style.width = '0%';
+  document.getElementById('captchaFill').classList.remove('done');
+  document.getElementById('captchaStatus').textContent = '';
+  document.getElementById('captchaStatus').className = 'captcha-status';
   document.getElementById('captchaCheck').classList.remove('show');
-  const btn=document.getElementById('btnRefresh');btn.classList.add('spin');setTimeout(()=>btn.classList.remove('spin'),400);
+  const btn = document.getElementById('btnRefresh');
+  btn.classList.add('spin'); setTimeout(() => btn.classList.remove('spin'), 400);
 }
-function renderChars(line,typed){
-  let html='';
-  for(let i=0;i<line.length;i++){
-    const ch=line[i]==' '?'&nbsp;':line[i].replace(/&/g,'&amp;').replace(/</g,'&lt;');
-    let cls='c-char';if(i<typed.length)cls+=typed[i]===line[i]?' correct':' wrong';
-    html+='<span class="'+cls+'">'+ch+'</span>';
+function renderChars(line, typed) {
+  let html = '';
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i] === ' ' ? '&nbsp;' : line[i].replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    let cls = 'c-char';
+    if (i < typed.length) cls += typed[i] === line[i] ? ' correct' : ' wrong';
+    html += '<span class="' + cls + '">' + ch + '</span>';
   }
-  document.getElementById('captchaDisplay').innerHTML=html;
+  document.getElementById('captchaDisplay').innerHTML = html;
 }
-function checkCaptcha(){
-  const typed=document.getElementById('captchaInput').value;
-  renderChars(currentLine,typed);
-  const pct=Math.min(100,(typed.length/currentLine.length)*100);
-  document.getElementById('captchaFill').style.width=pct+'%';
-  const st=document.getElementById('captchaStatus'),inp=document.getElementById('captchaInput');
-  if(typed===currentLine){captchaPassed=true;document.getElementById('captchaFill').classList.add('done');st.textContent='Perfect.';st.className='captcha-status ok';document.getElementById('captchaCheck').classList.add('show');inp.className='captcha-inp ok';}
-  else if(typed.length===currentLine.length){captchaPassed=false;st.textContent='Not quite — try again or refresh.';st.className='captcha-status err';inp.className='captcha-inp err';}
-  else{captchaPassed=false;st.textContent='';st.className='captcha-status';document.getElementById('captchaCheck').classList.remove('show');inp.className='captcha-inp';}
+function checkCaptcha() {
+  const typed = document.getElementById('captchaInput').value;
+  renderChars(currentLine, typed);
+  const pct = Math.min(100, (typed.length / currentLine.length) * 100);
+  document.getElementById('captchaFill').style.width = pct + '%';
+  const st = document.getElementById('captchaStatus'), inp = document.getElementById('captchaInput');
+  if (typed === currentLine) {
+    captchaPassed = true;
+    document.getElementById('captchaFill').classList.add('done');
+    st.textContent = 'Perfect.'; st.className = 'captcha-status ok';
+    document.getElementById('captchaCheck').classList.add('show');
+    inp.className = 'captcha-inp ok';
+  } else if (typed.length === currentLine.length) {
+    captchaPassed = false; st.textContent = 'Not quite — try again or refresh.';
+    st.className = 'captcha-status err'; inp.className = 'captcha-inp err';
+  } else {
+    captchaPassed = false; st.textContent = ''; st.className = 'captcha-status';
+    document.getElementById('captchaCheck').classList.remove('show'); inp.className = 'captcha-inp';
+  }
 }
-function valUser(){const v=document.getElementById('reg-user').value;const ok=v.length>=3&&v.length<=20&&/^[a-zA-Z0-9_]+$/.test(v);document.getElementById('reg-user').className=v?(ok?'ok':'err'):'';}
-function valPass(){const v=document.getElementById('reg-pass').value;const ok=v.length>=8&&/[A-Z]/.test(v)&&/[0-9]/.test(v);document.getElementById('reg-pass').className=v?(ok?'ok':'err'):'';}
-function clearErrors(){['reg-err','log-err'].forEach(id=>document.getElementById(id).classList.remove('show'));}
-function showErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.classList.add('show');}
+function valUser() { const v = document.getElementById('reg-user').value; const ok = v.length>=3&&v.length<=20&&/^[a-zA-Z0-9_]+$/.test(v); document.getElementById('reg-user').className = v?(ok?'ok':'err'):''; }
+function valPass() { const v = document.getElementById('reg-pass').value; const ok = v.length>=8&&/[A-Z]/.test(v)&&/[0-9]/.test(v); document.getElementById('reg-pass').className = v?(ok?'ok':'err'):''; }
 
-async function register(){
+// ── Register / Login ─────────────────────────────────────────────────────────
+async function register() {
   clearErrors();
-  const username=document.getElementById('reg-user').value.trim();
-  const email=document.getElementById('reg-email').value.trim();
-  const password=document.getElementById('reg-pass').value;
-  if(!username)return showErr('reg-err','Username is required.');
-  if(!email||!email.includes('@'))return showErr('reg-err','A valid email is required.');
-  if(password.length<8)return showErr('reg-err','Password must be at least 8 characters.');
-  if(!/[A-Z]/.test(password)||!/[0-9]/.test(password))return showErr('reg-err','Password needs one uppercase letter and one number.');
-  if(!captchaPassed)return showErr('reg-err','Please complete the captcha first.');
-  const btn=document.getElementById('reg-btn');btn.disabled=true;btn.classList.add('loading');btn.textContent='Creating...';
-  try{
-    const r=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,email})});
-    const d=await r.json();
-    if(!r.ok){showErr('reg-err',d.error||'Something went wrong.');btn.disabled=false;btn.classList.remove('loading');btn.textContent='Create account';return;}
-    localStorage.setItem('chapters_token',d.token);localStorage.setItem('chapters_username',d.username);
-    document.getElementById('successTitle').textContent='Welcome, '+d.username+'.';
-    document.getElementById('successBody').textContent='Your story begins now.';
-    _skipAutoRedirect=true;showScreen('screenSuccess');
-  }catch{showErr('reg-err','Connection error.');btn.disabled=false;btn.classList.remove('loading');btn.textContent='Create account';}
+  const username = document.getElementById('reg-user').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-pass').value;
+  if (!username) return showErr('reg-err','Username is required.');
+  if (!email||!email.includes('@')) return showErr('reg-err','A valid email is required.');
+  if (password.length < 8) return showErr('reg-err','Password must be at least 8 characters.');
+  if (!/[A-Z]/.test(password)||!/[0-9]/.test(password)) return showErr('reg-err','Password needs one uppercase letter and one number.');
+  if (!captchaPassed) return showErr('reg-err','Please complete the captcha first.');
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'Creating...';
+  try {
+    const r = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,email})});
+    const d = await r.json();
+    if (!r.ok) { showErr('reg-err',d.error||'Something went wrong.'); btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Create account'; return; }
+    localStorage.setItem('chapters_token',d.token); localStorage.setItem('chapters_username',d.username);
+    showSuccess('Welcome, '+d.username+'.','Your story begins now.');
+  } catch { showErr('reg-err','Connection error.'); btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Create account'; }
 }
 
-async function login(){
+async function login() {
   clearErrors();
-  const username=document.getElementById('log-user').value.trim();
-  const password=document.getElementById('log-pass').value;
-  if(!username||!password)return showErr('log-err','Username and password are required.');
-  const btn=document.getElementById('log-btn');btn.disabled=true;btn.classList.add('loading');btn.textContent='Signing in...';
-  try{
-    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
-    const d=await r.json();
-    if(!r.ok){showErr('log-err',d.error||'Something went wrong.');btn.disabled=false;btn.classList.remove('loading');btn.textContent='Enter the anthology';return;}
-    localStorage.setItem('chapters_token',d.token);localStorage.setItem('chapters_username',d.username);
-    document.getElementById('successTitle').textContent='Welcome back, '+d.username+'.';
-    document.getElementById('successBody').textContent='Your chapters are waiting.';
-    _skipAutoRedirect=true;showScreen('screenSuccess');
-  }catch{showErr('log-err','Connection error.');btn.disabled=false;btn.classList.remove('loading');btn.textContent='Enter the anthology';}
+  const username = document.getElementById('log-user').value.trim();
+  const password = document.getElementById('log-pass').value;
+  if (!username||!password) return showErr('log-err','Username and password are required.');
+  const btn = document.getElementById('log-btn');
+  btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'Signing in...';
+  try {
+    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const d = await r.json();
+    if (!r.ok) { showErr('log-err',d.error||'Something went wrong.'); btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Enter the anthology'; return; }
+    localStorage.setItem('chapters_token',d.token); localStorage.setItem('chapters_username',d.username);
+    showSuccess('Welcome back, '+d.username+'.','Your chapters are waiting.');
+  } catch { showErr('log-err','Connection error.'); btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Enter the anthology'; }
 }
 
-async function resendVerification(){
-  if(!pendingEmail)return;
-  const btn=document.querySelector('.resend-row button');
-  if(btn){btn.textContent='Sending...';btn.disabled=true;}
-  try{await fetch('/api/resend-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:pendingEmail})});}catch{}
-  if(btn){btn.textContent='Sent!';setTimeout(()=>{btn.textContent='Resend email';btn.disabled=false;},8000);}
+async function resendVerification() {
+  if (!pendingEmail) return;
+  const btn = document.querySelector('.resend-row button');
+  if (btn) { btn.textContent='Sending...'; btn.disabled=true; }
+  try { await fetch('/api/resend-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:pendingEmail})}); } catch {}
+  if (btn) { btn.textContent='Sent!'; setTimeout(()=>{btn.textContent='Resend email';btn.disabled=false;},8000); }
 }
-function enterApp(){window.location.href='/';}
 
-document.addEventListener('keydown',e=>{
-  if(e.key!=='Enter'||e.target.id==='captchaInput')return;
-  if(document.getElementById('form-join').style.display!=='none')register();
-  else if(document.getElementById('form-enter').style.display!=='none')login();
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.target.id === 'captchaInput') return;
+  if (document.getElementById('form-join').style.display !== 'none') register();
+  else if (document.getElementById('form-enter').style.display !== 'none') login();
 });
-
-// Auto-redirect — ONLY runs if we haven't just set up a success screen
-(async()=>{
-  if(_skipAutoRedirect)return;
-  const token=localStorage.getItem('chapters_token');
-  if(!token)return;
-  try{const r=await fetch('/api/me',{headers:{'Authorization':'Bearer '+token}});if(r.ok)window.location.href='/';}catch{}
-})();
 
 newCaptcha();
 </script>
