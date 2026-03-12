@@ -811,6 +811,7 @@ app.use((req, res, next) => {
   if (req.path.toLowerCase() === '/admin.html') return res.status(404).send('Not found.');
   next();
 });
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 

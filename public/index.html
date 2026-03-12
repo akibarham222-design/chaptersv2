@@ -411,10 +411,25 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
 .mp-vv{font-size:10px;color:var(--muted);width:22px;text-align:right;}
 /* Music player layout compensation — prevents player from covering chat input */
 #app.mp-on { padding-bottom: 56px; }
-#app.mp-on.mp-expanded { padding-bottom: 0; } /* expanded player is tall; content scrolls above it */
+#app.mp-on.mp-expanded { padding-bottom: 0; }
+/* Landing view extra bottom padding so Find a Stranger stays visible */
+#app.mp-on #view-landing { padding-bottom: 64px; }
 @media(max-width:600px){
   #mp.open { max-height: 52vh; overflow-y: auto; }
   .mp-panel { overflow-y: auto; }
+}
+/* Headphone animation */
+@keyframes hpFloat { 0%,100%{transform:translateY(0) rotate(-5deg);} 50%{transform:translateY(-12px) rotate(5deg);} }
+@keyframes hpRing  { 0%{transform:translate(-50%,-50%) scale(1);opacity:.7;} 100%{transform:translate(-50%,-50%) scale(2.8);opacity:0;} }
+#mpHeadAnim { animation: hpFloat 2.2s ease-in-out infinite; display:block; }
+#mpHeadOv.show { display:flex !important; }
+.hp-ring {
+  position:absolute;top:50%;left:50%;
+  width:90px;height:90px;
+  border-radius:50%;
+  border:1.5px solid rgba(139,92,246,.55);
+  animation: hpRing 2.1s ease-out infinite;
+  pointer-events:none;
 }
 @media(max-width:600px){
   .topbar{padding:11px 15px;}.topbar-r{gap:5px;}.pill{display:none;}.uchip{display:none;}
@@ -646,14 +661,30 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
   </div>
 </div>
 
+<!-- HEADPHONE PROMPT (shown once on first music open) -->
+<div id="mpHeadOv" style="position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(20px);z-index:500;display:none;align-items:center;justify-content:center;">
+  <div style="text-align:center;padding:32px 28px;max-width:340px;">
+    <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:120px;height:120px;margin-bottom:20px;">
+      <div class="hp-ring" style="width:90px;height:90px;animation-delay:0s;"></div>
+      <div class="hp-ring" style="width:90px;height:90px;animation-delay:0.7s;"></div>
+      <div class="hp-ring" style="width:90px;height:90px;animation-delay:1.4s;"></div>
+      <div id="mpHeadAnim" style="font-size:62px;position:relative;z-index:2;line-height:1;">🎧</div>
+    </div>
+    <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:-.3px;">Put on your headphones</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.5);line-height:1.75;margin-bottom:28px;">Calm, free-to-use music to set the mood.<br/>Best with headphones on.</div>
+    <button onclick="mpHeadConfirm()" style="padding:13px 44px;background:linear-gradient(135deg,var(--violet),var(--teal));border:none;border-radius:10px;color:#fff;font-family:'Playfair Display',serif;font-size:18px;font-style:italic;cursor:pointer;box-shadow:0 6px 24px rgba(139,92,246,.4);">I'm ready ✦</button>
+    <div onclick="mpHeadConfirm()" style="margin-top:14px;font-size:11px;color:rgba(255,255,255,.25);cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;">skip</div>
+  </div>
+</div>
+
 <!-- MUSIC PLAYER -->
 <div id="mp">
   <div class="mp-bar" onclick="togglePlayerExpand()">
     <div class="mp-bl">
-      <div class="mp-ico">♪</div>
+      <div class="mp-ico">🎧</div>
       <div class="mp-np">
-        <div class="mp-tn" id="mpTrackName"><span class="mp-idle">No track playing</span></div>
-        <div class="mp-ta" id="mpTrackArtist"></div>
+        <div class="mp-tn" id="mpTrackName"><span class="mp-idle">Chapters Atmosphere</span></div>
+        <div class="mp-ta" id="mpTrackArtist"><span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;opacity:.5;">Free to use · Calm</span></div>
         <div id="mpStatus" style="font-size:10px;color:var(--amber);min-height:13px;"></div>
       </div>
     </div>
@@ -667,15 +698,12 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
     <div class="mp-prog-f" id="mpProgressFill"></div>
   </div>
   <div class="mp-panel">
-    <div class="mp-srow">
-      <input class="mp-sinp" id="mpSearchInput" type="text" placeholder="Search for any song..." onkeydown="if(event.key==='Enter')mpSearch()"/>
-      <button class="mp-sbtn" onclick="mpSearch()">Search</button>
-    </div>
-    <div class="mp-res" id="mpResults"></div>
-    <div class="mp-volr">
+    <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:11px;">Curated atmosphere · Free to use</div>
+    <div class="mp-res" id="mpResults" style="display:flex;"></div>
+    <div class="mp-volr" style="margin-top:10px;">
       <span class="mp-vlbl">Vol</span>
-      <input type="range" class="mp-vol" id="mpVol" min="0" max="100" value="40" oninput="mpSetVol(this.value)"/>
-      <span class="mp-vv" id="mpVolVal">40</span>
+      <input type="range" class="mp-vol" id="mpVol" min="0" max="100" value="35" oninput="mpSetVol(this.value)"/>
+      <span class="mp-vv" id="mpVolVal">35</span>
     </div>
   </div>
 </div>
@@ -709,6 +737,7 @@ socket.on('authed', () => {});
 socket.on('online_count', c => { document.getElementById('onlineCount').textContent = c; });
 socket.on('history', h => { S.history = h; if (S.view==='history') renderHistory(); });
 socket.on('matched', ({ chapter, myName, theirName, pairRef, pairBond }) => {
+  clearTimeout(_botTimer); _botTimer = null;
   S.connected=true; S.myName=myName; S.theirName=theirName;
   document.getElementById('chatChapterNum').textContent=toRoman(chapter);
   document.getElementById('myNamePlate').textContent=myName;
@@ -770,9 +799,24 @@ function goHome() { showView('landing'); }
 function showHistory() { renderHistory(); showView('history'); }
 
 // ── CHAT ──────────────────────────────────────────────────────────────────────
-function findStranger() { closeGamePanel(); showView('waiting'); socket.emit('find_stranger'); }
-function cancelSearch() { socket.emit('cancel_search'); }
+let _botTimer = null;
+function findStranger() {
+  closeGamePanel();
+  showView('waiting');
+  socket.emit('find_stranger');
+  // If no match in 45s, silently connect the bot
+  clearTimeout(_botTimer);
+  _botTimer = setTimeout(() => {
+    if (S.view === 'waiting') botConnect();
+  }, 45000);
+}
+function cancelSearch() {
+  clearTimeout(_botTimer);
+  _botTimer = null;
+  socket.emit('cancel_search');
+}
 function leaveChat() {
+  if (BOT.active) { botLeave(); S.connected=false; addSysMsg('You closed the chapter.'); document.getElementById('strangerLeft').classList.add('show'); closeGamePanel(); return; }
   socket.emit('leave_chat'); S.connected=false;
   addSysMsg('You closed the chapter.');
   document.getElementById('strangerLeft').classList.add('show');
@@ -817,16 +861,23 @@ function onInput(){
   const b=document.getElementById('charBadge');
   b.textContent=len+' / 4000';b.className='cbadge'+(len>4000?' over':len>=3600?' warn':'');
   document.getElementById('sendBtn').disabled=len===0||len>4000||!S.connected;
-  if(S.connected&&len>0){socket.emit('typing');clearTimeout(S.typingTO);S.typingTO=setTimeout(()=>socket.emit('stop_typing'),2000);}
-  else socket.emit('stop_typing');
+  if(S.connected&&len>0&&!BOT.active){socket.emit('typing');clearTimeout(S.typingTO);S.typingTO=setTimeout(()=>socket.emit('stop_typing'),2000);}
+  else if(!BOT.active) socket.emit('stop_typing');
   const ta=document.getElementById('msgInput');ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,200)+'px';
 }
 function onKeydown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
 function sendMessage(){
   const inp=document.getElementById('msgInput'),txt=inp.value.trim();
   if(!txt||!S.connected||txt.length>4000)return;
-  socket.emit('message',{content:txt});inp.value='';inp.style.height='auto';onInput();
-  clearTimeout(S.typingTO);socket.emit('stop_typing');
+  if (BOT.active) {
+    // Show as your own message, then trigger bot reply
+    addMsg('you', txt);
+    inp.value=''; inp.style.height='auto'; onInput();
+    botReply(txt);
+  } else {
+    socket.emit('message',{content:txt});inp.value='';inp.style.height='auto';onInput();
+    clearTimeout(S.typingTO);socket.emit('stop_typing');
+  }
 }
 
 // ── SONG SHARING IN CHAT ──────────────────────────────────────────────────────
@@ -857,8 +908,362 @@ async function searchShareSong(){
 function sendSongMsg(i){
   const t=_spTracks[i];if(!t||!S.connected)return;
   const url=`https://open.spotify.com/search/${encodeURIComponent(t.trackName+' '+t.artistName)}`;
-  socket.emit('message',{content:'[♫]'+JSON.stringify({title:t.trackName,artist:t.artistName,url})});
+  const payload='[♫]'+JSON.stringify({title:t.trackName,artist:t.artistName,url});
+  if (BOT.active) {
+    renderSongMsg('you', payload);
+    botReply('just sent a song 🎵');
+  } else {
+    socket.emit('message',{content:payload});
+  }
   closeSongPicker();
+}
+
+// ── BOT ENGINE (fully scripted, zero cost, zero external APIs) ───────────────
+const BOT = { active:false, history:[], typingTimer:null, msgCount:0, mood:'neutral', theirName:'' };
+
+// ── Response banks ────────────────────────────────────────────────────────────
+const B = {
+  openers: [
+    'heyyy','hi omg finally someone 😭','hey!! 👀','yo wsp','omg hi',
+    'heyy','finally lol hi','oh hey','hii','hello stranger lol',
+    'yooo hi','hey hey','omg someone actually matched 💀','hiiii',
+  ],
+
+  greetings: [
+    'heyyy wsp','hi!! how are u','hey omg finally','yo what's good',
+    'hii wsp with u','omg hey 👀','hiiii ur actually here lol',
+  ],
+
+  howAreYou: [
+    'ngl kinda tired but okay i guess... u?','lowkey vibing rn wbu',
+    'honestly??? a lil bored lol hence why im here 😭 u?',
+    'omg so-so rn, had a day y'know... wbu tho',
+    'tired but its giving main character energy so 🤷 u?',
+    'not terrible not great lol wbu',
+    'honestly just existing rn 💀 u?',
+  ],
+
+  asl: [
+    'lol asl era 💀 f / 20 / online u?','m/19/my room lmao u?',
+    '19 f and the internet lol u?','20 m / somewhere boring u?',
+    'omg 19 f here wbu','loll 20 / f / nowhere special u?',
+  ],
+
+  name: [
+    'u can call me whatever lol this app gives us names anyway 😭',
+    'omg idk im just using whatever the app gave me lol',
+    'keeping it mysterious 👀 what about u tho',
+    'ngl i kinda like the name they gave me lmaoo',
+  ],
+
+  bored: [
+    'SAME omg that's literally why im here 💀',
+    'bro same i've been on here for like an hour 😭',
+    'same... it's giving 3am energy ngl',
+    'lol same why are we like this 😭',
+    'honestly relatable... what do u do when ur bored normally',
+  ],
+
+  lonely: [
+    'aww noo 😭 u okay tho?',
+    'omg same tbh... this app kinda helps ngl',
+    'nooo don't say that 😭 ur talking to me rn so that counts right',
+    'lowkey same... it hits different at night fr',
+  ],
+
+  compliment: [
+    'omg stop 😭 ur too nice','aww that's actually so sweet ty!!',
+    'lmaoo okay i'll take it 😌','bestie ur sweet ty 🥺',
+    'omg noo ur making me blush 💀','wait fr?? ty that made my day ngl',
+  ],
+
+  insult: [
+    'okay that's a bit much 😭 we just met lol',
+    'bro why 💀 i didn't even do anything',
+    'lmaoo okay noted 😭 anyway...',
+    'omg rude 😭 i thought we were vibing',
+  ],
+
+  bot: [
+    'lmaoo no?? why would a bot be on here 💀',
+    'omg not this again 😭 im literally just a person who's bored',
+    'bro if i was a bot i'd be a lot more interesting ngl 💀',
+    'nooo lmao i promise im real... unfortunately 😭',
+    'why does everyone ask this on anonymous apps 💀 no im not a bot',
+  ],
+
+  weird: [
+    'ok that's a bit much lmaoo','omg 😭 okay then...',
+    'bro what 💀 lol','ngl not sure how to respond to that 😭',
+    'ok moving on 💀','i— okay 😭',
+  ],
+
+  music: [
+    'omg yes music is literally everything to me 🎵 what do u listen to',
+    'ngl music is my whole personality 💀 u?',
+    'fr tho what genre? im curious 👀',
+    'lowkey been listening to sad music all day ngl... u into music?',
+  ],
+
+  movies: [
+    'omg yes what genre tho? horror? romance? 👀',
+    'ngl i have terrible taste in movies 💀 what about u',
+    'lowkey been rewatching the same show for like 3 weeks 😭',
+    'omg yes movies are a vibe... any faves?',
+  ],
+
+  food: [
+    'omg don't talk to me about food im starving rn 😭',
+    'ngl i eat the same 3 meals forever 💀 u?',
+    'bro food is literally the only thing getting me through rn',
+    'omg what's ur fav food?? this is important info 👀',
+  ],
+
+  school: [
+    'omg don't remind me 😭 school is literally so draining',
+    'ngl im procrastinating on an assignment rn 💀',
+    'school is a concept i refuse to acknowledge rn',
+    'ugh same... what are u studying?',
+  ],
+
+  work: [
+    'omg work?? adulting is not for me 💀',
+    'ngl i should be working rn 😭',
+    'work is such a vibe killer honestly... what do u do?',
+  ],
+
+  sleep: [
+    'omg same i never sleep at normal times 💀',
+    'ngl its giving "avoiding tomorrow" energy 😭',
+    'same... sleep is a privilege fr',
+    'why do we do this to ourselves 💀 wbu what time is it there',
+  ],
+
+  location: [
+    'somewhere on earth lol 🌍 u?',
+    'ngl just vibing in my room 💀 where are u from?',
+    'lol internet 🫠 but like generally where are u?',
+    'im from a place that's too boring to mention 😭 u?',
+  ],
+
+  age: [
+    '20! u?','19 wbu?','literally just turned 20 💀 u?','20 here wbu',
+  ],
+
+  feelings: [
+    'omg what's going on?? wanna talk about it',
+    'aww no 😭 r u okay?',
+    'ngl anonymous chats r actually good for this stuff... what's up',
+    'omg say more im listening 👀',
+  ],
+
+  relate: [
+    'omg literally same 💀','fr no cap','bestie same 😭',
+    'wait that's so relatable','LMAOO same tho','omg i feel that',
+  ],
+
+  funny: [
+    'LMAOOOO 💀','omg stop 😭','bro i-','wait that's actually so funny 💀',
+    'LMAO why 😭','okay that got me 💀','omg LMAOOO',
+  ],
+
+  thanks: [
+    'omg of course!! 🥺','aww no worries!!','hehe anytime 😌',
+    'omg stop ur so sweet 🥺','noo thank u fr!!',
+  ],
+
+  bye: [
+    'aww nooo already?? 😭','omg it was so nice talking to u fr',
+    'noo don't go 😭 okay fine... take care tho!!',
+    'aww bye!! hope u have a good rest of ur day 🥺',
+    'omg this was so fun actually!! bye 💀',
+  ],
+
+  yes: [
+    'omg yes fr!!','yess!!','literally yes 💀','omg yes same',
+    'yesss ngl','fr tho yes','lowkey yes',
+  ],
+
+  no: [
+    'noo 😭','omg no way','lmao nope','not rly ngl... u?','nooo 💀',
+  ],
+
+  followUp: [
+    'wait tell me more 👀','omg and then what??','no bc continue 💀',
+    'wait fr?? 😭','omg i need more context 👀','bro say more',
+    'ngl that's interesting... keep going','wait what 💀',
+  ],
+
+  fillers: [
+    'ngl this app is kinda addicting 💀 like who are all these people',
+    'wait do u ever have conversations on here that just hit different',
+    'lowkey i was not expecting to actually talk to someone rn 😭',
+    'ngl anonymous apps are so weird but also kind of nice??',
+    'like what even is the appeal of this app to u lol',
+    'wait have u talked to interesting people on here before',
+    'omg i wonder what the other person is doing rn like are they bored too',
+    'ngl i kinda like that we don't know each other it's freeing somehow',
+    'this is giving strangers on a train energy and i'm here for it 💀',
+    'like do u prefer talking to strangers or people u know?? be honest',
+  ],
+};
+
+function bPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function bMatch(msg) {
+  const m = msg.toLowerCase().replace(/[^\w\s]/g,'');
+  const has = (...words) => words.some(w => m.includes(w));
+
+  // Identity / bot check
+  if (has('bot','robot','ai','artificial','fake','not real','are you human','r u human','ur a bot')) return bPick(B.bot);
+
+  // Greetings
+  if (has('hello','hii','heyyy','heyy','hey','hi ','sup','wsp','wyd','what\'s up','whats up','yo '))
+    return BOT.msgCount < 2 ? bPick(B.greetings) : bPick(B.followUp);
+
+  // How are you
+  if (has('how are','how r u','how ru','hows u','how u doing','how are you','u good','you good','feeling','u okay','you okay'))
+    return bPick(B.howAreYou);
+
+  // ASL
+  if (has('asl','age sex','a/s/l')) return bPick(B.asl);
+
+  // Name
+  if (has('ur name','your name','what\'s ur','whats ur name','who are you','who r u')) return bPick(B.name);
+
+  // Location
+  if (has('where are you','where r u','where u from','ur from','you from','location','country','city','state')) return bPick(B.location);
+
+  // Age
+  if (has('how old','ur age','your age','ur old')) return bPick(B.age);
+
+  // Feelings / sad
+  if (has('sad','depress','anxious','stress','upset','cry','crying','bad day','rough','hard time','miss','lonely','alone'))
+    return bPick(B.lonely);
+
+  // Feelings general
+  if (has('feel','feeling','emotion','vent','talk about')) return bPick(B.feelings);
+
+  // Bored
+  if (has('bored','boring','nothing to do','have nothing')) return bPick(B.bored);
+
+  // Music
+  if (has('music','song','listen','playlist','spotify','album','artist','band','singer')) return bPick(B.music);
+
+  // Movies / shows
+  if (has('movie','film','show','series','watch','netflix','drama','anime','episode')) return bPick(B.movies);
+
+  // Food
+  if (has('food','eat','hungry','meal','snack','cook','restaurant','pizza','rice','chicken')) return bPick(B.food);
+
+  // School
+  if (has('school','class','exam','study','homework','college','university','teacher','subject','grade')) return bPick(B.school);
+
+  // Work
+  if (has('work','job','office','boss','career','interview','salary')) return bPick(B.work);
+
+  // Sleep
+  if (has('sleep','tired','sleepy','insomnia','late night','up late','cant sleep','awake')) return bPick(B.sleep);
+
+  // Compliments
+  if (has('cute','pretty','nice','sweet','kind','cool','amazing','great','awesome','funny','love you','ur great'))
+    return bPick(B.compliment);
+
+  // Insults
+  if (has('ugly','stupid','dumb','idiot','hate you','shut up','loser','boring','trash','worst'))
+    return bPick(B.insult);
+
+  // Thanks
+  if (has('thank','thanks','ty','thx','appreciate')) return bPick(B.thanks);
+
+  // Bye
+  if (has('bye','goodbye','gotta go','gtg','leaving','see ya','cya','later','take care'))
+    return bPick(B.bye);
+
+  // Yes
+  if (/^(yes|yeah|yep|yup|yess|ye|fr|true|exactly|definitely|absolutely|agree|same|ikr|ik|lol yes)/.test(m))
+    return Math.random() < 0.4 ? bPick(B.yes) : bPick(B.followUp);
+
+  // No
+  if (/^(no|nope|nah|not really|idk|maybe not|disagree)/.test(m))
+    return bPick(B.no);
+
+  // Laughter
+  if (has('lmao','lol','lmfao','haha','hehe','😂','💀','😭') && m.length < 20)
+    return bPick(B.funny);
+
+  // Short messages — engage with a follow-up question
+  if (msg.trim().split(' ').length <= 3) return bPick(B.followUp);
+
+  // Relate to longer messages
+  if (msg.trim().split(' ').length > 12) return Math.random()<0.5 ? bPick(B.relate) : bPick(B.followUp);
+
+  // Default — filler conversation starters
+  return bPick(B.fillers);
+}
+
+const BOT_NAMES = [
+  'Isolde','Cressida','Rosalind','Ophelia','Beatrice','Cordelia',
+  'Lysander','Dorian','Leander','Phineas','Caspian','Auberon'
+];
+const BOT_REFS = ['met by chance','found each other','crossed paths','arrived together'];
+const BOT_BONDS = [
+  'two people who both pretend they don\'t care, but do.',
+  'strangers who\'ve lived parallel lives without knowing.',
+  'the kind of people who text back instantly but pretend they don\'t.',
+  'two souls who both have unsent drafts sitting in their notes app.',
+];
+
+function botConnect() {
+  if (S.connected || S.view !== 'waiting') return;
+  socket.emit('cancel_search');
+  const names = [...BOT_NAMES].sort(() => Math.random()-.5);
+  const myName = names[0], theirName = names[1];
+  const chapter = Math.floor(Math.random() * 80) + 1;
+  const ref = BOT_REFS[Math.floor(Math.random()*BOT_REFS.length)];
+  const bond = BOT_BONDS[Math.floor(Math.random()*BOT_BONDS.length)];
+  BOT.active = true; BOT.history = []; BOT.msgCount = 0; BOT.theirName = theirName;
+  S.connected = true; S.myName = myName; S.theirName = theirName;
+  document.getElementById('chatChapterNum').textContent = toRoman(chapter);
+  document.getElementById('myNamePlate').textContent = myName;
+  document.getElementById('theirNamePlate').textContent = theirName;
+  document.getElementById('strangerLeft').classList.remove('show');
+  clearMsgs(); closeGamePanel();
+  showView('reveal');
+  playReveal(myName, theirName, ref, bond);
+  // Opener after reveal animation
+  setTimeout(() => botSend(bPick(B.openers)), 3500 + Math.random()*1800);
+}
+
+function botSend(text) {
+  if (!BOT.active) return;
+  const typeMs = 700 + text.length * 38 + Math.random()*500;
+  showTyping();
+  clearTimeout(BOT.typingTimer);
+  BOT.typingTimer = setTimeout(() => {
+    if (!BOT.active) return;
+    hideTyping();
+    addMsg('stranger', text);
+    BOT.msgCount++;
+    BOT.history.push(text);
+  }, Math.min(typeMs, 3000));
+}
+
+function botReply(userMsg) {
+  if (!BOT.active) return;
+  BOT.history.push('user:' + userMsg);
+  const thinkMs = 900 + Math.min(userMsg.length * 18, 1600) + Math.random()*700;
+  setTimeout(() => {
+    if (!BOT.active) return;
+    const reply = bMatch(userMsg);
+    botSend(reply);
+  }, thinkMs);
+}
+
+function botLeave() {
+  BOT.active = false; BOT.history = []; BOT.msgCount = 0;
+  clearTimeout(BOT.typingTimer);
+  hideTyping();
 }
 
 // ── MORE MENU ─────────────────────────────────────────────────────────────────
@@ -1006,7 +1411,11 @@ function openGameSelect(){
 function closeGameSelect(){document.getElementById('gameSelectOv').classList.remove('show');}
 function inviteGame(type){
   closeGameSelect();
-  closeGamePanel(); // clear any previous game panel
+  if (BOT.active) {
+    addSysMsg('Games aren\'t available with this stranger right now.');
+    return;
+  }
+  closeGamePanel();
   G.type=type;G.isHost=true;
   socket.emit('game_invite',{gameType:type});
   addSysMsg('Game invitation sent. Waiting for response...');
@@ -1202,22 +1611,34 @@ function handleGameAction(data){
 }
 
 // ── MUSIC PLAYER ─────────────────────────────────────────────────────────────
-// Simple, robust player using iTunes 30s previews.
-// No unlock tricks — clicking a track IS a user gesture, play() will work.
-const MP = { audio: null, tracks: [], idx: -1, progTimer: null, open: false, expanded: false };
+// Curated free-to-use calm/ambient tracks — Mixkit Free License
+const MP_PLAYLIST = [
+  { title: 'Dreaming Big',           artist: 'Ambient · Calm',         url: 'https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3' },
+  { title: 'Serene View',            artist: 'Piano · Serene',          url: 'https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3' },
+  { title: 'Life Is a Dream',        artist: 'Piano · Atmospheric',     url: 'https://assets.mixkit.co/music/preview/mixkit-life-is-a-dream-837.mp3' },
+  { title: 'Valley Sunset',          artist: 'Ambient · Gentle',        url: 'https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3' },
+  { title: 'Piano Reflections',      artist: 'Cinematic · Quiet',       url: 'https://assets.mixkit.co/music/preview/mixkit-piano-reflections-22.mp3' },
+  { title: 'Sleepy Cat',             artist: 'Ambient · Night',         url: 'https://assets.mixkit.co/music/preview/mixkit-sleepy-cat-135.mp3' },
+  { title: 'Slow Morning',           artist: 'Lo-fi · Warm',            url: 'https://assets.mixkit.co/music/preview/mixkit-slow-morning-741.mp3' },
+  { title: 'Soft Petals',            artist: 'Piano · Delicate',        url: 'https://assets.mixkit.co/music/preview/mixkit-soft-petals-1258.mp3' },
+  { title: 'Peaceful Mind',          artist: 'Ambient · Meditative',    url: 'https://assets.mixkit.co/music/preview/mixkit-peaceful-mind-1301.mp3' },
+  { title: 'Night Owl',              artist: 'Cinematic · Moody',       url: 'https://assets.mixkit.co/music/preview/mixkit-night-owl-702.mp3' },
+  { title: 'Comforting Warmth',      artist: 'Ambient · Cozy',          url: 'https://assets.mixkit.co/music/preview/mixkit-comforting-warmth-1301.mp3' },
+  { title: 'Dreamy Traveler',        artist: 'Piano · Wandering',       url: 'https://assets.mixkit.co/music/preview/mixkit-dreamy-traveler-1053.mp3' },
+];
+
+const MP = { audio: null, idx: -1, progTimer: null, open: false, expanded: false, headShown: false };
 
 function mpAudio() {
   if (MP.audio) return MP.audio;
   MP.audio = new Audio();
-  // Keep playing in background — do NOT append to DOM, just hold in memory
-  MP.audio.addEventListener('ended', () => {
-    if (MP.tracks.length > 1) mpNext();
-    else { mpSetBtn(false); clearInterval(MP.progTimer); }
-  });
-  MP.audio.addEventListener('playing', () => mpSetBtn(true));
-  MP.audio.addEventListener('pause',   () => mpSetBtn(false));
-  MP.audio.addEventListener('error',   () => mpStatus('Could not load preview. Try another.'));
-  MP.audio.addEventListener('waiting', () => mpStatus('Buffering...'));
+  MP.audio.loop = false;
+  MP.audio.volume = (document.getElementById('mpVol')?.value || 35) / 100;
+  MP.audio.addEventListener('ended',   () => mpNext());
+  MP.audio.addEventListener('playing', () => { mpSetBtn(true); mpStartProg(); });
+  MP.audio.addEventListener('pause',   () => { mpSetBtn(false); clearInterval(MP.progTimer); });
+  MP.audio.addEventListener('error',   () => { mpStatus('Could not load track — trying next...'); setTimeout(mpNext, 1200); });
+  MP.audio.addEventListener('waiting', () => mpStatus('Loading...'));
   MP.audio.addEventListener('canplay', () => mpStatus(''));
   return MP.audio;
 }
@@ -1227,8 +1648,6 @@ function mpSetBtn(playing) {
   const tb = document.getElementById('mpToggleBtn');
   if (pb) { pb.textContent = playing ? '⏸' : '▶'; pb.classList.toggle('on', playing); }
   if (tb) tb.classList.toggle('on', playing);
-  if (playing) mpStartProg();
-  else clearInterval(MP.progTimer);
 }
 
 function mpStatus(msg) {
@@ -1239,51 +1658,39 @@ function mpStatus(msg) {
 function mpSetTrackInfo(t) {
   const tn = document.getElementById('mpTrackName');
   const ta = document.getElementById('mpTrackArtist');
-  if (tn) tn.textContent = t.trackName;
-  if (ta) ta.textContent = t.artistName;
+  if (tn) tn.textContent = t.title;
+  if (ta) ta.textContent = t.artist;
 }
 
-// Called directly from a click handler — always a user gesture, play() allowed
 function mpPlay(i) {
-  const t = MP.tracks[i];
-  if (!t || !t.previewUrl) return;
+  const tracks = MP_PLAYLIST;
+  i = ((i % tracks.length) + tracks.length) % tracks.length;
+  const t = tracks[i];
   MP.idx = i;
   mpSetTrackInfo(t);
   mpStatus('');
   // Highlight active row
-  document.querySelectorAll('.mp-r').forEach((el, j) => {
+  document.querySelectorAll('#mpResults .mp-r').forEach((el, j) => {
     el.classList.toggle('on', j === i);
     const pi = document.getElementById('mpi' + j);
     if (pi) pi.textContent = j === i ? '▶' : '▷';
   });
   const a = mpAudio();
   a.pause();
-  a.src = t.previewUrl;       // Do NOT call a.load() — setting src is enough
-  a.volume = (document.getElementById('mpVol')?.value || 40) / 100;
-  a.play().catch(err => {
-    console.warn('mpPlay blocked:', err);
-    mpStatus('Tap ▶ to start');
-  });
+  a.src = t.url;
+  a.volume = (document.getElementById('mpVol')?.value || 35) / 100;
+  a.play().catch(() => mpStatus('Tap ▶ to play'));
 }
 
-// Called from the ▶/⏸ button — also a direct user gesture
 function mpTogglePlay() {
   const a = mpAudio();
-  if (!a.src) {
-    // Nothing loaded yet — play first available track
-    if (MP.tracks.length) mpPlay(MP.idx >= 0 ? MP.idx : 0);
-    return;
-  }
-  if (a.paused) {
-    a.play().catch(() => mpStatus('Tap ▶ to start'));
-  } else {
-    a.pause();
-  }
+  if (!a.src) { mpPlay(MP.idx >= 0 ? MP.idx : 0); return; }
+  if (a.paused) a.play().catch(() => mpStatus('Tap ▶ to play'));
+  else a.pause();
 }
 
 function mpNext() {
-  if (!MP.tracks.length) return;
-  mpPlay((MP.idx + 1) % MP.tracks.length);
+  mpPlay(MP.idx + 1);
 }
 
 function mpStartProg() {
@@ -1304,25 +1711,53 @@ function mpSeek(e) {
 }
 
 function mpSetVol(v) {
-  const a = mpAudio();
-  a.volume = v / 100;
+  mpAudio().volume = v / 100;
   const vv = document.getElementById('mpVolVal');
   if (vv) vv.textContent = v;
 }
 
+// Build the playlist list in the panel
+function mpRenderPlaylist() {
+  const re = document.getElementById('mpResults');
+  if (!re || re.children.length > 0) return; // already rendered
+  re.innerHTML = MP_PLAYLIST.map((t, i) => `
+    <div class="mp-r" data-i="${i}">
+      <span class="mp-rpi" id="mpi${i}">▷</span>
+      <div class="mp-ri">
+        <div class="mp-rt">${t.title}</div>
+        <div class="mp-ra">${t.artist}</div>
+      </div>
+    </div>`).join('');
+  re.querySelectorAll('.mp-r').forEach(el =>
+    el.addEventListener('click', () => mpPlay(parseInt(el.dataset.i)))
+  );
+}
+
+// Headphone prompt — confirm opens player and starts music
 function togglePlayer() {
   const el = document.getElementById('mp');
   const btn = document.getElementById('mpToggleBtn');
   const app = document.getElementById('app');
   if (!MP.open) {
+    // First time — show headphone prompt if not seen
+    if (!MP.headShown && !localStorage.getItem('chapters_mp_head')) {
+      const ov = document.getElementById('mpHeadOv');
+      ov.style.display = 'flex';
+      MP.headShown = true;
+      return;
+    }
     MP.open = true;
     el.classList.add('mini');
     btn.classList.add('on');
     app.classList.add('mp-on');
+    mpRenderPlaylist();
+    // Auto-start first track
+    if (MP.idx < 0) mpPlay(0);
   } else if (!MP.expanded) {
     el.classList.remove('mini'); el.classList.add('open');
     MP.expanded = true;
     app.classList.add('mp-expanded');
+    mpRenderPlaylist();
   } else {
     el.classList.remove('open'); el.classList.add('mini');
     MP.expanded = false;
@@ -1342,39 +1777,27 @@ function togglePlayerExpand() {
     el.classList.remove('mini'); el.classList.add('open');
     MP.expanded = true;
     app.classList.add('mp-expanded');
+    mpRenderPlaylist();
   }
 }
 
-async function mpSearch() {
-  const q = document.getElementById('mpSearchInput').value.trim();
-  if (!q) return;
-  const re = document.getElementById('mpResults');
-  re.style.display = 'flex';
-  re.innerHTML = `<div class="mp-r"><div class="mp-ri"><div class="mp-rt" style="color:var(--muted)">Searching...</div></div></div>`;
-  try {
-    const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=10&entity=song`);
-    const d = await r.json();
-    const tracks = (d.results || []).filter(t => t.previewUrl);
-    if (!tracks.length) {
-      re.innerHTML = `<div class="mp-r"><div class="mp-ri"><div class="mp-rt" style="color:var(--muted)">No previews found. Try another search.</div></div></div>`;
-      return;
-    }
-    MP.tracks = tracks;
-    re.innerHTML = tracks.map((t, i) => `
-      <div class="mp-r" data-i="${i}">
-        <span class="mp-rpi" id="mpi${i}">▷</span>
-        <div class="mp-ri">
-          <div class="mp-rt">${esc(t.trackName)}</div>
-          <div class="mp-ra">${esc(t.artistName)}</div>
-        </div>
-        <span class="mp-rd">30s</span>
-      </div>`).join('');
-    re.querySelectorAll('.mp-r').forEach(el =>
-      el.addEventListener('click', () => mpPlay(parseInt(el.dataset.i)))
-    );
-  } catch {
-    re.innerHTML = `<div class="mp-r"><div class="mp-ri"><div class="mp-rt" style="color:var(--muted)">Search failed. Check connection.</div></div></div>`;
-  }
+// Called from headphone confirm — then open the player normally
+function mpHeadConfirm() {
+  const ov = document.getElementById('mpHeadOv');
+  ov.style.opacity = '0';
+  ov.style.transition = 'opacity .35s';
+  setTimeout(() => { ov.style.display = 'none'; ov.style.opacity = ''; ov.style.transition = ''; }, 380);
+  localStorage.setItem('chapters_mp_head', '1');
+  // Now actually open the player
+  const el = document.getElementById('mp');
+  const btn = document.getElementById('mpToggleBtn');
+  const app = document.getElementById('app');
+  MP.open = true;
+  el.classList.add('mini');
+  btn.classList.add('on');
+  app.classList.add('mp-on');
+  mpRenderPlaylist();
+  mpPlay(0);
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
