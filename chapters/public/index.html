@@ -734,9 +734,17 @@ const G = {
 
 // ── SOCKET ────────────────────────────────────────────────────────────────────
 let socket;
-try { socket = io(); } catch(e) {
+try {
+  socket = io({
+    transports: ['polling', 'websocket'],
+    upgrade: true,
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 1000,
+    timeout: 20000
+  });
+} catch(e) {
   console.error('Socket.io failed to load:', e);
-  // Stub so onclick functions don't crash when calling socket.emit
   socket = { emit:()=>{}, on:()=>{}, connected:false };
 }
 socket.on('connect', () => socket.emit('auth', { token: TOKEN }));

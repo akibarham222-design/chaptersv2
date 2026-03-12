@@ -15,7 +15,15 @@ const server = http.createServer(app);
 // origin: true = reflect request origin (safe — auth is token-based, not cookie-based)
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || true;
 const io = new Server(server, {
-  cors: { origin: ALLOWED_ORIGIN, methods: ['GET','POST'] }
+  cors: {
+    origin: ALLOWED_ORIGIN,
+    methods: ['GET', 'POST'],
+    credentials: false
+  },
+  transports: ['polling', 'websocket'],
+  allowUpgrades: true,
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 app.use(express.json({ limit: '50kb' }));
