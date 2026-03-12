@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
@@ -29,7 +30,7 @@ app.use((req, res, next) => {
   // Fix 3: Content-Security-Policy — restricts scripts/styles/connections to trusted sources only
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.socket.io",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' wss: ws: https://itunes.apple.com https://oauth2.googleapis.com https://www.googleapis.com",
@@ -689,8 +690,6 @@ const adminLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-const crypto = require('crypto');
 
 function adminAuth(req, res, next) {
   const pass = req.headers['x-admin-password'] || '';

@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
 <script src="/socket.io/socket.io.js"></script>
+<script>if(typeof io==='undefined'){document.write('<scr'+'ipt src="https://cdn.socket.io/4.7.4/socket.io.min.js"><\/scr'+'ipt>');}</script>
 <script>(function(){if(!localStorage.getItem('chapters_token'))window.location.href='/auth.html';})();</script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -732,7 +733,12 @@ const G = {
 };
 
 // ── SOCKET ────────────────────────────────────────────────────────────────────
-const socket = io();
+let socket;
+try { socket = io(); } catch(e) {
+  console.error('Socket.io failed to load:', e);
+  // Stub so onclick functions don't crash when calling socket.emit
+  socket = { emit:()=>{}, on:()=>{}, connected:false };
+}
 socket.on('connect', () => socket.emit('auth', { token: TOKEN }));
 socket.on('auth_error', () => { localStorage.removeItem('chapters_token'); window.location.href='/auth.html'; });
 socket.on('authed', () => {});
@@ -932,14 +938,14 @@ const B = {
   ],
 
   greetings: [
-    'heyyy wsp','hi!! how are u','hey omg finally','yo what's good',
+    'heyyy wsp','hi!! how are u','hey omg finally','yo what\'s good',
     'hii wsp with u','omg hey 👀','hiiii ur actually here lol',
   ],
 
   howAreYou: [
     'ngl kinda tired but okay i guess... u?','lowkey vibing rn wbu',
     'honestly??? a lil bored lol hence why im here 😭 u?',
-    'omg so-so rn, had a day y'know... wbu tho',
+    'omg so-so rn, had a day y\'know... wbu tho',
     'tired but its giving main character energy so 🤷 u?',
     'not terrible not great lol wbu',
     'honestly just existing rn 💀 u?',
@@ -959,9 +965,9 @@ const B = {
   ],
 
   bored: [
-    'SAME omg that's literally why im here 💀',
-    'bro same i've been on here for like an hour 😭',
-    'same... it's giving 3am energy ngl',
+    'SAME omg that\'s literally why im here 💀',
+    'bro same i\'ve been on here for like an hour 😭',
+    'same... it\'s giving 3am energy ngl',
     'lol same why are we like this 😭',
     'honestly relatable... what do u do when ur bored normally',
   ],
@@ -969,33 +975,33 @@ const B = {
   lonely: [
     'aww noo 😭 u okay tho?',
     'omg same tbh... this app kinda helps ngl',
-    'nooo don't say that 😭 ur talking to me rn so that counts right',
+    'nooo don\'t say that 😭 ur talking to me rn so that counts right',
     'lowkey same... it hits different at night fr',
   ],
 
   compliment: [
-    'omg stop 😭 ur too nice','aww that's actually so sweet ty!!',
-    'lmaoo okay i'll take it 😌','bestie ur sweet ty 🥺',
+    'omg stop 😭 ur too nice','aww that\'s actually so sweet ty!!',
+    'lmaoo okay i\'ll take it 😌','bestie ur sweet ty 🥺',
     'omg noo ur making me blush 💀','wait fr?? ty that made my day ngl',
   ],
 
   insult: [
-    'okay that's a bit much 😭 we just met lol',
-    'bro why 💀 i didn't even do anything',
+    'okay that\'s a bit much 😭 we just met lol',
+    'bro why 💀 i didn\'t even do anything',
     'lmaoo okay noted 😭 anyway...',
     'omg rude 😭 i thought we were vibing',
   ],
 
   bot: [
     'lmaoo no?? why would a bot be on here 💀',
-    'omg not this again 😭 im literally just a person who's bored',
-    'bro if i was a bot i'd be a lot more interesting ngl 💀',
+    'omg not this again 😭 im literally just a person who\'s bored',
+    'bro if i was a bot i\'d be a lot more interesting ngl 💀',
     'nooo lmao i promise im real... unfortunately 😭',
     'why does everyone ask this on anonymous apps 💀 no im not a bot',
   ],
 
   weird: [
-    'ok that's a bit much lmaoo','omg 😭 okay then...',
+    'ok that\'s a bit much lmaoo','omg 😭 okay then...',
     'bro what 💀 lol','ngl not sure how to respond to that 😭',
     'ok moving on 💀','i— okay 😭',
   ],
@@ -1015,14 +1021,14 @@ const B = {
   ],
 
   food: [
-    'omg don't talk to me about food im starving rn 😭',
+    'omg don\'t talk to me about food im starving rn 😭',
     'ngl i eat the same 3 meals forever 💀 u?',
     'bro food is literally the only thing getting me through rn',
-    'omg what's ur fav food?? this is important info 👀',
+    'omg what\'s ur fav food?? this is important info 👀',
   ],
 
   school: [
-    'omg don't remind me 😭 school is literally so draining',
+    'omg don\'t remind me 😭 school is literally so draining',
     'ngl im procrastinating on an assignment rn 💀',
     'school is a concept i refuse to acknowledge rn',
     'ugh same... what are u studying?',
@@ -1045,7 +1051,7 @@ const B = {
     'somewhere on earth lol 🌍 u?',
     'ngl just vibing in my room 💀 where are u from?',
     'lol internet 🫠 but like generally where are u?',
-    'im from a place that's too boring to mention 😭 u?',
+    'im from a place that\'s too boring to mention 😭 u?',
   ],
 
   age: [
@@ -1053,19 +1059,19 @@ const B = {
   ],
 
   feelings: [
-    'omg what's going on?? wanna talk about it',
+    'omg what\'s going on?? wanna talk about it',
     'aww no 😭 r u okay?',
-    'ngl anonymous chats r actually good for this stuff... what's up',
+    'ngl anonymous chats r actually good for this stuff... what\'s up',
     'omg say more im listening 👀',
   ],
 
   relate: [
     'omg literally same 💀','fr no cap','bestie same 😭',
-    'wait that's so relatable','LMAOO same tho','omg i feel that',
+    'wait that\'s so relatable','LMAOO same tho','omg i feel that',
   ],
 
   funny: [
-    'LMAOOOO 💀','omg stop 😭','bro i-','wait that's actually so funny 💀',
+    'LMAOOOO 💀','omg stop 😭','bro i-','wait that\'s actually so funny 💀',
     'LMAO why 😭','okay that got me 💀','omg LMAOOO',
   ],
 
@@ -1076,7 +1082,7 @@ const B = {
 
   bye: [
     'aww nooo already?? 😭','omg it was so nice talking to u fr',
-    'noo don't go 😭 okay fine... take care tho!!',
+    'noo don\'t go 😭 okay fine... take care tho!!',
     'aww bye!! hope u have a good rest of ur day 🥺',
     'omg this was so fun actually!! bye 💀',
   ],
@@ -1093,7 +1099,7 @@ const B = {
   followUp: [
     'wait tell me more 👀','omg and then what??','no bc continue 💀',
     'wait fr?? 😭','omg i need more context 👀','bro say more',
-    'ngl that's interesting... keep going','wait what 💀',
+    'ngl that\'s interesting... keep going','wait what 💀',
   ],
 
   fillers: [
@@ -1104,8 +1110,8 @@ const B = {
     'like what even is the appeal of this app to u lol',
     'wait have u talked to interesting people on here before',
     'omg i wonder what the other person is doing rn like are they bored too',
-    'ngl i kinda like that we don't know each other it's freeing somehow',
-    'this is giving strangers on a train energy and i'm here for it 💀',
+    'ngl i kinda like that we don\'t know each other it\'s freeing somehow',
+    'this is giving strangers on a train energy and i\'m here for it 💀',
     'like do u prefer talking to strangers or people u know?? be honest',
   ],
 };
