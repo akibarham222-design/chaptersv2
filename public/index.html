@@ -635,6 +635,7 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
         <button class="ctab on" id="atab-pending" onclick="adminTab('pending')">⏳ Pending</button>
         <button class="ctab" id="atab-all" onclick="adminTab('all')">📋 All Confessions</button>
         <button class="ctab" id="atab-reports" onclick="adminTab('reports')">🚨 Reports</button>
+        <button class="ctab" id="atab-mods" onclick="adminTab('mods')" style="display:none;">🛡 Moderators</button>
       </div>
 
       <!-- Pending confessions -->
@@ -650,6 +651,18 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
       <!-- Reports -->
       <div id="admin-reports" style="display:none;">
         <div id="adminReportsList"><div class="empty-st"><div class="emt-s">Loading...</div></div></div>
+      </div>
+
+      <!-- Moderators (admin only) -->
+      <div id="admin-mods" style="display:none;">
+        <!-- Search -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <input id="modSearchInp" class="winp" placeholder="Search by username or email..." style="flex:1;font-size:14px;" oninput="modSearch()" />
+        </div>
+        <div id="modSearchResults" style="margin-bottom:20px;"></div>
+        <!-- Current mods list -->
+        <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Current Moderators</div>
+        <div id="modCurrentList"><div class="empty-st"><div class="emt-s">Loading...</div></div></div>
       </div>
     </div>
   </div>
@@ -769,15 +782,19 @@ const _utag = document.getElementById('usernameTag');
 if (_utag && USERNAME) _utag.textContent = USERNAME;
 function logout(){ localStorage.removeItem('chapters_token'); localStorage.removeItem('chapters_username'); window.location.href='/auth.html'; }
 
-// Check if this account is admin
+// Check if this account is admin or moderator
 (async () => {
   try {
     const r = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + TOKEN } });
     const d = await r.json();
     if (d.is_admin) {
-      IS_ADMIN = true;
+      IS_ADMIN = true; IS_MOD = true;
       const btn = document.getElementById('adminNavBtn');
       if (btn) btn.style.display = '';
+    } else if (d.is_moderator) {
+      IS_MOD = true;
+      const btn = document.getElementById('adminNavBtn');
+      if (btn) { btn.style.display = ''; btn.textContent = '🛡 Mod'; }
     }
   } catch {}
 })();
@@ -1741,20 +1758,26 @@ function mpHeadConfirm() {
 
 // ── ADMIN PANEL ───────────────────────────────────────────────────────────────
 let IS_ADMIN = false;
+let IS_MOD = false;
 
 function openAdminPanel() {
   showView('admin');
+  // Show Moderators tab only for full admin
+  document.getElementById('atab-mods').style.display = IS_ADMIN ? '' : 'none';
   adminTab('pending');
 }
 
 function adminTab(tab) {
-  ['pending','all','reports'].forEach(t => {
-    document.getElementById('admin-' + t).style.display = t === tab ? 'block' : 'none';
-    document.getElementById('atab-' + t).classList.toggle('on', t === tab);
+  ['pending','all','reports','mods'].forEach(t => {
+    const el = document.getElementById('admin-' + t);
+    const tb = document.getElementById('atab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+    if (tb) tb.classList.toggle('on', t === tab);
   });
   if (tab === 'pending') loadAdminPending();
   if (tab === 'all')     loadAdminAll();
   if (tab === 'reports') loadAdminReports();
+  if (tab === 'mods')    loadModerators();
 }
 
 async function adminFetch(url, opts = {}) {
@@ -1765,6 +1788,24 @@ async function adminFetch(url, opts = {}) {
   return r.json();
 }
 
+function confCard(c, showDelete) {
+  const poster = c.poster_email
+    ? `<div class="acard-meta" style="margin-top:4px;">👤 <b>${esc(c.poster_username||'?')}</b> · <span style="color:var(--amber)">${esc(c.poster_email)}</span></div>`
+    : (c.poster_username ? `<div class="acard-meta" style="margin-top:4px;">👤 <b>${esc(c.poster_username)}</b></div>` : '');
+  return `<div class="acard" id="ac-${c.id}">
+    <div><span class="acard-status ${c.status||'approved'}">${c.status||'approved'}</span></div>
+    <div class="acard-meta">From <b>${esc(c.from_name)}</b> → To <b>${esc(c.to_name)}</b> · ${new Date(c.created_at*1000).toLocaleString()}</div>
+    ${poster}
+    <div class="acard-body">${esc(c.content)}</div>
+    ${c.song_title?`<div class="acard-meta">🎵 ${esc(c.song_title)} — ${esc(c.song_artist||'')}</div>`:''}
+    <div class="acard-acts">
+      ${c.status!=='approved'?`<button class="btn-approve" onclick="adminApprove('${c.id}')">✓ Approve</button>`:''}
+      ${c.status!=='rejected'?`<button class="btn-reject" onclick="adminReject('${c.id}')">✕ Reject</button>`:''}
+      ${showDelete?`<button class="btn-adel" onclick="adminDelete('${c.id}')">🗑 Delete</button>`:''}
+    </div>
+  </div>`;
+}
+
 async function loadAdminPending() {
   const el = document.getElementById('adminPendingList');
   el.innerHTML = '<div class="empty-st"><div class="emt-s">Loading...</div></div>';
@@ -1773,18 +1814,7 @@ async function loadAdminPending() {
     el.innerHTML = '<div class="empty-st"><div class="emt-i">✓</div><div class="emt-s">No pending confessions</div></div>';
     return;
   }
-  el.innerHTML = d.confessions.map(c => `
-    <div class="acard" id="ac-${c.id}">
-      <div><span class="acard-status pending">Pending</span></div>
-      <div class="acard-meta">From <b>${esc(c.from_name)}</b> → To <b>${esc(c.to_name)}</b> · ${new Date(c.created_at * 1000).toLocaleString()}</div>
-      <div class="acard-body">${esc(c.content)}</div>
-      ${c.song_title ? `<div class="acard-meta">🎵 ${esc(c.song_title)} — ${esc(c.song_artist || '')}</div>` : ''}
-      <div class="acard-acts">
-        <button class="btn-approve" onclick="adminApprove('${c.id}')">✓ Approve</button>
-        <button class="btn-reject"  onclick="adminReject('${c.id}')">✕ Reject</button>
-        <button class="btn-adel"    onclick="adminDelete('${c.id}')">🗑 Delete</button>
-      </div>
-    </div>`).join('');
+  el.innerHTML = d.confessions.map(c => confCard(c, IS_ADMIN)).join('');
 }
 
 async function loadAdminAll() {
@@ -1795,17 +1825,7 @@ async function loadAdminAll() {
     el.innerHTML = '<div class="empty-st"><div class="emt-s">No confessions yet</div></div>';
     return;
   }
-  el.innerHTML = d.confessions.map(c => `
-    <div class="acard" id="ac-${c.id}">
-      <div><span class="acard-status ${c.status || 'approved'}">${c.status || 'approved'}</span></div>
-      <div class="acard-meta">From <b>${esc(c.from_name)}</b> → To <b>${esc(c.to_name)}</b> · ${new Date(c.created_at * 1000).toLocaleString()}</div>
-      <div class="acard-body">${esc(c.content)}</div>
-      <div class="acard-acts">
-        ${c.status !== 'approved' ? `<button class="btn-approve" onclick="adminApprove('${c.id}')">✓ Approve</button>` : ''}
-        ${c.status !== 'rejected' ? `<button class="btn-reject"  onclick="adminReject('${c.id}')">✕ Reject</button>` : ''}
-        <button class="btn-adel" onclick="adminDelete('${c.id}')">🗑 Delete</button>
-      </div>
-    </div>`).join('');
+  el.innerHTML = d.confessions.map(c => confCard(c, IS_ADMIN)).join('');
 }
 
 async function loadAdminReports() {
@@ -1816,24 +1836,88 @@ async function loadAdminReports() {
     el.innerHTML = '<div class="empty-st"><div class="emt-i">✓</div><div class="emt-s">No reports</div></div>';
     return;
   }
-  el.innerHTML = d.reports.map(r => `
-    <div class="acard" id="ar-${r.id}" style="${r.read_at ? 'opacity:.6' : ''}">
-      ${!r.read_at ? '<span class="acard-status pending">New</span>' : '<span class="acard-status approved">Read</span>'}
-      <div class="acard-meta"><b>${esc(r.reporter_name || '?')}</b> reported <b>${esc(r.reported_name || '?')}</b> · ${new Date(r.created_at * 1000).toLocaleString()}</div>
-      <div class="acard-body">${esc(r.reason || 'No reason given')}</div>
+  el.innerHTML = d.reports.map(r => {
+    const emailRow = IS_ADMIN && r.reported_email
+      ? `<div class="acard-meta" style="margin-top:3px;">📧 Reporter: <span style="color:var(--amber)">${esc(r.reporter_email||'')}</span> · Reported: <span style="color:var(--rose)">${esc(r.reported_email||'')}</span></div>`
+      : '';
+    return `<div class="acard" id="ar-${r.id}" style="${r.read_at?'opacity:.65':''}">
+      ${!r.read_at?'<span class="acard-status pending">New</span>':'<span class="acard-status approved">Read</span>'}
+      <div class="acard-meta"><b>${esc(r.reporter_name||'?')}</b> reported <b>${esc(r.reported_name||'?')}</b> · ${new Date(r.created_at*1000).toLocaleString()}</div>
+      ${emailRow}
+      <div class="acard-body">${esc(r.reason||'No reason given')}</div>
       <div class="acard-acts">
-        ${!r.read_at ? `<button class="btn-approve" onclick="adminMarkRead('${r.id}')">✓ Mark read</button>` : ''}
+        ${!r.read_at?`<button class="btn-approve" onclick="adminMarkRead('${r.id}')">✓ Mark read</button>`:''}
         ${!r.is_banned
-          ? `<button class="btn-ban" onclick="adminBan('${r.reported_account}','${esc(r.reported_name || '')}','${r.id}')">🚫 Ban user</button>`
-          : `<button class="btn-reject" onclick="adminUnban('${r.reported_account}')">↩ Unban</button>`}
+          ?`<button class="btn-ban" onclick="adminBan('${r.reported_account}','${esc(r.reported_name||'')}')">🚫 Ban user</button>`
+          :IS_ADMIN?`<button class="btn-reject" onclick="adminUnban('${r.reported_account}')">↩ Unban</button>`:'<span style="font-size:11px;color:var(--rose);">Banned</span>'}
       </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Moderator management (admin only) ─────────────────────────────────────────
+let _modSearchTO = null;
+function modSearch() {
+  clearTimeout(_modSearchTO);
+  _modSearchTO = setTimeout(async () => {
+    const q = document.getElementById('modSearchInp').value.trim();
+    const el = document.getElementById('modSearchResults');
+    if (q.length < 2) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Searching...</div>';
+    const d = await adminFetch('/api/admin/users/search?q=' + encodeURIComponent(q));
+    if (!d.users || d.users.length === 0) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted);">No users found.</div>';
+      return;
+    }
+    el.innerHTML = d.users.map(u => `
+      <div class="acard" style="padding:12px 16px;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--txt);">${esc(u.username)}</div>
+          <div style="font-size:11px;color:var(--amber);margin-top:2px;">${esc(u.email||'')}</div>
+          ${u.is_banned?'<div style="font-size:10px;color:var(--rose);margin-top:2px;">⛔ Banned</div>':''}
+        </div>
+        <div>
+          ${u.is_moderator
+            ? `<button class="btn-reject" onclick="revokeMod('${u.id}','${esc(u.username)}')">Remove mod</button>`
+            : `<button class="btn-approve" onclick="grantMod('${u.id}','${esc(u.username)}')">+ Make moderator</button>`}
+        </div>
+      </div>`).join('');
+  }, 350);
+}
+
+async function grantMod(id, name) {
+  const d = await adminFetch('/api/admin/mod/grant/' + id, { method: 'POST' });
+  if (d.success) { alert(name + ' is now a moderator.'); modSearch(); loadModerators(); }
+}
+
+async function revokeMod(id, name) {
+  if (!confirm('Remove moderator from ' + name + '?')) return;
+  await adminFetch('/api/admin/mod/revoke/' + id, { method: 'POST' });
+  modSearch(); loadModerators();
+}
+
+async function loadModerators() {
+  const el = document.getElementById('modCurrentList');
+  el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Loading...</div>';
+  const d = await adminFetch('/api/admin/moderators');
+  if (!d.moderators || d.moderators.length === 0) {
+    el.innerHTML = '<div class="empty-st"><div class="emt-s">No moderators yet</div></div>';
+    return;
+  }
+  el.innerHTML = d.moderators.map(m => `
+    <div class="acard" style="padding:12px 16px;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--txt);">${esc(m.username)}</div>
+        <div style="font-size:11px;color:var(--amber);margin-top:2px;">${esc(m.email||'')}</div>
+      </div>
+      <button class="btn-reject" onclick="revokeMod('${m.id}','${esc(m.username)}')">Remove</button>
     </div>`).join('');
 }
 
+// ── Actions ───────────────────────────────────────────────────────────────────
 async function adminApprove(id) {
   await adminFetch('/api/admin/confessions/' + id + '/approve', { method: 'POST' });
   document.getElementById('ac-' + id)?.remove();
-  loadAdminPending();
 }
 
 async function adminReject(id) {
@@ -1852,7 +1936,7 @@ async function adminMarkRead(id) {
   loadAdminReports();
 }
 
-async function adminBan(accountId, name, reportId) {
+async function adminBan(accountId, name) {
   if (!confirm('Ban ' + name + '? They will be immediately signed out.')) return;
   const d = await adminFetch('/api/admin/ban/' + accountId, { method: 'POST' });
   if (d.success) { alert(name + ' has been banned.'); loadAdminReports(); }

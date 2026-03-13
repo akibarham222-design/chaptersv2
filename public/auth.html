@@ -114,6 +114,9 @@ input::placeholder{color:var(--muted);font-style:italic;}
 /* Error */
 .error-box{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.25);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--rose);display:none;margin-bottom:12px;line-height:1.5;}
 .error-box.show{display:block;}
+.suggest-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.suggest-chip{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);border-radius:20px;padding:4px 12px;font-size:11px;color:#a78bfa;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
+.suggest-chip:hover{background:rgba(139,92,246,.25);color:#fff;}
 
 /* Submit */
 .btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,var(--violet),var(--teal));border:none;border-radius:10px;cursor:pointer;font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:#fff;letter-spacing:.5px;transition:all .3s;position:relative;overflow:hidden;box-shadow:0 6px 22px rgba(139,92,246,.3);}
@@ -462,7 +465,17 @@ async function register() {
   try {
     const r = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,email})});
     const d = await r.json();
-    if (!r.ok) { showErr('reg-err',d.error||'Something went wrong.'); btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Create account'; return; }
+    if (!r.ok) {
+      const errBox = document.getElementById('reg-err');
+      errBox.innerHTML = d.error || 'Something went wrong.';
+      if (d.suggestions && d.suggestions.length) {
+        errBox.innerHTML += `<div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.4);">Try one of these:</div><div class="suggest-row">${
+          d.suggestions.map(s => `<span class="suggest-chip" onclick="document.getElementById('reg-user').value='${s}';valUser();document.getElementById('reg-err').classList.remove('show');">${s}</span>`).join('')
+        }</div>`;
+      }
+      errBox.classList.add('show');
+      btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Create account'; return;
+    }
     localStorage.setItem('chapters_token',d.token); localStorage.setItem('chapters_username',d.username);
     showSuccess('Welcome, '+d.username+'.','Your story begins now.');
   } catch { showErr('reg-err','Connection error.'); btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Create account'; }
