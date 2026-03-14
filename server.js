@@ -6,6 +6,29 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+
+// Ensure uploads directory exists
+const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+// Multer config — images only, max 5MB
+const adStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, 'ad_' + Date.now() + ext);
+  }
+});
+const adUpload = multer({
+  storage: adStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/^image\//.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Images only.'));
+  }
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -187,6 +210,13 @@ db.exec(`
     token TEXT PRIMARY KEY,
     account_id TEXT NOT NULL,
     expires_at INTEGER NOT NULL,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS ads (
+    id TEXT PRIMARY KEY,
+    image_url TEXT NOT NULL,
+    link_url TEXT,
     created_at INTEGER DEFAULT (strftime('%s','now'))
   );
 `);
@@ -956,6 +986,31 @@ app.get('/api/admin/users/search', inAppAdminAuth, (req, res) => {
   res.json({ users });
 });
 
+// All members paginated + real-time search — ADMIN ONLY
+app.get('/api/admin/members', inAppAdminAuth, (req, res) => {
+  const q = (req.query.q || '').trim();
+  const page = parseInt(req.query.page) || 1;
+  const limit = 25;
+  const offset = (page - 1) * limit;
+  const pattern = '%' + q + '%';
+  const where = q.length > 0 ? 'WHERE (a.username LIKE ? OR a.email LIKE ?)' : '';
+  const params = q.length > 0 ? [pattern, pattern, limit, offset] : [limit, offset];
+  const users = db.prepare(`
+    SELECT a.id, a.username, a.email, a.created_at, a.is_moderator, a.oauth_provider,
+      CASE WHEN b.account_id IS NOT NULL THEN 1 ELSE 0 END as is_banned,
+      (SELECT COUNT(*) FROM conversations WHERE account_a = a.id OR account_b = a.id) as chat_count,
+      (SELECT COUNT(*) FROM reports WHERE reported_account = a.id) as report_count
+    FROM accounts a
+    LEFT JOIN banned_accounts b ON b.account_id = a.id
+    ${where}
+    ORDER BY a.created_at DESC LIMIT ? OFFSET ?
+  `).all(...params);
+  const total = q.length > 0
+    ? db.prepare(`SELECT COUNT(*) as c FROM accounts a WHERE (a.username LIKE ? OR a.email LIKE ?)`).get(pattern, pattern).c
+    : db.prepare(`SELECT COUNT(*) as c FROM accounts`).get().c;
+  res.json({ users, total, page });
+});
+
 // Grant moderator — ADMIN ONLY
 app.post('/api/admin/mod/grant/:accountId', inAppAdminAuth, (req, res) => {
   const acc = db.prepare(`SELECT * FROM accounts WHERE id = ?`).get(req.params.accountId);
@@ -974,6 +1029,42 @@ app.post('/api/admin/mod/revoke/:accountId', inAppAdminAuth, (req, res) => {
 app.get('/api/admin/moderators', inAppAdminAuth, (req, res) => {
   const mods = db.prepare(`SELECT id, username, email, created_at FROM accounts WHERE is_moderator = 1`).all();
   res.json({ moderators: mods });
+});
+
+// ── Ad Routes ─────────────────────────────────────────────────────────────────
+
+// Public — get current active ad (shown after login)
+app.get('/api/ad', (req, res) => {
+  const ad = db.prepare(`SELECT * FROM ads ORDER BY created_at DESC LIMIT 1`).get();
+  res.json({ ad: ad || null });
+});
+
+// Admin — upload image from device
+app.post('/api/admin/ad/upload', inAppAdminAuth, (req, res) => {
+  adUpload.single('image')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'Upload failed.' });
+    if (!req.file) return res.status(400).json({ error: 'No file received.' });
+    const url = '/uploads/' + req.file.filename;
+    res.json({ success: true, url });
+  });
+});
+
+// Admin — post new ad (image URL + optional link)
+app.post('/api/admin/ad', inAppAdminAuth, (req, res) => {
+  const { image_url, link_url } = req.body;
+  if (!image_url) return res.status(400).json({ error: 'Image URL required.' });
+  try { new URL(image_url); } catch { return res.status(400).json({ error: 'Invalid image URL.' }); }
+  // Only one active ad at a time — clear old ones
+  db.prepare(`DELETE FROM ads`).run();
+  const id = uuidv4();
+  db.prepare(`INSERT INTO ads (id, image_url, link_url) VALUES (?, ?, ?)`).run(id, image_url, link_url || null);
+  res.json({ success: true, id });
+});
+
+// Admin — delete current ad
+app.delete('/api/admin/ad', inAppAdminAuth, (req, res) => {
+  db.prepare(`DELETE FROM ads`).run();
+  res.json({ success: true });
 });
 
 // Make a user admin (one-time setup — secured by ADMIN_PASSWORD)

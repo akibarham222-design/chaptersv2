@@ -28,10 +28,11 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.022;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
 #app{height:100dvh;display:flex;flex-direction:column;position:relative;z-index:2;}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--b1);flex-shrink:0;position:relative;z-index:20;background:rgba(7,7,15,.85);backdrop-filter:blur(20px);}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 28px;border-bottom:1px solid var(--b1);flex-shrink:0;position:relative;z-index:20;background:rgba(7,7,15,.85);backdrop-filter:blur(20px);}
 .logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;cursor:pointer;background:linear-gradient(130deg,#fff 20%,var(--violet2) 65%,var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.3px;transition:opacity .2s;}
 .logo:hover{opacity:.75;}
-.topbar-r{display:flex;align-items:center;gap:8px;}
+.topbar-r{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;flex-shrink:1;min-width:0;}
+.topbar-r::-webkit-scrollbar{display:none;}
 .pill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt2);background:var(--s1);border:1px solid var(--b1);padding:6px 13px;border-radius:100px;}
 .gdot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:gpulse 2.5s ease-in-out infinite;}
 @keyframes gpulse{0%,100%{opacity:.5;transform:scale(1);}50%{opacity:1;transform:scale(1.3);box-shadow:0 0 7px var(--green);}}
@@ -450,7 +451,7 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
   pointer-events:none;
 }
 @media(max-width:600px){
-  .topbar{padding:11px 15px;}.topbar-r{gap:5px;}.pill{display:none;}.uchip{display:none;}
+  .topbar{padding:11px 15px;}.logo{flex-shrink:0;}.topbar-r{gap:5px;}.pill{display:none;}.uchip{display:none;}
   .msgs,.chat-inp-area,.slist,.reader-msgs,.conf-list,.write-sc,.conf-sbar{padding-left:15px;padding-right:15px;}
   .chat-hdr,.vhdr,.conf-hdr2{padding-left:15px;padding-right:15px;}
   .msg{max-width:88%;}.cconf{padding:16px 14px;}
@@ -635,7 +636,9 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
         <button class="ctab on" id="atab-pending" onclick="adminTab('pending')">⏳ Pending</button>
         <button class="ctab" id="atab-all" onclick="adminTab('all')">📋 All Confessions</button>
         <button class="ctab" id="atab-reports" onclick="adminTab('reports')">🚨 Reports</button>
+        <button class="ctab" id="atab-members" onclick="adminTab('members')" style="display:none;">👥 Members</button>
         <button class="ctab" id="atab-mods" onclick="adminTab('mods')" style="display:none;">🛡 Moderators</button>
+        <button class="ctab" id="atab-ads" onclick="adminTab('ads')" style="display:none;">📢 Ads</button>
       </div>
 
       <!-- Pending confessions -->
@@ -653,6 +656,59 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
         <div id="adminReportsList"><div class="empty-st"><div class="emt-s">Loading...</div></div></div>
       </div>
 
+      <!-- Members (admin only) -->
+      <div id="admin-members" style="display:none;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <input id="memberSearchInp" class="winp" placeholder="Search by username or email..." style="flex:1;font-size:14px;" oninput="memberSearchRealtime()" />
+          <span id="memberTotal" style="font-size:11px;color:var(--muted);white-space:nowrap;"></span>
+        </div>
+        <div id="membersList"><div class="empty-st"><div class="emt-s">Loading...</div></div></div>
+        <div id="membersPaging" style="display:flex;gap:8px;justify-content:center;margin-top:14px;"></div>
+      </div>
+
+      <!-- Ads (admin only) -->
+      <div id="admin-ads" style="display:none;">
+        <div id="adCurrentWrap" style="margin-bottom:20px;"></div>
+        <div class="acard" style="padding:18px 20px;">
+          <div style="font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;">Post New Ad</div>
+
+          <!-- Upload tabs -->
+          <div style="display:flex;gap:0;margin-bottom:14px;border:1px solid var(--b1);border-radius:8px;overflow:hidden;width:fit-content;">
+            <button id="adTabUrl" onclick="adInputTab('url')" style="padding:7px 18px;font-size:12px;background:rgba(139,92,246,.2);border:none;color:#a78bfa;cursor:pointer;font-weight:600;">🔗 URL</button>
+            <button id="adTabFile" onclick="adInputTab('file')" style="padding:7px 18px;font-size:12px;background:none;border:none;color:var(--muted);cursor:pointer;">📁 Upload</button>
+          </div>
+
+          <!-- URL input -->
+          <div id="adInputUrl">
+            <div class="wf" style="margin-bottom:10px;">
+              <label class="wlbl">Image URL</label>
+              <input type="url" class="winp" id="adImgUrl" placeholder="https://example.com/banner.jpg" style="font-size:14px;" />
+            </div>
+          </div>
+
+          <!-- File upload -->
+          <div id="adInputFile" style="display:none;">
+            <div class="wf" style="margin-bottom:10px;">
+              <label class="wlbl">Choose Image <span style="color:var(--muted);font-size:10px;">(JPG, PNG, GIF, WebP · max 5MB)</span></label>
+              <input type="file" id="adFileInp" accept="image/*" onchange="adFileChosen()" style="font-size:13px;color:var(--txt2);padding:8px 0;" />
+            </div>
+          </div>
+
+          <div class="wf" style="margin-bottom:14px;">
+            <label class="wlbl">Click URL <span style="color:var(--muted);font-size:10px;">(optional)</span></label>
+            <input type="url" class="winp" id="adLinkUrl" placeholder="https://example.com" style="font-size:14px;" />
+          </div>
+          <div id="adPreviewWrap" style="display:none;margin-bottom:14px;border-radius:10px;overflow:hidden;border:1px solid var(--b1);">
+            <img id="adPreviewImg" src="" style="width:100%;display:block;" />
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-approve" onclick="previewAd()" style="font-size:13px;padding:8px 16px;">👁 Preview</button>
+            <button class="btn-approve" onclick="postAd()" style="font-size:13px;padding:8px 16px;" id="adPostBtn">📢 Post Ad</button>
+          </div>
+          <div id="adErr" style="font-size:12px;color:var(--rose);margin-top:8px;"></div>
+        </div>
+      </div>
+
       <!-- Moderators (admin only) -->
       <div id="admin-mods" style="display:none;">
         <!-- Search -->
@@ -667,6 +723,17 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
     </div>
   </div>
 
+  </div>
+</div>
+
+<!-- AD OVERLAY — shown after login, cross appears after 2s -->
+<div id="adOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(18px);z-index:600;display:none;align-items:center;justify-content:center;">
+  <div style="position:relative;max-width:420px;width:90%;border-radius:16px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);">
+    <a id="adLink" href="#" target="_blank" rel="noopener noreferrer" onclick="return adLinkClick(event)">
+      <img id="adImg" src="" alt="Advertisement" style="width:100%;display:block;border-radius:16px;" />
+    </a>
+    <button id="adClose" onclick="closeAd()" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:16px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;transition:background .2s;">✕</button>
+    <div id="adTimer" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</div>
   </div>
 </div>
 
@@ -797,6 +864,8 @@ function logout(){ localStorage.removeItem('chapters_token'); localStorage.remov
       if (btn) { btn.style.display = ''; btn.textContent = '🛡 Mod'; }
     }
   } catch {}
+  // Show ad after login (non-admin users only)
+  if (!IS_ADMIN) setTimeout(checkAndShowAd, 800);
 })();
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -1762,13 +1831,14 @@ let IS_MOD = false;
 
 function openAdminPanel() {
   showView('admin');
-  // Show Moderators tab only for full admin
   document.getElementById('atab-mods').style.display = IS_ADMIN ? '' : 'none';
+  document.getElementById('atab-members').style.display = IS_ADMIN ? '' : 'none';
+  document.getElementById('atab-ads').style.display = IS_ADMIN ? '' : 'none';
   adminTab('pending');
 }
 
 function adminTab(tab) {
-  ['pending','all','reports','mods'].forEach(t => {
+  ['pending','all','reports','members','mods','ads'].forEach(t => {
     const el = document.getElementById('admin-' + t);
     const tb = document.getElementById('atab-' + t);
     if (el) el.style.display = t === tab ? 'block' : 'none';
@@ -1777,7 +1847,9 @@ function adminTab(tab) {
   if (tab === 'pending') loadAdminPending();
   if (tab === 'all')     loadAdminAll();
   if (tab === 'reports') loadAdminReports();
+  if (tab === 'members') loadMembers(1, '');
   if (tab === 'mods')    loadModerators();
+  if (tab === 'ads')     loadAdTab();
 }
 
 async function adminFetch(url, opts = {}) {
@@ -1853,6 +1925,88 @@ async function loadAdminReports() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Members (admin only) ──────────────────────────────────────────────────────
+let _memberTO = null;
+let _memberPage = 1;
+let _memberQ = '';
+
+function memberSearchRealtime() {
+  clearTimeout(_memberTO);
+  _memberTO = setTimeout(() => {
+    _memberQ = document.getElementById('memberSearchInp').value.trim();
+    _memberPage = 1;
+    loadMembers(1, _memberQ);
+  }, 250);
+}
+
+async function loadMembers(page, q) {
+  _memberPage = page; _memberQ = q;
+  const el = document.getElementById('membersList');
+  el.innerHTML = '<div class="empty-st"><div class="emt-s">Loading...</div></div>';
+  const url = `/api/admin/members?page=${page}&q=${encodeURIComponent(q)}`;
+  const d = await adminFetch(url);
+  if (!d.users || d.users.length === 0) {
+    el.innerHTML = '<div class="empty-st"><div class="emt-i">👥</div><div class="emt-s">No members found</div></div>';
+    document.getElementById('memberTotal').textContent = '';
+    document.getElementById('membersPaging').innerHTML = '';
+    return;
+  }
+  document.getElementById('memberTotal').textContent = `${d.total} total`;
+  el.innerHTML = d.users.map(u => `
+    <div class="acard" style="padding:13px 16px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+            <span style="font-size:15px;font-weight:600;color:var(--txt);">${esc(u.username)}</span>
+            ${u.is_moderator ? '<span style="font-size:10px;background:rgba(139,92,246,.2);color:#a78bfa;padding:2px 7px;border-radius:10px;">MOD</span>' : ''}
+            ${u.is_banned ? '<span style="font-size:10px;background:rgba(244,63,94,.15);color:var(--rose);padding:2px 7px;border-radius:10px;">BANNED</span>' : ''}
+            ${u.oauth_provider ? `<span style="font-size:10px;background:rgba(16,185,129,.12);color:#10b981;padding:2px 7px;border-radius:10px;">${esc(u.oauth_provider)}</span>` : ''}
+          </div>
+          <div style="font-size:11px;color:var(--amber);margin-top:3px;">${esc(u.email||'—')}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px;">
+            Joined ${new Date(u.created_at*1000).toLocaleDateString()} · 
+            ${u.chat_count} chats · 
+            ${u.report_count > 0 ? `<span style="color:var(--rose);">${u.report_count} reports</span>` : '0 reports'}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          ${!u.is_banned
+            ? `<button class="btn-ban" style="font-size:11px;padding:5px 10px;" onclick="adminBanMember('${u.id}','${esc(u.username)}')">🚫 Ban</button>`
+            : `<button class="btn-reject" style="font-size:11px;padding:5px 10px;" onclick="adminUnban('${u.id}')">↩ Unban</button>`}
+        </div>
+      </div>
+    </div>`).join('');
+
+  // Pagination
+  const totalPages = Math.ceil(d.total / 25);
+  const pg = document.getElementById('membersPaging');
+  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  pg.innerHTML = '';
+  if (page > 1) {
+    const b = document.createElement('button');
+    b.className = 'btn-approve'; b.style.cssText = 'font-size:12px;padding:5px 12px;';
+    b.textContent = '← Prev'; b.onclick = () => loadMembers(page-1, _memberQ);
+    pg.appendChild(b);
+  }
+  const sp = document.createElement('span');
+  sp.style.cssText = 'font-size:12px;color:var(--muted);align-self:center;';
+  sp.textContent = `${page} / ${totalPages}`;
+  pg.appendChild(sp);
+  if (page < totalPages) {
+    const b = document.createElement('button');
+    b.className = 'btn-approve'; b.style.cssText = 'font-size:12px;padding:5px 12px;';
+    b.textContent = 'Next →'; b.onclick = () => loadMembers(page+1, _memberQ);
+    pg.appendChild(b);
+  }
+}
+
+async function adminBanMember(accountId, name) {
+  if (!confirm('Ban ' + name + '? They will be immediately signed out.')) return;
+  const d = await adminFetch('/api/admin/ban/' + accountId, { method: 'POST' });
+  if (d.success) loadMembers(_memberPage, _memberQ);
+  else alert(d.error || 'Error');
 }
 
 // ── Moderator management (admin only) ─────────────────────────────────────────
@@ -1946,6 +2100,169 @@ async function adminBan(accountId, name) {
 async function adminUnban(accountId) {
   await adminFetch('/api/admin/unban/' + accountId, { method: 'POST' });
   loadAdminReports();
+}
+
+// ── ADS ───────────────────────────────────────────────────────────────────────
+let _adShown = false;
+
+async function checkAndShowAd() {
+  if (_adShown) return;
+  // Only show once per session
+  if (sessionStorage.getItem('ad_seen')) return;
+  try {
+    const r = await fetch('/api/ad');
+    const d = await r.json();
+    if (!d.ad) return;
+    _adShown = true;
+    sessionStorage.setItem('ad_seen', '1');
+    const ov = document.getElementById('adOverlay');
+    const img = document.getElementById('adImg');
+    const lnk = document.getElementById('adLink');
+    const timer = document.getElementById('adTimer');
+    const closeBtn = document.getElementById('adClose');
+    img.src = d.ad.image_url;
+    if (d.ad.link_url) {
+      lnk.href = d.ad.link_url;
+    } else {
+      lnk.href = '#';
+    }
+    lnk._hasLink = !!d.ad.link_url;
+    ov.style.display = 'flex';
+    // Countdown 2s then show X
+    let sec = 2;
+    timer.textContent = sec;
+    timer.style.display = 'flex';
+    closeBtn.style.display = 'none';
+    const tick = setInterval(() => {
+      sec--;
+      if (sec <= 0) {
+        clearInterval(tick);
+        timer.style.display = 'none';
+        closeBtn.style.display = 'flex';
+      } else {
+        timer.textContent = sec;
+      }
+    }, 1000);
+  } catch {}
+}
+
+function adLinkClick(e) {
+  const lnk = document.getElementById('adLink');
+  if (!lnk._hasLink) { e.preventDefault(); return false; }
+  closeAd();
+  return true;
+}
+
+function closeAd() {
+  document.getElementById('adOverlay').style.display = 'none';
+}
+
+// ── Admin Ad Management ───────────────────────────────────────────────────────
+// ── Admin Ad Management ───────────────────────────────────────────────────────
+let _adMode = 'url'; // 'url' or 'file'
+let _uploadedAdUrl = null;
+
+function adInputTab(tab) {
+  _adMode = tab;
+  document.getElementById('adInputUrl').style.display  = tab === 'url'  ? 'block' : 'none';
+  document.getElementById('adInputFile').style.display = tab === 'file' ? 'block' : 'none';
+  document.getElementById('adTabUrl').style.background  = tab === 'url'  ? 'rgba(139,92,246,.2)' : 'none';
+  document.getElementById('adTabUrl').style.color       = tab === 'url'  ? '#a78bfa' : 'var(--muted)';
+  document.getElementById('adTabFile').style.background = tab === 'file' ? 'rgba(139,92,246,.2)' : 'none';
+  document.getElementById('adTabFile').style.color      = tab === 'file' ? '#a78bfa' : 'var(--muted)';
+  document.getElementById('adPreviewWrap').style.display = 'none';
+  _uploadedAdUrl = null;
+}
+
+function adFileChosen() {
+  const file = document.getElementById('adFileInp').files[0];
+  if (!file) return;
+  // Show local preview instantly
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('adPreviewImg').src = e.target.result;
+    document.getElementById('adPreviewWrap').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+  _uploadedAdUrl = null; // reset — will upload on post
+}
+
+async function loadAdTab() {
+  const wrap = document.getElementById('adCurrentWrap');
+  const d = await adminFetch('/api/ad');
+  if (!d.ad) {
+    wrap.innerHTML = '<div style="font-size:13px;color:var(--muted);margin-bottom:4px;">No active ad right now.</div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="acard" style="padding:16px 18px;">
+      <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--amber);margin-bottom:10px;">Active Ad</div>
+      <img src="${esc(d.ad.image_url)}" style="width:100%;border-radius:8px;margin-bottom:10px;border:1px solid var(--b1);" />
+      ${d.ad.link_url ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Links to: ${esc(d.ad.link_url)}</div>` : ''}
+      <button class="btn-adel" onclick="deleteAd()" style="font-size:13px;padding:7px 16px;">🗑 Remove Ad</button>
+    </div>`;
+}
+
+function previewAd() {
+  if (_adMode === 'url') {
+    const url = document.getElementById('adImgUrl').value.trim();
+    if (!url) { document.getElementById('adErr').textContent = 'Enter an image URL first.'; return; }
+    document.getElementById('adPreviewImg').src = url;
+    document.getElementById('adPreviewWrap').style.display = 'block';
+  }
+  // File preview is shown automatically on file select
+  document.getElementById('adErr').textContent = '';
+}
+
+async function postAd() {
+  const link_url = document.getElementById('adLinkUrl').value.trim();
+  const btn = document.getElementById('adPostBtn');
+  const errEl = document.getElementById('adErr');
+  errEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'Posting...';
+
+  let image_url = null;
+
+  if (_adMode === 'url') {
+    image_url = document.getElementById('adImgUrl').value.trim();
+    if (!image_url) { errEl.textContent = 'Image URL is required.'; btn.disabled=false; btn.textContent='📢 Post Ad'; return; }
+  } else {
+    // Upload file first
+    const file = document.getElementById('adFileInp').files[0];
+    if (!file) { errEl.textContent = 'Please choose an image file.'; btn.disabled=false; btn.textContent='📢 Post Ad'; return; }
+    btn.textContent = 'Uploading...';
+    const form = new FormData();
+    form.append('image', file);
+    try {
+      const r = await fetch('/api/admin/ad/upload', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TOKEN },
+        body: form
+      });
+      const d = await r.json();
+      if (!d.success) { errEl.textContent = d.error || 'Upload failed.'; btn.disabled=false; btn.textContent='📢 Post Ad'; return; }
+      image_url = d.url;
+    } catch { errEl.textContent = 'Upload error.'; btn.disabled=false; btn.textContent='📢 Post Ad'; return; }
+  }
+
+  const d = await adminFetch('/api/admin/ad', { method: 'POST', body: JSON.stringify({ image_url, link_url }) });
+  btn.disabled = false; btn.textContent = '📢 Post Ad';
+  if (d.success) {
+    document.getElementById('adImgUrl').value = '';
+    document.getElementById('adLinkUrl').value = '';
+    document.getElementById('adFileInp').value = '';
+    document.getElementById('adPreviewWrap').style.display = 'none';
+    _uploadedAdUrl = null;
+    loadAdTab();
+  } else {
+    errEl.textContent = d.error || 'Error posting ad.';
+  }
+}
+
+async function deleteAd() {
+  if (!confirm('Remove the current ad?')) return;
+  await adminFetch('/api/admin/ad', { method: 'DELETE' });
+  loadAdTab();
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
