@@ -1512,69 +1512,160 @@ async function botLoadKeys() {
   } catch { BOT.keys = []; }
 }
 
-function botNextKey() {
+// ── Key rotation with rate-limit tracking ────────────────────────────────────
+// Each key tracks: rateLimitedUntil (timestamp), failCount
+const BOT_KEY_STATE = {}; // keyed by key string
+
+function botGetBestKey() {
   if (!BOT.keys.length) return null;
-  const key = BOT.keys[BOT.keyIdx % BOT.keys.length];
-  BOT.keyIdx++;
-  return key;
+  const now = Date.now();
+  // Find first non-rate-limited key
+  for (let i = 0; i < BOT.keys.length; i++) {
+    const idx = (BOT.keyIdx + i) % BOT.keys.length;
+    const key = BOT.keys[idx];
+    const state = BOT_KEY_STATE[key] || { rateLimitedUntil: 0, failCount: 0 };
+    if (state.rateLimitedUntil <= now) {
+      BOT.keyIdx = (idx + 1) % BOT.keys.length; // next call starts after this one
+      return key;
+    }
+  }
+  // All keys rate-limited — find the one with shortest wait
+  let soonest = null, soonestTime = Infinity;
+  for (const key of BOT.keys) {
+    const t = (BOT_KEY_STATE[key] || {}).rateLimitedUntil || 0;
+    if (t < soonestTime) { soonestTime = t; soonest = key; }
+  }
+  return soonest; // will try anyway — might have recovered
+}
+
+function botMarkKeyRateLimit(key, retryAfterSec) {
+  if (!BOT_KEY_STATE[key]) BOT_KEY_STATE[key] = { rateLimitedUntil: 0, failCount: 0 };
+  const waitMs = (retryAfterSec || 60) * 1000;
+  BOT_KEY_STATE[key].rateLimitedUntil = Date.now() + waitMs;
+  BOT_KEY_STATE[key].failCount++;
+  console.log(`[BOT] Key ...${key.slice(-4)} rate limited for ${retryAfterSec||60}s`);
+}
+
+function botMarkKeyOk(key) {
+  if (BOT_KEY_STATE[key]) {
+    BOT_KEY_STATE[key].rateLimitedUntil = 0;
+    BOT_KEY_STATE[key].failCount = 0;
+  }
 }
 
 async function botGemini(userMsg) {
-  const key = botNextKey();
-  if (!key) return null;
+  // Try each key once, skip rate-limited ones
+  const contents = [
+    ...BOT.history.slice(-12).map(m => ({
+      role: m.role === 'bot' ? 'model' : 'user',
+      parts: [{ text: m.text }]
+    })),
+    { role: 'user', parts: [{ text: userMsg }] }
+  ];
 
-  // Build message history for context (last 12 messages)
-  const recent = BOT.history.slice(-12);
-  const contents = recent.map(m => ({
-    role: m.role === 'bot' ? 'model' : 'user',
-    parts: [{ text: m.text }]
-  }));
-  // Add current message
-  contents.push({ role: 'user', parts: [{ text: userMsg }] });
+  const tried = new Set();
+  for (let attempt = 0; attempt < BOT.keys.length; attempt++) {
+    const key = botGetBestKey();
+    if (!key || tried.has(key)) break;
+    tried.add(key);
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: BOT_SYSTEM_PROMPT }] },
-          contents,
-          generationConfig: { temperature: 0.95, maxOutputTokens: 150, topP: 0.95 }
-        })
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: BOT_SYSTEM_PROMPT }] },
+            contents,
+            generationConfig: { temperature: 0.95, maxOutputTokens: 150, topP: 0.95 }
+          })
+        }
+      );
+      const data = await res.json();
+
+      // Rate limit hit — mark key and try next
+      if (res.status === 429) {
+        const retryAfter = parseFloat(
+          data?.error?.details?.find(d => d.retryDelay)?.retryDelay?.replace('s','') || '60'
+        );
+        botMarkKeyRateLimit(key, retryAfter);
+        continue; // try next key immediately
       }
-    );
-    const data = await res.json();
-    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      return data.candidates[0].content.parts[0].text.trim();
+
+      // Success
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        botMarkKeyOk(key);
+        return data.candidates[0].content.parts[0].text.trim();
+      }
+
+      // Other error — skip this key
+      continue;
+    } catch {
+      continue; // network error — try next key
     }
-    return null;
-  } catch { return null; }
+  }
+  return null; // all keys failed
 }
 
-function botConnect() {
-  // Wait 45s before bot joins if no real match
+async function botConnect() {
+  // Called from findStranger after 45s — no extra delay needed here
+  if (S.view !== 'waiting') return;
+
+  await botLoadKeys();
+
+  BOT.active = true;
+  BOT.sentCount = 0;
+  BOT.history = [];
+  BOT.keyIdx = Math.floor(Math.random() * Math.max(1, BOT.keys.length));
+
+  // Cancel socket search so server doesn't match us with a real user
+  socket.emit('cancel_search');
+
+  // Pick literary names
+  const namePairs = [
+    ['Elara','Voss'],['Cai','Morrow'],['Seren','Lake'],['Fen','Ashby'],
+    ['Lyra','Stone'],['Theo','Vale'],['Noor','Ellis'],['Zephyr','Cross'],
+    ['Mira','Holt'],['Riven','Gray']
+  ];
+  const pick = namePairs[Math.floor(Math.random() * namePairs.length)];
+  const myName    = pick[0];
+  const theirName = pick[1];
+  BOT.name = theirName;
+
+  const bonds = [
+    "two people who both pretend they don't care, but do.",
+    "strangers who've lived parallel lives without knowing.",
+    "two souls who both have unsent drafts sitting in their notes app.",
+    "the kind of people who find each other at 3am for a reason.",
+  ];
+  const bond = bonds[Math.floor(Math.random() * bonds.length)];
+
+  // Set up chat state exactly like a real match
+  S.connected = true;
+  S.myName    = myName;
+  S.theirName = theirName;
+  document.getElementById('chatChapterNum').textContent = toRoman(Math.floor(Math.random()*80)+1);
+  document.getElementById('myNamePlate').textContent    = myName;
+  document.getElementById('theirNamePlate').textContent = theirName;
+  document.getElementById('strangerLeft').classList.remove('show');
+  clearMsgs();
+  closeGamePanel();
+
+  showView('reveal');
+  playReveal(myName, theirName, 'a chance encounter across the void', bond);
+
+  // Bot sends opener after reveal finishes (3.8s) + small delay
   setTimeout(async () => {
-    if (S.view !== 'waiting') return;
-    await botLoadKeys();
-    BOT.active = true;
-    BOT.sentCount = 0;
-    BOT.history = [];
-    BOT.keyIdx = Math.floor(Math.random() * Math.max(1, BOT.keys.length));
-
-    // Give bot a random literary name
-    const names = [
-      ['Elara','Voss'],['Cai','Morrow'],['Seren','Lake'],['Fen','Ashby'],
-      ['Lyra','Stone'],['Theo','Vale'],['Noor','Ellis'],['Zephyr','Cross'],
-      ['Mira','Holt'],['Riven','Gray']
+    if (!BOT.active) return;
+    const openers = [
+      'heyyy', 'hi omg finally someone 😭', 'hey!! 👀', 'yo wsp',
+      'omg hi', 'heyy', 'finally lol hi', 'hiiii', 'hello stranger lol',
     ];
-    const pick = names[Math.floor(Math.random() * names.length)];
-    BOT.name = pick[0] + ' ' + pick[1];
-
-    // Fake match — same flow as real match
-    playReveal(BOT.name, 'bot', 'A chance encounter across the void');
-  }, 45000);
+    const opener = openers[Math.floor(Math.random() * openers.length)];
+    botSend(opener);
+    bScheduleProbe();
+  }, 4200 + Math.random() * 1000);
 }
 
 function botLeave() {
@@ -1630,57 +1721,68 @@ async function botReply(userMsg) {
   }, thinkDelay);
 }
 
+const BOT_PROBE_FALLBACKS = [
+  'okay so genuine question — do u believe in soulmates or nah',
+  'what song r u listening to rn',
+  'what do u actually think about anonymous chat apps lol',
+  'do u have a go-to comfort show',
+  'what time is it where u are rn',
+  'ok tell me one thing thats been on ur mind lately',
+  'what would u do if u had tomorrow completely free',
+  'weirdest thing that happened to u this week',
+  'do u think people can actually connect through text',
+  'okay hot take: whats overrated rn',
+];
+
 async function botProbe() {
   if (!BOT.active || BOT.sentCount >= BOT_MAX_MSGS) return;
 
-  // Ask Gemini to start a new topic naturally
-  const probeSystemExtra = '\n\nThe conversation has gone quiet. Start a new topic or ask something interesting. Keep it casual and short.';
-  const key = botNextKey();
-  if (!key) {
-    // Fallback probes
-    const probes = [
-      'okay so genuine question — do u believe in soulmates or nah',
-      'what song r u listening to rn',
-      'hot take: what do u actually think about this whole anonymous chat thing',
-      'do u have a go-to comfort show',
-      'what time is it where u are rn',
-      'ok tell me one thing thats been on ur mind lately',
-      'what would u do if u had tomorrow completely free',
-      'ok weirdest thing that happened to u this week',
-    ];
-    botSend(probes[Math.floor(Math.random() * probes.length)]);
-    bScheduleProbe();
-    return;
+  const probePrompt = BOT_SYSTEM_PROMPT + `\n\nThe conversation has gone quiet. Send ONE short message to restart it. Ask something interesting. Max 1 sentence, very casual.`;
+
+  // Try Gemini with smart key rotation
+  const tried = new Set();
+  for (let attempt = 0; attempt < BOT.keys.length; attempt++) {
+    const key = botGetBestKey();
+    if (!key || tried.has(key)) break;
+    tried.add(key);
+
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: probePrompt }] },
+            contents: BOT.history.slice(-6).map(m => ({
+              role: m.role === 'bot' ? 'model' : 'user',
+              parts: [{ text: m.text }]
+            })),
+            generationConfig: { temperature: 1.0, maxOutputTokens: 80 }
+          })
+        }
+      );
+      const data = await res.json();
+      if (res.status === 429) {
+        const retryAfter = parseFloat(data?.error?.details?.find(d => d.retryDelay)?.retryDelay?.replace('s','') || '60');
+        botMarkKeyRateLimit(key, retryAfter);
+        continue;
+      }
+      const msg = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (msg) {
+        botMarkKeyOk(key);
+        botSend(msg);
+        BOT.history.push({ role: 'bot', text: msg });
+        bScheduleProbe();
+        return;
+      }
+    } catch { continue; }
   }
 
-  showTyping();
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: BOT_SYSTEM_PROMPT + probeSystemExtra }] },
-          contents: BOT.history.slice(-6).map(m => ({
-            role: m.role === 'bot' ? 'model' : 'user',
-            parts: [{ text: m.text }]
-          })),
-          generationConfig: { temperature: 1.0, maxOutputTokens: 80 }
-        })
-      }
-    );
-    const data = await res.json();
-    const probe = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    hideTyping();
-    if (!BOT.active) return;
-    const msg = probe || 'sooo what else is going on with u';
-    botSend(msg);
-    BOT.history.push({ role: 'bot', text: msg });
-  } catch {
-    hideTyping();
-    if (BOT.active) botSend('sooo what else');
-  }
+  // All keys failed — use scripted fallback
+  const msg = BOT_PROBE_FALLBACKS[Math.floor(Math.random() * BOT_PROBE_FALLBACKS.length)];
+  botSend(msg);
+  BOT.history.push({ role: 'bot', text: msg });
   bScheduleProbe();
 }
 
@@ -1696,12 +1798,15 @@ function bScheduleProbe() {
 function botSend(text) {
   if (!BOT.active) return;
   BOT.sentCount++;
-  const m = document.getElementById('messages');
-  const el = document.createElement('div');
-  el.className = 'msg them';
-  el.innerHTML = `<div class="mbub">${text.replace(/</g,'&lt;')}</div>`;
-  m.appendChild(el);
-  scrollBot();
+  showTyping();
+  clearTimeout(BOT.typingTimer);
+  const delay = Math.min(600 + text.length * 35 + Math.random() * 400, 2500);
+  BOT.typingTimer = setTimeout(() => {
+    if (!BOT.active) return;
+    hideTyping();
+    addMsg('stranger', text);
+    scrollBot();
+  }, delay);
 }
 
 // ── MUSIC PLAYER ─────────────────────────────────────────────────────────────

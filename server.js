@@ -1150,14 +1150,19 @@ app.post('/api/admin/ai/generate', inAppAdminAuth, async (req, res) => {
   try {
     const currentHtml = fs.readFileSync(INDEX_PATH, 'utf8');
 
-    const systemPrompt = `You are a precise frontend code editor for a web app called "Chapters".
-You will receive the full index.html file and a change request from the admin.
-Your job: make ONLY the requested change. Do not change anything else.
-Return ONLY the complete modified HTML file — no explanation, no markdown, no code fences.
-The very first character of your response must be < (the start of the HTML).
-Keep all existing functionality intact.`;
+    // Extract only <style> and <script> — reduces tokens from ~140KB to ~40KB
+    const styleMatch = currentHtml.match(/<style>([\s\S]*?)<\/style>/);
+    const scriptMatch = currentHtml.match(/<script>([\s\S]*?)<\/script>/);
+    const cssBlock = styleMatch  ? styleMatch[1]  : '';
+    const jsBlock  = scriptMatch ? scriptMatch[1] : '';
 
-    const userPrompt = `Here is the current index.html:\n\n${currentHtml}\n\n---\nChange request: ${prompt.trim()}\n\nReturn the complete modified index.html only.`;
+    const systemPrompt = `You are a precise frontend code editor for a web app called "Chapters".
+You receive the CSS and JS sections of index.html.
+Make ONLY the requested visual/UI change. Do not change logic or functionality.
+Return ONLY a JSON object: {"css": "full modified CSS", "js": "full modified JS"}.
+No markdown, no explanation. Start with { end with }.`;
+
+    const userPrompt = `CSS:\n${cssBlock}\n\nJS:\n${jsBlock}\n\n---\nChange request: ${prompt.trim()}\n\nReturn JSON: {"css":"...","js":"..."}`;
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -1167,7 +1172,7 @@ Keep all existing functionality intact.`;
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [{ parts: [{ text: userPrompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 65536 }
+          generationConfig: { temperature: 0.2, maxOutputTokens: 32768 }
         })
       }
     );
@@ -1177,24 +1182,25 @@ Keep all existing functionality intact.`;
       return res.status(500).json({ error: 'Gemini API error: ' + (geminiData.error?.message || 'Unknown error') });
     }
 
-    let newHtml = geminiData.candidates[0].content.parts[0].text || '';
-    // Strip any accidental markdown fences
-    newHtml = newHtml.replace(/^```html\n?/i, '').replace(/^```\n?/, '').replace(/\n?```$/, '').trim();
+    let raw = geminiData.candidates[0].content.parts[0].text || '';
+    raw = raw.replace(/^```json\n?/i, '').replace(/^```\n?/, '').replace(/\n?```$/, '').trim();
 
-    if (!newHtml.startsWith('<')) {
-      return res.status(500).json({ error: 'Gemini returned invalid HTML. Try rephrasing your request.' });
-    }
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch { return res.status(500).json({ error: 'Gemini returned invalid JSON. Try rephrasing your request.' }); }
 
-    // Save staged file
+    const newCss = parsed.css || cssBlock;
+    const newJs  = parsed.js  || jsBlock;
+
+    let newHtml = currentHtml;
+    if (styleMatch)  newHtml = newHtml.replace(/<style>[\s\S]*?<\/style>/, `<style>${newCss}</style>`);
+    if (scriptMatch) newHtml = newHtml.replace(/<script>[\s\S]*?<\/script>/, `<script>${newJs}</script>`);
+
     fs.writeFileSync(STAGED_PATH, newHtml, 'utf8');
 
-    // Generate a simple diff summary
-    const oldLines = currentHtml.split('\n').length;
-    const newLines = newHtml.split('\n').length;
-    const lineDiff = newLines - oldLines;
+    const lineDiff = newHtml.split('\n').length - currentHtml.split('\n').length;
     const diffSummary = `${lineDiff >= 0 ? '+' : ''}${lineDiff} lines · ${newHtml.length - currentHtml.length >= 0 ? '+' : ''}${newHtml.length - currentHtml.length} bytes`;
 
-    // Store staging state
     db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('active','1')`).run();
     db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('last_prompt',?)`).run(prompt.trim());
     db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('diff_summary',?)`).run(diffSummary);
