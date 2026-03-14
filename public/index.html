@@ -1553,15 +1553,20 @@ function botMarkKeyOk(key) {
   }
 }
 
-async function botGemini(userMsg) {
-  // Try each key once, skip rate-limited ones
-  const contents = [
-    ...BOT.history.slice(-12).map(m => ({
-      role: m.role === 'bot' ? 'model' : 'user',
-      parts: [{ text: m.text }]
-    })),
-    { role: 'user', parts: [{ text: userMsg }] }
-  ];
+async function botGemini() {
+  // Build contents from history (already includes latest user msg)
+  // Gemini requires alternating user/model roles — clean history first
+  const raw = BOT.history.slice(-16);
+  const contents = [];
+  for (const m of raw) {
+    const role = m.role === 'bot' ? 'model' : 'user';
+    // Skip consecutive same roles (Gemini rejects them)
+    if (contents.length > 0 && contents[contents.length-1].role === role) continue;
+    contents.push({ role, parts: [{ text: m.text }] });
+  }
+  // Must start with user turn
+  while (contents.length && contents[0].role !== 'user') contents.shift();
+  if (!contents.length) return null;
 
   const tried = new Set();
   for (let attempt = 0; attempt < BOT.keys.length; attempt++) {
@@ -1675,114 +1680,58 @@ function botLeave() {
 async function botReply(userMsg) {
   if (!BOT.active || BOT.sentCount >= BOT_MAX_MSGS) return;
 
-  // Add user msg to history
+  // Add to history BEFORE calling Gemini (so context includes this msg)
   BOT.history.push({ role: 'user', text: userMsg });
 
-  // Show typing indicator
-  const thinkDelay = 800 + Math.random() * 1400;
+  const thinkDelay = 700 + Math.random() * 1000;
+  clearTimeout(BOT.typingTimer);
   BOT.typingTimer = setTimeout(async () => {
     if (!BOT.active) return;
     showTyping();
 
-    // Call Gemini
-    let reply = await botGemini(userMsg);
+    let reply = await botGemini();
 
-    // Fallback if Gemini fails
-    if (!reply) {
-      const fallbacks = [
-        'lol sorry had a moment',
-        'wait what were u saying',
-        'omg hold on',
-        'haha yeah',
-        'true tbh',
-        'hmm idk what to say to that lol',
-        'tell me more??',
-      ];
-      reply = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-    }
-
-    // Remove typing, send reply
     hideTyping();
     if (!BOT.active) return;
 
-    // Simulate typing delay based on reply length
-    const typeDelay = Math.min(2500, 400 + reply.length * 18);
+    if (!reply) {
+      // Gemini failed — use contextual scripted fallback
+      reply = botScriptedReply(userMsg);
+    }
+
+    const typeDelay = Math.min(2200, 300 + reply.length * 20);
     showTyping();
+    clearTimeout(BOT.typingTimer);
     BOT.typingTimer = setTimeout(() => {
       hideTyping();
       if (!BOT.active) return;
-      botSend(reply);
       BOT.history.push({ role: 'bot', text: reply });
+      botSend(reply);
       bScheduleProbe();
     }, typeDelay);
   }, thinkDelay);
 }
 
-const BOT_PROBE_FALLBACKS = [
-  'okay so genuine question — do u believe in soulmates or nah',
-  'what song r u listening to rn',
-  'what do u actually think about anonymous chat apps lol',
-  'do u have a go-to comfort show',
-  'what time is it where u are rn',
-  'ok tell me one thing thats been on ur mind lately',
-  'what would u do if u had tomorrow completely free',
-  'weirdest thing that happened to u this week',
-  'do u think people can actually connect through text',
-  'okay hot take: whats overrated rn',
-];
-
-async function botProbe() {
-  if (!BOT.active || BOT.sentCount >= BOT_MAX_MSGS) return;
-
-  const probePrompt = BOT_SYSTEM_PROMPT + `\n\nThe conversation has gone quiet. Send ONE short message to restart it. Ask something interesting. Max 1 sentence, very casual.`;
-
-  // Try Gemini with smart key rotation
-  const tried = new Set();
-  for (let attempt = 0; attempt < BOT.keys.length; attempt++) {
-    const key = botGetBestKey();
-    if (!key || tried.has(key)) break;
-    tried.add(key);
-
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: probePrompt }] },
-            contents: BOT.history.slice(-6).map(m => ({
-              role: m.role === 'bot' ? 'model' : 'user',
-              parts: [{ text: m.text }]
-            })),
-            generationConfig: { temperature: 1.0, maxOutputTokens: 80 }
-          })
-        }
-      );
-      const data = await res.json();
-      if (res.status === 429) {
-        const retryAfter = parseFloat(data?.error?.details?.find(d => d.retryDelay)?.retryDelay?.replace('s','') || '60');
-        botMarkKeyRateLimit(key, retryAfter);
-        continue;
-      }
-      const msg = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-      if (msg) {
-        botMarkKeyOk(key);
-        botSend(msg);
-        BOT.history.push({ role: 'bot', text: msg });
-        bScheduleProbe();
-        return;
-      }
-    } catch { continue; }
-  }
-
-  // All keys failed — use scripted fallback
-  const msg = BOT_PROBE_FALLBACKS[Math.floor(Math.random() * BOT_PROBE_FALLBACKS.length)];
-  botSend(msg);
-  BOT.history.push({ role: 'bot', text: msg });
-  bScheduleProbe();
+// Scripted fallback — contextual, not random
+function botScriptedReply(msg) {
+  const m = msg.toLowerCase();
+  const has = (...w) => w.some(x => m.includes(x));
+  if (has('how are','how r u','u good','you good','hows u')) return ['ngl kinda tired but okay... u?','lowkey vibing rn wbu','honestly just existing lol u?'][~~(Math.random()*3)];
+  if (has('hey','hi ','hello','hiii','heyyy','sup','yo ')) return ['heyy wsp','hi!! how r u','omg hey finally 👀'][~~(Math.random()*3)];
+  if (has('sad','lonely','depress','cry','hurt','miss','bad day')) return ['omg nooo wanna talk about it?','aww whats going on?? im here','hey r u okay tho??'][~~(Math.random()*3)];
+  if (has('happy','excited','amazing','best day','so good')) return ['omg wait tell me everything 👀','yesss thats actually so good!!','OMGG thats wholesome fr'][~~(Math.random()*3)];
+  if (has('music','song','listen','playlist')) return ['omg yes what do u listen to','ngl music is literally my whole personality 😭 wbu','fr whats ur current fav song??'][~~(Math.random()*3)];
+  if (has('bored','boring','nothing to do')) return ['SAME literally why im here 😭','bro same ive been on here for ages','same... what do u usually do when ur bored'][~~(Math.random()*3)];
+  if (has('school','study','exam','homework','uni','college')) return ['omg dont remind me 😭 school is draining','ngl im procrastinating rn 😭 u?','ugh same what r u studying'][~~(Math.random()*3)];
+  if (has('work','job','boss','office')) return ['omg adulting is not for me 😭','ngl i should be working rn 😭','work is such a vibe killer... what do u do tho'][~~(Math.random()*3)];
+  if (has('sleep','tired','sleepy','late','awake')) return ['same i never sleep at normal times 😭','ngl its giving avoid-tomorrow energy','why do we do this to ourselves 😭'][~~(Math.random()*3)];
+  if (has('lmao','lol','haha','hehe') && m.length < 20) return ['LMAOOO 😭','omg stop 😭','okay that got me 😭'][~~(Math.random()*3)];
+  if (has('bye','gtg','gotta go','leaving','later')) return ['aww nooo already?? 😭','noo dont go 😭 take care tho!!','this was actually so fun bye 😭'][~~(Math.random()*3)];
+  if (has('bot','robot','ai','not real','are you human')) return ['lmaoo no?? why would a bot be on here 😭','bro i promise im real... unfortunately 😭','nooo lol im actual human what 😭'][~~(Math.random()*3)];
+  if (m.trim().split(' ').length <= 2) return ['omg go on 👀','wait say more 😭','need more context lol'][~~(Math.random()*3)];
+  if (m.includes('?')) return ['omg good question ngl... idk u?','hmm honestly it depends... what do u think','fr i wonder about that too'][~~(Math.random()*3)];
+  return ['omg thats actually interesting 👀','wait fr?? tell me more','no bc i feel that lowkey','thats such a vibe... wbu tho'][~~(Math.random()*4)];
 }
-
 function bScheduleProbe() {
   clearTimeout(BOT.probeTimer);
   if (!BOT.active || BOT.sentCount >= BOT_MAX_MSGS) return;

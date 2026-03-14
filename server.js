@@ -1145,33 +1145,57 @@ app.get('/api/admin/ai/status', inAppAdminAuth, (req, res) => {
 app.post('/api/admin/ai/generate', inAppAdminAuth, async (req, res) => {
   const { prompt } = req.body;
   if (!prompt || prompt.trim().length < 5) return res.status(400).json({ error: 'Describe what you want changed.' });
-  if (!GEMINI_API_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY not set in environment.' });
+
+  const allKeys = [GEMINI_API_KEY, ...getBotKeys()].filter((k,i,a) => k && a.indexOf(k)===i);
+  if (!allKeys.length) return res.status(500).json({ error: 'No Gemini API keys configured.' });
 
   try {
     const currentHtml = fs.readFileSync(INDEX_PATH, 'utf8');
 
-    // Extract only <style> and main <script> (last one = app JS)
+    // Extract CSS variables (small — ~100 tokens)
+    const cssVarMatch = currentHtml.match(/:root\s*\{([^}]+)\}/);
+    const cssVars = cssVarMatch ? cssVarMatch[0] : '';
+
+    // Extract only CSS rules relevant to the prompt (keyword match)
     const styleMatch = currentHtml.match(/<style>([\s\S]*?)<\/style>/);
-    const allScripts = [...currentHtml.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)];
-    // Main app JS is the longest script block
-    const scriptBlock = allScripts.reduce((a, b) => b[1].length > a[1].length ? b : a, {1:''});
-    const cssBlock = styleMatch  ? styleMatch[1]  : '';
-    const jsBlock  = scriptBlock[1] || '';
+    const fullCss = styleMatch ? styleMatch[1] : '';
+    const promptWords = prompt.toLowerCase().match(/\w{4,}/g) || [];
+    const cssLines = fullCss.split('\n');
+    const relevantCss = cssLines.filter(line => {
+      const l = line.toLowerCase();
+      return promptWords.some(w => l.includes(w)) || line.includes(':root') || line.includes('--');
+    }).join('\n');
 
-    const systemPrompt = `You are a precise frontend code editor for a web app called "Chapters".
-You receive the CSS and JS sections of index.html.
-Make ONLY the requested visual/UI change. Do not change logic or functionality.
-Return ONLY a JSON object: {"css": "full modified CSS", "js": "full modified JS"}.
-No markdown, no explanation. Start with { end with }.`;
+    // Extract only HTML text content (strip tags, keep text nodes) for text changes
+    const htmlText = currentHtml
+      .replace(/<script[\s\S]*?<\/script>/g, '')
+      .replace(/<style[\s\S]*?<\/style>/g, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 2000); // first 2000 chars of visible text
 
-    const userPrompt = `CSS:\n${cssBlock}\n\nJS:\n${jsBlock}\n\n---\nChange request: ${prompt.trim()}\n\nReturn JSON: {"css":"...","js":"..."}`;
+    const systemPrompt = `You are editing a web app called "Chapters". You will receive:
+1. CSS variables (:root block)  
+2. Relevant CSS rules
+3. A sample of visible text in the app
 
-    // Try all available keys — GEMINI_API_KEY first, then bot keys
-    const allKeys = [GEMINI_API_KEY, ...getBotKeys()].filter((k,i,a) => k && a.indexOf(k)===i);
+Based on the change request, return ONLY a JSON object:
+{
+  "type": "css" | "text" | "both",
+  "cssVars": "full modified :root{} block if colors/theme changed, else null",
+  "cssRules": "only the specific CSS rules that changed (not the full CSS), else null", 
+  "find": "exact text to find in HTML if text change needed, else null",
+  "replace": "replacement text, else null"
+}
+Be minimal. Only include what actually changes.`;
+
+    const userPrompt = `CSS Variables:\n${cssVars}\n\nRelevant CSS:\n${relevantCss.slice(0,3000)}\n\nVisible app text (sample):\n${htmlText}\n\n---\nChange: ${prompt.trim()}`;
+
     let raw = '';
     let lastErr = '';
     for (const key of allKeys) {
-      const geminiRes = await fetch(
+      const r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
         {
           method: 'POST',
@@ -1179,41 +1203,48 @@ No markdown, no explanation. Start with { end with }.`;
           body: JSON.stringify({
             system_instruction: { parts: [{ text: systemPrompt }] },
             contents: [{ parts: [{ text: userPrompt }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 32768 }
+            generationConfig: { temperature: 0.2, maxOutputTokens: 4096 }
           })
         }
       );
-      const geminiData = await geminiRes.json();
-      if (geminiRes.status === 429) { lastErr = geminiData.error?.message || 'Quota exceeded'; continue; }
-      if (!geminiRes.ok || !geminiData.candidates?.[0]) { lastErr = geminiData.error?.message || 'API error'; continue; }
-      raw = geminiData.candidates[0].content.parts[0].text || '';
+      const d = await r.json();
+      if (r.status === 429) { lastErr = 'Quota exceeded'; continue; }
+      if (!r.ok || !d.candidates?.[0]) { lastErr = d.error?.message || 'API error'; continue; }
+      raw = d.candidates[0].content.parts[0].text || '';
       break;
     }
-    if (!raw) return res.status(429).json({ error: 'All Gemini keys are rate-limited. Try again in a minute. (' + lastErr + ')' });
-    raw = raw.replace(/^```json\n?/i, '').replace(/^```\n?/, '').replace(/\n?```$/, '').trim();
+    if (!raw) return res.status(429).json({ error: 'All Gemini keys are rate-limited. Wait a minute and try again.' });
 
+    raw = raw.replace(/^```json\n?/i,'').replace(/^```\n?/,'').replace(/\n?```$/,'').trim();
     let parsed;
     try { parsed = JSON.parse(raw); }
-    catch { return res.status(500).json({ error: 'Gemini returned invalid JSON. Try rephrasing your request.' }); }
-
-    const newCss = parsed.css || cssBlock;
-    const newJs  = parsed.js  || jsBlock;
+    catch { return res.status(500).json({ error: 'Gemini returned invalid response. Rephrase and try again.' }); }
 
     let newHtml = currentHtml;
-    if (styleMatch) newHtml = newHtml.replace(/<style>[\s\S]*?<\/style>/, `<style>${newCss}</style>`);
-    if (scriptBlock[1]) {
-      // Find last script tag position and replace it
-      const lastScriptStart = newHtml.lastIndexOf('<script>');
-      const lastScriptEnd   = newHtml.lastIndexOf('</script>') + '</script>'.length;
-      if (lastScriptStart !== -1 && lastScriptEnd > lastScriptStart) {
-        newHtml = newHtml.slice(0, lastScriptStart) + `<script>${newJs}</script>` + newHtml.slice(lastScriptEnd);
-      }
+
+    // Apply CSS variable changes
+    if (parsed.cssVars) {
+      newHtml = newHtml.replace(/:root\s*\{[^}]+\}/, parsed.cssVars);
+    }
+
+    // Apply specific CSS rule changes (inject before </style>)
+    if (parsed.cssRules) {
+      newHtml = newHtml.replace(/<\/style>/, parsed.cssRules + '\n</style>');
+    }
+
+    // Apply text changes
+    if (parsed.find && parsed.replace && newHtml.includes(parsed.find)) {
+      newHtml = newHtml.replace(parsed.find, parsed.replace);
+    }
+
+    if (newHtml === currentHtml) {
+      return res.status(400).json({ error: 'Gemini could not identify what to change. Be more specific.' });
     }
 
     fs.writeFileSync(STAGED_PATH, newHtml, 'utf8');
 
     const lineDiff = newHtml.split('\n').length - currentHtml.split('\n').length;
-    const diffSummary = `${lineDiff >= 0 ? '+' : ''}${lineDiff} lines · ${newHtml.length - currentHtml.length >= 0 ? '+' : ''}${newHtml.length - currentHtml.length} bytes`;
+    const diffSummary = `${lineDiff >= 0 ? '+' : ''}${lineDiff} lines · changed`;
 
     db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('active','1')`).run();
     db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('last_prompt',?)`).run(prompt.trim());
