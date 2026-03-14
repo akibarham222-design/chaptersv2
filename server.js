@@ -1150,11 +1150,13 @@ app.post('/api/admin/ai/generate', inAppAdminAuth, async (req, res) => {
   try {
     const currentHtml = fs.readFileSync(INDEX_PATH, 'utf8');
 
-    // Extract only <style> and <script> — reduces tokens from ~140KB to ~40KB
+    // Extract only <style> and main <script> (last one = app JS)
     const styleMatch = currentHtml.match(/<style>([\s\S]*?)<\/style>/);
-    const scriptMatch = currentHtml.match(/<script>([\s\S]*?)<\/script>/);
+    const allScripts = [...currentHtml.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)];
+    // Main app JS is the longest script block
+    const scriptBlock = allScripts.reduce((a, b) => b[1].length > a[1].length ? b : a, {1:''});
     const cssBlock = styleMatch  ? styleMatch[1]  : '';
-    const jsBlock  = scriptMatch ? scriptMatch[1] : '';
+    const jsBlock  = scriptBlock[1] || '';
 
     const systemPrompt = `You are a precise frontend code editor for a web app called "Chapters".
 You receive the CSS and JS sections of index.html.
@@ -1164,25 +1166,30 @@ No markdown, no explanation. Start with { end with }.`;
 
     const userPrompt = `CSS:\n${cssBlock}\n\nJS:\n${jsBlock}\n\n---\nChange request: ${prompt.trim()}\n\nReturn JSON: {"css":"...","js":"..."}`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ parts: [{ text: userPrompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 32768 }
-        })
-      }
-    );
-
-    const geminiData = await geminiRes.json();
-    if (!geminiRes.ok || !geminiData.candidates?.[0]) {
-      return res.status(500).json({ error: 'Gemini API error: ' + (geminiData.error?.message || 'Unknown error') });
+    // Try all available keys — GEMINI_API_KEY first, then bot keys
+    const allKeys = [GEMINI_API_KEY, ...getBotKeys()].filter((k,i,a) => k && a.indexOf(k)===i);
+    let raw = '';
+    let lastErr = '';
+    for (const key of allKeys) {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ parts: [{ text: userPrompt }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 32768 }
+          })
+        }
+      );
+      const geminiData = await geminiRes.json();
+      if (geminiRes.status === 429) { lastErr = geminiData.error?.message || 'Quota exceeded'; continue; }
+      if (!geminiRes.ok || !geminiData.candidates?.[0]) { lastErr = geminiData.error?.message || 'API error'; continue; }
+      raw = geminiData.candidates[0].content.parts[0].text || '';
+      break;
     }
-
-    let raw = geminiData.candidates[0].content.parts[0].text || '';
+    if (!raw) return res.status(429).json({ error: 'All Gemini keys are rate-limited. Try again in a minute. (' + lastErr + ')' });
     raw = raw.replace(/^```json\n?/i, '').replace(/^```\n?/, '').replace(/\n?```$/, '').trim();
 
     let parsed;
@@ -1193,8 +1200,15 @@ No markdown, no explanation. Start with { end with }.`;
     const newJs  = parsed.js  || jsBlock;
 
     let newHtml = currentHtml;
-    if (styleMatch)  newHtml = newHtml.replace(/<style>[\s\S]*?<\/style>/, `<style>${newCss}</style>`);
-    if (scriptMatch) newHtml = newHtml.replace(/<script>[\s\S]*?<\/script>/, `<script>${newJs}</script>`);
+    if (styleMatch) newHtml = newHtml.replace(/<style>[\s\S]*?<\/style>/, `<style>${newCss}</style>`);
+    if (scriptBlock[1]) {
+      // Find last script tag position and replace it
+      const lastScriptStart = newHtml.lastIndexOf('<script>');
+      const lastScriptEnd   = newHtml.lastIndexOf('</script>') + '</script>'.length;
+      if (lastScriptStart !== -1 && lastScriptEnd > lastScriptStart) {
+        newHtml = newHtml.slice(0, lastScriptStart) + `<script>${newJs}</script>` + newHtml.slice(lastScriptEnd);
+      }
+    }
 
     fs.writeFileSync(STAGED_PATH, newHtml, 'utf8');
 

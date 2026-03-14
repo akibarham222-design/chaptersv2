@@ -960,7 +960,7 @@ socket.on('stranger_left', () => {
   document.getElementById('strangerLeft').classList.add('show');
   closeGamePanel();
 });
-socket.on('search_cancelled', () => showView('landing'));
+socket.on('search_cancelled', () => { if (!BOT.active) showView('landing'); });
 socket.on('report_result', ({ success, error }) => {
   if (success) { document.getElementById('reportForm').style.display='none'; document.getElementById('reportSuccess').style.display='block'; }
   else alert(error || 'Could not submit report.');
@@ -1618,9 +1618,6 @@ async function botConnect() {
   BOT.sentCount = 0;
   BOT.history = [];
   BOT.keyIdx = Math.floor(Math.random() * Math.max(1, BOT.keys.length));
-
-  // Cancel socket search so server doesn't match us with a real user
-  socket.emit('cancel_search');
 
   // Pick literary names
   const namePairs = [
