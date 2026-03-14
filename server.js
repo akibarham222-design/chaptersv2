@@ -1053,7 +1053,10 @@ app.post('/api/admin/ad/upload', inAppAdminAuth, (req, res) => {
 app.post('/api/admin/ad', inAppAdminAuth, (req, res) => {
   const { image_url, link_url } = req.body;
   if (!image_url) return res.status(400).json({ error: 'Image URL required.' });
-  try { new URL(image_url); } catch { return res.status(400).json({ error: 'Invalid image URL.' }); }
+  // Allow relative paths (from device upload) or full URLs
+  if (!image_url.startsWith('/uploads/')) {
+    try { new URL(image_url); } catch { return res.status(400).json({ error: 'Invalid image URL.' }); }
+  }
   // Only one active ad at a time — clear old ones
   db.prepare(`DELETE FROM ads`).run();
   const id = uuidv4();
