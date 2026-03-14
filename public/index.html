@@ -983,6 +983,73 @@ socket.on('game_response', ({ accepted, gameType }) => {
   startGame(gameType || G.type, false);
 });
 socket.on('game_action', data => handleGameAction(data));
+socket.on('chapter_messages', ({ messages }) => {
+  const el = document.getElementById('readerMessages');
+  if (!el) return;
+  if (!messages || !messages.length) { el.innerHTML = '<div class="empty-st"><div class="emt-s">No messages in this chapter.</div></div>'; return; }
+  el.innerHTML = messages.map(m => `<div class="msg ${m.is_mine?'you':'them'}"><div class="mbub">${esc(m.content)}</div></div>`).join('');
+});
+
+function handleGameAction(data) {
+  if (!G.active) return;
+  if (G.type === 'ttt' && data.type === 'ttt') {
+    G.ttt.board[data.idx] = G.ttt.theirMark;
+    G.ttt.turn = G.ttt.myMark;
+    checkTTT(); renderTTT();
+  }
+  if (G.type === 'rps' && data.type === 'rps') {
+    const r = G.rps;
+    r.theirPick = data.pick;
+    if (r.myPick && r.theirPick) {
+      const beats = { rock:'scissors', paper:'rock', scissors:'paper' };
+      if (beats[r.myPick] === r.theirPick) r.scores.me++;
+      else if (beats[r.theirPick] === r.myPick) r.scores.them++;
+      addSysMsg(`Round ${r.round}: You: ${r.myPick} vs Them: ${r.theirPick}`);
+      r.round++; r.myPick = null; r.theirPick = null; r.waiting = false;
+      if (r.round > r.maxRounds) r.over = true;
+      renderRPS();
+    }
+  }
+  if (G.type === 'race' && data.type === 'race') {
+    G.race.themPos = Math.min(G.race.themPos + (data.dice||1), 15);
+    G.race.myTurn = true;
+    if (G.race.themPos >= 15) { G.race.over = true; addSysMsg('They won the race!'); }
+    renderRace();
+  }
+}
+
+// ── CONFESSIONS ───────────────────────────────────────────────────────────────
+let _confPage = 1, _confLoading = false;
+
+function renderConf(c) {
+  return `<div class="cconf">
+    <div class="cconf-names">From <b>${esc(c.from_name)}</b> to <b>${esc(c.to_name)}</b></div>
+    <div class="cconf-body">${esc(c.content)}</div>
+    ${c.song_title ? `<div class="cconf-song">🎵 ${esc(c.song_title)} — ${esc(c.song_artist||'')}</div>` : ''}
+    <div class="cconf-date">${new Date((c.created_at||0)*1000).toLocaleDateString()}</div>
+  </div>`;
+}
+
+async function loadConf(reset=false) {
+  if (_confLoading) return;
+  if (reset) { _confPage = 1; }
+  _confLoading = true;
+  const el = document.getElementById('confessionsList');
+  if (!el) { _confLoading=false; return; }
+  if (reset) el.innerHTML = '<div class="empty-st"><div class="emt-s">Loading...</div></div>';
+  try {
+    const r = await fetch(`/api/confessions?page=${_confPage}`, { headers: { 'Authorization': 'Bearer ' + TOKEN } });
+    const d = await r.json();
+    if (reset) el.innerHTML = '';
+    if (!d.confessions || !d.confessions.length) {
+      if (reset) el.innerHTML = '<div class="empty-st"><div class="emt-i">💌</div><div class="emt-s">No confessions yet. Be the first.</div></div>';
+      _confLoading = false; return;
+    }
+    d.confessions.forEach(c => { el.innerHTML += renderConf(c); });
+    _confPage++;
+  } catch { if (reset) el.innerHTML = '<div class="empty-st"><div class="emt-s">Failed to load.</div></div>'; }
+  _confLoading = false;
+}
 
 // ── VIEWS ─────────────────────────────────────────────────────────────────────
 function showView(name) {
@@ -1116,6 +1183,158 @@ function sendSongMsg(i){
   closeSongPicker();
 }
 
+// ── REVEAL ANIMATION ─────────────────────────────────────────────────────────
+function playReveal(myName, theirName, pairRef, pairBond) {
+  const rn1  = document.getElementById('revealNameYou');
+  const rn2  = document.getElementById('revealNameThem');
+  const rref = document.getElementById('revealRef');
+  const rbond= document.getElementById('revealBond');
+  const hint = document.getElementById('revealHint');
+  if (rn1)  rn1.textContent  = myName;
+  if (rn2)  rn2.textContent  = theirName;
+  if (rref) rref.textContent = pairRef  || 'met by chance';
+  if (rbond)rbond.textContent= pairBond || 'two strangers sharing a moment.';
+  if (hint) hint.textContent = 'Beginning your chapter...';
+  setTimeout(() => { if (S.view === 'reveal') showView('chat'); }, 3800);
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (!el) return;
+  if (!S.history || !S.history.length) {
+    el.innerHTML = '<div class="empty-st"><div class="emt-i">📖</div><div class="emt-s">No chapters yet. Start a conversation.</div></div>';
+    return;
+  }
+  el.innerHTML = S.history.map(c => `
+    <div class="hcard" onclick="openCById('${c.id}')">
+      <div class="hcard-ch">Chapter ${toRoman(c.chapter_num || 1)}</div>
+      <div class="hcard-names">${esc(c.name_a||'?')} & ${esc(c.name_b||'?')}</div>
+      <div class="hcard-date">${new Date((c.started_at||0)*1000).toLocaleDateString()}</div>
+    </div>`).join('');
+}
+
+function openCById(id) { const c = S.history.find(x => x.id === id); if (c) openChapter(c); }
+
+function openChapter(conv) {
+  showView('chapter');
+  const meta = document.getElementById('readerMeta');
+  if (meta) meta.textContent = `Chapter ${toRoman(conv.chapter_num||1)} · ${new Date((conv.started_at||0)*1000).toLocaleDateString()}`;
+  socket.emit('get_chapter', { conversationId: conv.id });
+}
+
+// ── GAME ENGINE ───────────────────────────────────────────────────────────────
+function closeGamePanel() {
+  const ga = document.getElementById('gameArea');
+  if (ga) ga.innerHTML = '';
+  G.active = false;
+}
+
+function startGame(type, isGuest) {
+  G.active = true; G.type = type; G.isHost = !isGuest;
+  addSysMsg('Game started! Let\'s play ' + (type==='ttt'?'Tic-Tac-Toe':type==='rps'?'Rock Paper Scissors':'Quick Race') + '.');
+  if (type==='ttt') {
+    G.ttt = { board:Array(9).fill(null), myMark:G.isHost?'X':'O', theirMark:G.isHost?'O':'X', turn:'X', wins:{me:0,them:0}, over:false };
+    renderTTT();
+  }
+  if (type==='rps') {
+    G.rps = { myPick:null, theirPick:null, round:1, scores:{me:0,them:0}, waiting:false, over:false, maxRounds:5 };
+    renderRPS();
+  }
+  if (type==='race') {
+    G.race = { myPos:0, themPos:0, myTurn:G.isHost, diceVal:null, over:false };
+    renderRace();
+  }
+}
+
+function renderTTT() {
+  const t = G.ttt;
+  const ga = document.getElementById('gameArea');
+  if (!ga) return;
+  const rematch = t.over ? `<button class="btn-rematch" onclick="inviteGame('ttt')">Rematch?</button>` : '';
+  ga.innerHTML = `<div class="game-panel">
+    <div class="game-score">You (${t.myMark}) ${t.wins.me} — ${t.wins.them} Them (${t.theirMark})</div>
+    <div class="ttt-board">${t.board.map((c,i)=>`<div class="ttt-cell${c?' filled':''}" onclick="tttMove(${i})">${c||''}</div>`).join('')}</div>
+    <div class="game-status" id="tttStatus">${t.over?'Game over':t.turn===t.myMark?'Your turn':'Their turn...'}</div>
+    ${rematch}<button class="btn-gclose" onclick="closeGamePanel()">✕</button>
+  </div>`;
+}
+
+function tttMove(i) {
+  const t = G.ttt;
+  if (t.over || t.board[i] || t.turn !== t.myMark) return;
+  t.board[i] = t.myMark; t.turn = t.theirMark;
+  socket.emit('game_move', { type:'ttt', idx:i });
+  checkTTT(); renderTTT();
+}
+
+function checkTTT() {
+  const t = G.ttt;
+  const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for (const [a,b,c] of wins) {
+    if (t.board[a] && t.board[a]===t.board[b] && t.board[a]===t.board[c]) {
+      t.over = true;
+      if (t.board[a]===t.myMark) t.wins.me++; else t.wins.them++;
+      return;
+    }
+  }
+  if (t.board.every(x=>x)) t.over = true;
+}
+
+function renderRPS() {
+  const r = G.rps;
+  const ga = document.getElementById('gameArea');
+  if (!ga) return;
+  const rematch = r.over ? `<button class="btn-rematch" onclick="inviteGame('rps')">Rematch?</button>` : '';
+  const picks = r.waiting ? '<div class="rps-waiting">Waiting for them...</div>' :
+    r.over ? '' : `<div class="rps-picks">
+      <button class="rps-pick" onclick="rpsPick('rock')">🪨</button>
+      <button class="rps-pick" onclick="rpsPick('paper')">📄</button>
+      <button class="rps-pick" onclick="rpsPick('scissors')">✂️</button>
+    </div>`;
+  ga.innerHTML = `<div class="game-panel">
+    <div class="game-score">Round ${r.round}/${r.maxRounds} · You ${r.scores.me} — ${r.scores.them} Them</div>
+    ${picks}
+    <div class="game-status">${r.over?'Game over':''}</div>
+    ${rematch}<button class="btn-gclose" onclick="closeGamePanel()">✕</button>
+  </div>`;
+}
+
+function rpsPick(pick) {
+  const r = G.rps; if (r.waiting || r.over) return;
+  r.myPick = pick; r.waiting = true;
+  socket.emit('game_move', { type:'rps', pick });
+  renderRPS();
+}
+
+function renderRace() {
+  const r = G.race;
+  const ga = document.getElementById('gameArea');
+  if (!ga) return;
+  const TOTAL = 15;
+  const rematch = r.over ? `<button class="btn-rematch" onclick="inviteGame('race')">Request Rematch</button>` : '';
+  const rollBtn = r.myTurn && !r.over ? `<button class="btn-roll" onclick="raceRoll()">🎲 Roll</button>` : '';
+  ga.innerHTML = `<div class="game-panel">
+    <div class="game-score">You: ${r.myPos}/${TOTAL} · Them: ${r.themPos}/${TOTAL}</div>
+    <div class="race-track">
+      ${Array.from({length:TOTAL+1},(_,i)=>`<div class="race-cell${i===r.myPos?' me':i===r.themPos?' them':''}">${i===r.myPos?'🟣':i===r.themPos?'🔵':'·'}</div>`).join('')}
+    </div>
+    ${rollBtn}
+    <div class="game-status">${r.over?'Game over':r.myTurn?'Your turn — roll!':'Their turn...'}</div>
+    ${rematch}<button class="btn-gclose" onclick="closeGamePanel()">✕</button>
+  </div>`;
+}
+
+function raceRoll() {
+  const r = G.race; if (!r.myTurn || r.over) return;
+  const dice = Math.floor(Math.random()*6)+1;
+  r.diceVal = dice; r.myPos = Math.min(r.myPos + dice, 15);
+  r.myTurn = false;
+  socket.emit('game_move', { type:'race', dice });
+  if (r.myPos >= 15) { r.over = true; addSysMsg('You won the race! 🎉'); }
+  renderRace();
+}
+
 // ── GAMES ─────────────────────────────────────────────────────────────────────
 function openGameSelect(){
   if(!S.connected){alert('Connect with a stranger first!');return;}
@@ -1175,7 +1394,9 @@ function updConfCnt(){
 
 function switchConfTab(tab){
   document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('on'));
-  document.getElementById('ctab-'+tab)?.classList.add('on');
+  document.getElementById('confTab-'+tab)?.classList.add('on');
+  const searchBar = document.getElementById('confSearchBar');
+  if (searchBar) searchBar.style.display = tab==='search' ? 'block' : 'none';
   if(tab==='all') loadConf(true);
   else document.getElementById('confessionsList').innerHTML=`<div class="empty-st"><div class="emt-s">Enter a name to search.</div></div>`;
 }
@@ -1313,7 +1534,7 @@ async function botGemini(userMsg) {
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1435,7 +1656,7 @@ async function botProbe() {
   showTyping();
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
