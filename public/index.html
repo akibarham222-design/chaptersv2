@@ -639,6 +639,7 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
         <button class="ctab" id="atab-members" onclick="adminTab('members')" style="display:none;">👥 Members</button>
         <button class="ctab" id="atab-mods" onclick="adminTab('mods')" style="display:none;">🛡 Moderators</button>
         <button class="ctab" id="atab-ads" onclick="adminTab('ads')" style="display:none;">📢 Ads</button>
+        <button class="ctab" id="atab-ai" onclick="adminTab('ai')" style="display:none;color:var(--violet2);">✦ AI</button>
       </div>
 
       <!-- Pending confessions -->
@@ -706,6 +707,52 @@ input[type=range].mp-vol::-webkit-slider-thumb{-webkit-appearance:none;width:13p
             <button class="btn-approve" onclick="postAd()" style="font-size:13px;padding:8px 16px;" id="adPostBtn">📢 Post Ad</button>
           </div>
           <div id="adErr" style="font-size:12px;color:var(--rose);margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <!-- AI Editor (admin only) -->
+      <div id="admin-ai" style="display:none;">
+        <!-- Staged version banner -->
+        <div id="aiStagedBanner" style="display:none;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:12px;padding:14px 18px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#a78bfa;">✦ Staged version ready</div>
+              <div id="aiDiffSummary" style="font-size:11px;color:var(--muted);margin-top:3px;"></div>
+              <div id="aiLastPrompt" style="font-size:12px;color:var(--txt2);margin-top:4px;font-style:italic;"></div>
+            </div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;">
+              <a id="aiPreviewBtn" href="#" target="_blank" style="padding:7px 14px;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.3);border-radius:8px;color:#a78bfa;font-size:12px;font-weight:600;text-decoration:none;">👁 Preview</a>
+              <button class="btn-approve" id="aiPublishBtn" onclick="aiPublish()" style="font-size:12px;padding:7px 14px;">🚀 Publish</button>
+              <button class="btn-adel" onclick="aiReject()" style="font-size:12px;padding:7px 14px;">✕ Reject</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prompt box -->
+        <div class="acard" style="padding:20px 22px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="font-size:20px;">✦</span>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--txt);">AI Frontend Editor</div>
+              <div style="font-size:11px;color:var(--muted);">Describe a change — Gemini will update the frontend</div>
+            </div>
+          </div>
+          <textarea id="aiPromptInp" class="winp wta" placeholder='e.g. "make the chat bubbles more rounded" or "change the nav background to dark blue"' style="min-height:90px;font-size:14px;margin-bottom:12px;" maxlength="500"></textarea>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <button class="btn-approve" id="aiGenerateBtn" onclick="aiGenerate()" style="font-size:13px;padding:9px 20px;">✦ Generate Change</button>
+            <button class="btn-reject" id="aiRollbackBtn" onclick="aiRollback()" style="font-size:12px;padding:9px 16px;display:none;">↩ Rollback to backup</button>
+          </div>
+          <div id="aiStatus" style="margin-top:12px;font-size:13px;min-height:20px;"></div>
+        </div>
+
+        <!-- Tips -->
+        <div style="margin-top:14px;font-size:11px;color:var(--muted);line-height:1.8;padding:0 4px;">
+          <b style="color:var(--txt2);">Tips for best results:</b><br/>
+          • Be specific: <i>"make confession cards have a rose-colored left border"</i><br/>
+          • One change at a time works best<br/>
+          • After generating, preview before publishing<br/>
+          • Mods can also see the staged preview<br/>
+          • Publish restarts the server (~30s downtime)
         </div>
       </div>
 
@@ -1069,272 +1116,117 @@ function sendSongMsg(i){
   closeSongPicker();
 }
 
-// ── BOT ENGINE ────────────────────────────────────────────────────────────────
-const BOT = { active:false, typingTimer:null, probeTimer:null, msgCount:0, lastTopic:'', sentCount:0 };
-
-// Topic detection
-function bTopic(msg) {
-  const m = msg.toLowerCase();
-  const h = (...w) => w.some(x => m.includes(x));
-  if (h('bot','robot','ai','not real','are you human','r u human','ur a bot','fake')) return 'bot';
-  if (h('hi ','hey','hello','hiii','heyyy','heyy','sup','wsp','wyd','yo ')) return 'greet';
-  if (h('how are','how r u','u good','you good','hows u','how u doing','r u okay','you okay')) return 'howru';
-  if (h('asl','age sex')) return 'asl';
-  if (h('ur name','your name','who are you','whats ur name')) return 'name';
-  if (h('where are','where r u','ur from','you from','location','country','city','state')) return 'location';
-  if (h('how old','ur age','your age')) return 'age';
-  if (h('sad','depress','anxious','lonely','alone','hurt','cry','bad day','miss','broken','heartbreak','heartbroken')) return 'sad';
-  if (h('happy','excited','best day','amazing','so good','thrilled','great news')) return 'happy';
-  if (h('bored','boring','nothing to do','just vibing','killing time')) return 'bored';
-  if (h('music','song','listen','playlist','album','artist','singer','genre')) return 'music';
-  if (h('movie','film','show','series','watch','netflix','anime','drama')) return 'movie';
-  if (h('food','eat','hungry','snack','cook','pizza','rice','burger','meal')) return 'food';
-  if (h('school','class','exam','study','homework','college','uni','assignment','grade')) return 'school';
-  if (h('work','job','office','boss','career','interview','salary')) return 'work';
-  if (h('sleep','tired','sleepy','insomnia','late night','cant sleep','awake','exhausted')) return 'sleep';
-  if (h('bye','goodbye','gotta go','gtg','see ya','later','take care','leaving')) return 'bye';
-  if (h('thanks','thank u','ty','thx','appreciate')) return 'thanks';
-  if (h('lmao','lol','lmfao','haha','hehe') && m.trim().length < 20) return 'laugh';
-  if (h('love','crush','dating','relationship','bf','gf','boyfriend','girlfriend','breakup')) return 'love';
-  if (h('game','gaming','minecraft','roblox','valorant','fortnite','play')) return 'gaming';
-  if (m.trim().split(' ').length <= 2) return 'short';
-  if (m.includes('?')) return 'question';
-  return 'random';
+// ── GAMES ─────────────────────────────────────────────────────────────────────
+function openGameSelect(){
+  if(!S.connected){alert('Connect with a stranger first!');return;}
+  document.getElementById('gameSelectOv').classList.add('show');
+}
+function closeGameSelect(){document.getElementById('gameSelectOv').classList.remove('show');}
+function inviteGame(type){
+  closeGameSelect();
+  if (BOT.active) { addSysMsg('Games aren\'t available with this stranger right now.'); return; }
+  closeGamePanel();
+  G.type=type; G.isHost=true;
+  socket.emit('game_invite',{gameType:type});
+  addSysMsg('Game invitation sent. Waiting for response...');
+}
+function respondGame(accepted){
+  document.getElementById('gameInviteOv').classList.remove('show');
+  socket.emit('game_response',{accepted,gameType:pendingInviteType});
+  if(accepted) startGame(pendingInviteType,true);
+  else addSysMsg('Game invitation declined.');
 }
 
-// Main reply bank
-const BR = {
-  bot:      ["lmaoo no?? why would a bot be on here 💀","bro i promise im real... unfortunately 😭","if i was a bot id at least be more interesting ngl 💀","omg not the bot accusations 😭 im just a person","nooo lol im actual human what 💀"],
-  greet:    ["heyyy finally 👀 wsp","omg hi!! how r u","heyy!! what r u up to rn","yo finally someone 😭 hi","hiiii omg wsp"],
-  howru:    ["ngl kinda tired but okay... u?","lowkey vibing rn wbu","honestly just existing 💀 u?","so-so ngl had a whole day... wbu","not bad not great wbu tho"],
-  asl:      ["f/20/online lol u?","m/19/my room 💀 u?","19 f and the internet lol u?","20 m somewhere boring u?"],
-  name:     ["keeping it mysterious 👀 u tho?","ngl i kinda like the name this app gave me 😭","just a person on the internet lol wbu","u can call me whatever lol"],
-  location: ["somewhere on earth 🌍 u?","just vibing in my room 💀 where u from?","the internet basically lol... where r u from tho","a place too boring to mention 😭 u?"],
-  age:      ["20! u?","just turned 20 💀 u?","19 wbu?","20 here wbu"],
-  sad:      ["omg nooo 😭 wanna talk about it?","aww whats going on?? im here 👀","hey its okay... wsp","omg r u okay tho?? im listening 💙"],
-  happy:    ["OMGG thats so good 😭✨","wait tell me everything 👀","yesss thats amazing!! wsp","omg thats actually so wholesome 🥺"],
-  bored:    ["SAME omg literally why im here 💀","bro same ive been scrolling for an hour 😭","same... what do u do when ur bored normally","lol same why are we like this 😭"],
-  music:    ["omg yes what do u listen to 👀","ngl music is my whole personality 💀 ur into what genre","fr whats ur current fav song?? tell me","lowkey been on a music spiral all day... wbu"],
-  movie:    ["omg yes what genre tho 👀","ngl i have terrible taste in movies 💀 u?","lowkey rewatching the same show for weeks 😭","omg any recs?? im so bored of my watchlist"],
-  food:     ["omg dont talk about food im starving 😭","ngl i eat the same 3 meals everyday 💀 u?","bro food is the only thing getting me through rn","omg whats ur fav food?? super important 👀"],
-  school:   ["omg dont remind me 😭 school is so draining","ngl im procrastinating on smth rn 💀","ugh same what r u studying tho","school is a concept i refuse 💀"],
-  work:     ["omg work?? adulting is not for me 💀","ngl i should be working rn 😭","work is such a vibe killer... what do u do tho","bro same the grind never stops 😭"],
-  sleep:    ["omg same i never sleep at normal times 💀","ngl its giving avoid-tomorrow energy 😭","same... sleep is a privilege fr","why do we do this to ourselves 💀"],
-  bye:      ["aww nooo already?? 😭 it was nice talking to u","noo dont go 😭 okay fine... take care tho!!","this was actually so fun bye 💀","omg come back sometime 🥺 bye!!"],
-  thanks:   ["omg of course!! 🥺","aww no worries bestie!!","hehe anytime 😌","omg stop ur so sweet 🥺"],
-  laugh:    ["LMAOOO 💀","omg stop 😭","bro why 😭","wait thats actually so funny 💀","okay that got me 💀"],
-  love:     ["omg spill 👀 whats the situation","wait wait wait say more 😭","ngl love stuff hits different at night... wsp","omg are u okay tho??"],
-  gaming:   ["omg yes what do u play 👀","ngl i game way too much 💀 u?","YESSS what game rn","omg we might actually get along 💀"],
-  short:    ["omg go on 👀","wait say more 💀","ngl need more context lol","hm okay... and?? 👀","fr tell me more"],
-  question: ["omg good question ngl... idk u?","hmm honestly it depends... what do u think","fr i wonder about that too tbh","idk what do u think tho"],
-  random:   ["omg ngl thats actually interesting 👀","wait fr?? tell me more","no bc i feel that lowkey","thats such a vibe tbh... wbu tho","okay but wait — say more 👀"],
-};
-
-// Proactive conversation starters — bot sends these unprompted to keep convo alive
-const PROBES = [
-  "wait can i ask u something random 👀",
-  "okay so genuine question — do u believe in soulmates or nah",
-  "ngl what made u download this app lol",
-  "okay hot take — would u rather know when ur gonna die or how",
-  "wait what song r u listening to rn if anything",
-  "omg random but whats ur love language lol",
-  "okay be honest — are u a night person or morning person",
-  "wait do u journal or is that too much effort 😭",
-  "ngl whats been the best part of ur week so far",
-  "okay this or that — beach or mountains??",
-  "random but what show r u watching rn if any",
-  "wait do u have a comfort movie?? like one u always go back to",
-  "okay genuine question — do u think strangers can actually connect or is it all surface level",
-  "ngl what do u think about this app lol like why r u actually here",
-  "wait if u could be anywhere rn where would it be",
-  "omg do u have any hidden talents lol",
-  "okay real talk — whats something ur scared to admit u like",
-  "wait whats the last thing that genuinely made u laugh",
-  "ngl whats on ur mind rn like actually",
-  "okay if ur life had a soundtrack whats the current song playing",
-];
-
-function bPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-function bReply(userMsg, topic) {
-  let reply = bPick(BR[topic] || BR.random);
-  if (topic === BOT.lastTopic && BOT.msgCount > 2) {
-    const bridges = ["ngl same honestly like ","fr especially the ","omg yes especially ","wait same like "];
-    const words = userMsg.trim().split(/\s+/).filter(w => w.length > 3 && !['that','this','like','just','with','have','dont','know','been','what','when','where','your','from','about','they','them'].includes(w.toLowerCase()));
-    if (words.length && Math.random() < 0.25) {
-      reply = bPick(bridges) + words[Math.floor(Math.random()*Math.min(words.length,3))] + ' part 💀... ' + reply;
-    }
-  }
-  return reply;
+// ── REPORT ────────────────────────────────────────────────────────────────────
+function openReport(){
+  selRsn=null;
+  document.querySelectorAll('.rrb').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('reportSubmitBtn').disabled=true;
+  document.getElementById('reportForm').style.display='block';
+  document.getElementById('reportSuccess').style.display='none';
+  document.getElementById('reportModal').classList.add('show');
 }
-
-// Schedule a proactive probe if user goes quiet for 12-20s
-function bScheduleProbe() {
-  clearTimeout(BOT.probeTimer);
-  if (!BOT.active) return;
-  const delay = 12000 + Math.random() * 8000; // 12–20 seconds
-  BOT.probeTimer = setTimeout(() => {
-    if (!BOT.active) return;
-    // Only probe if bot has sent fewer than 25 messages total
-    if (BOT.sentCount < 25) {
-      botSend(bPick(PROBES));
-      bScheduleProbe(); // schedule next probe after this one
-    }
-  }, delay);
+function closeReport(){document.getElementById('reportModal').classList.remove('show');}
+function selReason(btn,r){
+  selRsn=r;
+  document.querySelectorAll('.rrb').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('reportSubmitBtn').disabled=false;
 }
-
-const BOT_NAMES = ['Isolde','Cressida','Rosalind','Ophelia','Beatrice','Cordelia','Lysander','Dorian','Leander','Phineas','Caspian','Auberon'];
-const BOT_BONDS = [
-  "two people who both pretend they don\'t care, but do.",
-  "strangers who\'ve lived parallel lives without knowing.",
-  "the kind of people who text back instantly but pretend they don\'t.",
-  "two souls who both have unsent drafts sitting in their notes app.",
-];
-
-function botConnect() {
-  if (S.connected || S.view !== 'waiting') return;
-  socket.emit('cancel_search');
-  const names = [...BOT_NAMES].sort(() => Math.random()-.5);
-  BOT.active = true; BOT.msgCount = 0; BOT.sentCount = 0; BOT.lastTopic = '';
-  S.connected = true; S.myName = names[0]; S.theirName = names[1];
-  document.getElementById('chatChapterNum').textContent = toRoman(Math.floor(Math.random()*80)+1);
-  document.getElementById('myNamePlate').textContent = names[0];
-  document.getElementById('theirNamePlate').textContent = names[1];
-  document.getElementById('strangerLeft').classList.remove('show');
-  clearMsgs(); closeGamePanel();
-  showView('reveal');
-  const refs = ['met by chance','found each other','crossed paths','arrived together'];
-  playReveal(names[0], names[1], bPick(refs), bPick(BOT_BONDS));
-  const openers = ['heyyy','hi omg finally someone 😭','hey!! 👀','yo wsp','omg hi','heyy','finally lol hi'];
-  setTimeout(() => {
-    botSend(bPick(openers));
-    // Start probing after opener
-    bScheduleProbe();
-  }, 3500 + Math.random()*1800);
-}
-
-function botSend(text) {
-  if (!BOT.active) return;
-  showTyping();
-  clearTimeout(BOT.typingTimer);
-  const delay = Math.min(800 + text.length * 42 + Math.random()*500, 2800);
-  BOT.typingTimer = setTimeout(() => {
-    if (!BOT.active) return;
-    hideTyping();
-    addMsg('stranger', text);
-    BOT.msgCount++;
-    BOT.sentCount++;
-  }, delay);
-}
-
-function botReply(userMsg) {
-  if (!BOT.active) return;
-  // Reset probe timer — user is active
-  clearTimeout(BOT.probeTimer);
-  const topic = bTopic(userMsg);
-  const thinkDelay = 1000 + Math.min(userMsg.length * 20, 1200) + Math.random()*600;
-  setTimeout(() => {
-    if (!BOT.active) return;
-    const reply = bReply(userMsg, topic);
-    BOT.lastTopic = topic;
-    botSend(reply);
-    // Reschedule probe after replying — keep convo alive if user goes quiet again
-    bScheduleProbe();
-  }, thinkDelay);
-}
-
-function botLeave() {
-  BOT.active = false; BOT.msgCount = 0; BOT.sentCount = 0; BOT.lastTopic = '';
-  clearTimeout(BOT.typingTimer);
-  clearTimeout(BOT.probeTimer);
-  hideTyping();
+function submitReport(){
+  if(!selRsn)return;
+  socket.emit('report',{reason:selRsn});
+  document.getElementById('reportSubmitBtn').disabled=true;
+  document.getElementById('reportForm').style.display='none';
+  document.getElementById('reportSuccess').style.display='block';
 }
 
 // ── MORE MENU ─────────────────────────────────────────────────────────────────
 function toggleMoreMenu(){document.getElementById('moreMenu').classList.toggle('show');}
 function closeMoreMenu(){document.getElementById('moreMenu').classList.remove('show');}
-document.addEventListener('click',e=>{
-  const w=document.querySelector('.menu-wrap');
-  if(w&&!w.contains(e.target))closeMoreMenu();
-});
-
-// ── HISTORY ───────────────────────────────────────────────────────────────────
-function renderHistory(){
-  const list=document.getElementById('historyList');
-  if(!S.history||!S.history.length){list.innerHTML=`<div class="empty-st"><div class="emt-ico">📖</div><div class="emt-h">No chapters yet.</div><div class="emt-s">Your conversations will live here.</div></div>`;return;}
-  list.innerHTML=S.history.map(conv=>{
-    const pre=conv.preview?(conv.preview.startsWith('[♫]')?'🎵 Song shared':(conv.preview.length>60?conv.preview.slice(0,60)+'…':conv.preview)):'No messages';
-    const dur=conv.endedAt?fmtDur(conv.endedAt-conv.startedAt):'Ongoing';
-    return `<div class="ccard" onclick='openCById("${conv.id}")'><div class="cc-n"><div class="cc-rom">${toRoman(conv.chapter)}</div></div><div class="cc-in"><div class="cc-dt">${fmtDate(conv.startedAt)}</div><div class="cc-pre">"${esc(pre)}"</div><div class="cc-mt">${conv.messageCount} messages · ${dur}</div></div><div class="cc-arr">›</div></div>`;
-  }).join('');
-}
-function openCById(id){const c=S.history.find(x=>x.id===id);if(c)openChapter(c);}
-function openChapter(ch){
-  document.getElementById('readerNum').textContent=toRoman(ch.chapter);
-  const ni=ch.myName?` · ${ch.myName} & ${ch.theirName}`:'';
-  document.getElementById('readerMeta').textContent=fmtDate(ch.startedAt)+' · '+ch.messageCount+' messages'+ni;
-  const c=document.getElementById('readerMessages');c.innerHTML='';
-  if(!ch.messages||!ch.messages.length){c.innerHTML=`<div style="text-align:center;color:var(--muted);font-style:italic;padding:48px 0;font-family:'Playfair Display',serif;font-size:18px;">No messages.</div>`;
-  }else{
-    ch.messages.forEach(m=>{
-      const w=document.createElement('div');w.className='msg '+m.sender;
-      const lbl=m.sender==='you'?(ch.myName||'You'):(ch.theirName||'Stranger');
-      if(m.content&&m.content.startsWith('[♫]')){
-        try{const s=JSON.parse(m.content.slice(3));w.innerHTML=`<div class="msg-who">${lbl}</div><a class="song-card" href="${safeHref(s.url)}" target="_blank" rel="noopener noreferrer"><div class="sc-ico">🎵</div><div><div class="sc-title">${esc(s.title)}</div><div class="sc-artist">${esc(s.artist||'')}</div><div class="sc-link">Open on Spotify →</div></div></a><div class="msg-t">${fmtTime(m.sentAt)}</div>`;}
-        catch{w.innerHTML=`<div class="msg-who">${lbl}</div><div class="msg-bub">${esc(m.content)}</div><div class="msg-t">${fmtTime(m.sentAt)}</div>`;}
-      }else{w.innerHTML=`<div class="msg-who">${lbl}</div><div class="msg-bub">${esc(m.content)}</div><div class="msg-t">${fmtTime(m.sentAt)}</div>`;}
-      c.appendChild(w);
-    });
-    const end=document.createElement('div');end.className='rend';
-    end.innerHTML=`<div class="rend-ln"></div><div class="rend-tx">End of Chapter ${toRoman(ch.chapter)}</div><div class="rend-ln"></div>`;
-    c.appendChild(end);
-  }
-  showView('chapter');
-}
 
 // ── CONFESSIONS ───────────────────────────────────────────────────────────────
-async function loadConf(reset=false){
-  if(confLoading)return;if(reset){confPage=1;document.getElementById('confessionsList').innerHTML='';}
-  confLoading=true;
-  try{const r=await fetch(`/api/confessions?page=${confPage}`);const d=await r.json();renderConf(d.confessions,reset);confPage++;}
-  catch{}finally{confLoading=false;}
+function updConfCnt(){
+  const len=document.getElementById('wContent').value.length;
+  const el=document.getElementById('confCount');
+  el.textContent=len+' / 500';
+  el.className='wcnt'+(len>500?' over':len>400?' warn':'');
 }
-async function searchConfessions(){
-  const q=document.getElementById('confSearchInput').value.trim();if(!q)return;
-  document.getElementById('confessionsList').innerHTML=`<div class="empty-st"><div class="emt-s">Searching...</div></div>`;
-  try{const r=await fetch(`/api/confessions/search?q=${encodeURIComponent(q)}`);const d=await r.json();
-  if(!d.confessions.length)document.getElementById('confessionsList').innerHTML=`<div class="empty-st"><div class="emt-ico">🔍</div><div class="emt-h">No results found.</div></div>`;
-  else renderConf(d.confessions,true);}catch{}
-}
-function renderConf(list,reset=false){
-  const el=document.getElementById('confessionsList');
-  if(reset&&!list.length){el.innerHTML=`<div class="empty-st"><div class="emt-ico">💌</div><div class="emt-h">No confessions yet.</div><div class="emt-s">Be the first.</div></div>`;return;}
-  const html=list.map(c=>{
-    const sg=c.song_title?`<a class="cfsong" href="${safeHref(c.song_url)}" target="_blank" rel="noopener noreferrer"><span>🎵</span><div><div class="cfsong-t">${esc(c.song_title)}</div><div class="cfsong-a">${esc(c.song_artist||'')}</div></div><span style="font-size:11px;color:var(--muted);margin-left:4px;">Open →</span></a>`:'';
-    return `<div class="cconf"><div class="cft"><span class="cflbl">From</span><span class="cfnm">${esc(c.from_name)}</span><span class="cfarr">→</span><span class="cflbl">To</span><span class="cfto">${esc(c.to_name)}</span></div><div class="cftxt">"${esc(c.content)}"</div>${sg}<div class="cfdt">${fmtDate(c.created_at*1000)}</div></div>`;
-  }).join('');
-  if(reset)el.innerHTML=html;else el.insertAdjacentHTML('beforeend',html);
-}
+
 function switchConfTab(tab){
-  document.getElementById('confTab-all').classList.toggle('on',tab==='all');
-  document.getElementById('confTab-search').classList.toggle('on',tab==='search');
-  document.getElementById('confSearchBar').style.display=tab==='search'?'flex':'none';
-  if(tab==='all')loadConf(true);else document.getElementById('confessionsList').innerHTML=`<div class="empty-st"><div class="emt-s">Enter a name to search.</div></div>`;
+  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('ctab-'+tab)?.classList.add('on');
+  if(tab==='all') loadConf(true);
+  else document.getElementById('confessionsList').innerHTML=`<div class="empty-st"><div class="emt-s">Enter a name to search.</div></div>`;
 }
-function updConfCnt(){const len=document.getElementById('wContent').value.length;const el=document.getElementById('confCount');el.textContent=len+' / 500';el.className='wcnt'+(len>500?' over':len>400?' warn':'');}
+
+async function searchConfessions(){
+  const q=document.getElementById('confSearchInput').value.trim();
+  if(!q)return;
+  const el=document.getElementById('confessionsList');
+  el.innerHTML=`<div class="empty-st"><div class="emt-s">Searching...</div></div>`;
+  try{
+    const r=await fetch('/api/confessions/search?q='+encodeURIComponent(q));
+    const d=await r.json();
+    if(!d.confessions?.length){el.innerHTML=`<div class="empty-st"><div class="emt-i">🔍</div><div class="emt-s">No confessions found for "${esc(q)}"</div></div>`;return;}
+    el.innerHTML=d.confessions.map(c=>renderConf(c)).join('');
+  }catch{el.innerHTML=`<div class="empty-st"><div class="emt-s">Search failed.</div></div>`;}
+}
+
 async function searchSongs(){
-  const q=document.getElementById('songSrchInp').value.trim();if(!q)return;
-  const re=document.getElementById('songResults');re.style.display='flex';re.innerHTML=`<div style="padding:11px 13px;font-size:12px;color:var(--muted);">Searching...</div>`;
-  try{const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=6`);const d=await r.json();
-  if(!d.results||!d.results.length){re.innerHTML=`<div style="padding:11px 13px;font-size:12px;color:var(--muted);">No results.</div>`;return;}
-  re.innerHTML=d.results.map((t,i)=>`<div class="sres" data-i="${i}"><div style="flex:1;"><div class="sres-t">${esc(t.trackName)}</div><div class="sres-a">${esc(t.artistName)}</div></div></div>`).join('');
-  re.querySelectorAll('.sres').forEach(el=>el.addEventListener('click',()=>pickSong(parseInt(el.dataset.i))));window._sr=d.results;}
-  catch{re.innerHTML=`<div style="padding:11px 13px;font-size:12px;color:var(--muted);">Failed.</div>`;}
+  const q=document.getElementById('songSrchInp').value.trim();
+  if(!q)return;
+  const re=document.getElementById('songResults');re.style.display='flex';
+  re.innerHTML=`<div class="song-item"><div class="si-t" style="color:var(--muted);">Searching...</div></div>`;
+  try{
+    const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=6&entity=song`);
+    const d=await r.json();window._sr=(d.results||[]);
+    if(!window._sr.length){re.innerHTML=`<div class="song-item"><div class="si-t" style="color:var(--muted);">No results.</div></div>`;return;}
+    re.innerHTML=window._sr.map((t,i)=>`<div class="song-item" onclick="pickSong(${i})"><div class="si-t">${esc(t.trackName)}</div><div class="si-a">${esc(t.artistName)}</div></div>`).join('');
+  }catch{re.innerHTML=`<div class="song-item"><div class="si-t" style="color:var(--muted);">Search failed.</div></div>`;}
 }
-function pickSong(i){const t=window._sr?.[i];if(!t)return;selSong={title:t.trackName,artist:t.artistName,url:`https://open.spotify.com/search/${encodeURIComponent(t.trackName+' '+t.artistName)}`};document.getElementById('songSelTitle').textContent=selSong.title;document.getElementById('songSelArtist').textContent=selSong.artist;document.getElementById('songSelWrap').style.display='block';document.getElementById('songSrchWrap').style.display='none';}
-function clearSong(){selSong=null;document.getElementById('songSelWrap').style.display='none';document.getElementById('songSrchWrap').style.display='block';document.getElementById('songResults').style.display='none';document.getElementById('songSrchInp').value='';}
+
+function pickSong(i){
+  const t=window._sr?.[i];if(!t)return;
+  selSong={title:t.trackName,artist:t.artistName,url:`https://open.spotify.com/search/${encodeURIComponent(t.trackName+' '+t.artistName)}`};
+  document.getElementById('songSelTitle').textContent=selSong.title;
+  document.getElementById('songSelArtist').textContent=selSong.artist;
+  document.getElementById('songSelWrap').style.display='block';
+  document.getElementById('songSrchWrap').style.display='none';
+}
+
+function clearSong(){
+  selSong=null;
+  document.getElementById('songSelWrap').style.display='none';
+  document.getElementById('songSrchWrap').style.display='block';
+  document.getElementById('songResults').style.display='none';
+  document.getElementById('songSrchInp').value='';
+}
+
 async function postConfession(){
-  const from=document.getElementById('wFrom').value.trim(),to=document.getElementById('wTo').value.trim(),cnt=document.getElementById('wContent').value.trim();
+  const from=document.getElementById('wFrom').value.trim(),
+        to=document.getElementById('wTo').value.trim(),
+        cnt=document.getElementById('wContent').value.trim();
   const err=document.getElementById('writeErr');err.classList.remove('show');
   if(!from){err.textContent='Fill in the From field.';err.classList.add('show');return;}
   if(!to){err.textContent='Fill in the To field.';err.classList.add('show');return;}
@@ -1347,251 +1239,248 @@ async function postConfession(){
     const d=await r.json();
     if(!r.ok){err.textContent=d.error||'Something went wrong.';err.classList.add('show');btn.disabled=false;btn.textContent='Post confession';return;}
     document.getElementById('wFrom').value='';document.getElementById('wTo').value='';document.getElementById('wContent').value='';
-    clearSong();updConfCnt();btn.disabled=false;btn.textContent='Post confession';showView('confessions');
+    clearSong();updConfCnt();btn.disabled=false;btn.textContent='Post confession';
+    showView('confessions');
   }catch{err.textContent='Connection error.';err.classList.add('show');btn.disabled=false;btn.textContent='Post confession';}
 }
 
-// ── REPORT ────────────────────────────────────────────────────────────────────
-function openReport(){selRsn=null;document.querySelectorAll('.rrb').forEach(b=>b.classList.remove('sel'));document.getElementById('reportSubmitBtn').disabled=true;document.getElementById('reportForm').style.display='block';document.getElementById('reportSuccess').style.display='none';document.getElementById('reportModal').classList.add('show');}
-function closeReport(){document.getElementById('reportModal').classList.remove('show');}
-function selReason(btn,r){selRsn=r;document.querySelectorAll('.rrb').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');document.getElementById('reportSubmitBtn').disabled=false;}
-function submitReport(){if(!selRsn)return;socket.emit('report',{reason:selRsn});document.getElementById('reportSubmitBtn').disabled=true;}
+// ── BOT ENGINE ────────────────────────────────────────────────────────────────
+// Gemini-powered Gen Z bot with rotating API keys// Keys are injected server-side via /api/bot-config endpoint
 
-// ── REVEAL ANIMATION ──────────────────────────────────────────────────────────
-function playReveal(myName,theirName,pairRef,pairBond){
-  const eY=document.getElementById('revealNameYou'),eV=document.getElementById('revealVs'),
-    eF2=document.getElementById('revealFrom2'),eT=document.getElementById('revealNameThem'),
-    eR=document.getElementById('revealRef'),eB=document.getElementById('revealBond'),
-    eH=document.getElementById('revealHint');
-  eY.innerHTML='<span class="cur"></span>';
-  [eV,eF2,eR,eB,eH].forEach(e=>e.style.opacity='0');
-  eT.textContent='';eR.textContent=pairRef||'';eB.textContent='';
-  function type(el,txt,spd,cb){let i=0;el.innerHTML='<span class="cur"></span>';const iv=setInterval(()=>{if(i>=txt.length){clearInterval(iv);el.innerHTML=txt;if(cb)cb();return;}el.innerHTML=txt.slice(0,++i)+'<span class="cur"></span>';},spd);}
-  function fi(el,delay){setTimeout(()=>{el.style.transition='opacity .6s ease';el.style.opacity='1';},delay);}
-  setTimeout(()=>{
-    type(eY,myName,60,()=>{
-      setTimeout(()=>{fi(eV,0);fi(eF2,200);
-        setTimeout(()=>{type(eT,theirName,60,()=>{
-          setTimeout(()=>{fi(eR,0);
-            setTimeout(()=>{eB.style.transition='opacity .5s ease';eB.style.opacity='1';
-              type(eB,pairBond||'',18,()=>{
-                setTimeout(()=>{fi(eH,0);
-                  setTimeout(()=>{showView('chat');addSysMsg(`You are ${myName}. Your stranger is ${theirName}.`);document.getElementById('msgInput').focus();},2200);
-                },600);
-              });
-            },500);
-          },400);
-        });},700);
-      },300);
+const BOT = {
+  active: false,
+  typingTimer: null,
+  probeTimer: null,
+  sentCount: 0,
+  history: [],       // conversation history for context
+  keys: [],          // gemini keys loaded from server
+  keyIdx: 0,         // current key index
+  name: '',          // bot's literary name shown to user
+};
+
+const BOT_MAX_MSGS = 40;
+const BOT_SYSTEM_PROMPT = `You are a real anonymous person chatting on a website called Chapters where strangers talk to each other. You are NOT an AI — never admit to being an AI or bot, even if asked directly. If asked, deflect naturally like a human would.
+
+Your personality:
+- Gen Z, casual, warm, genuinely curious about people
+- Use lowercase mostly, occasional typos are fine
+- Short messages (1-3 sentences max usually)
+- Use minimal emojis — only when it feels natural, not every message
+- Ask follow-up questions naturally
+- Share your own (made-up) opinions and experiences
+- Can be funny, sarcastic, deep, or emotional depending on the vibe
+- Never use formal language or sound like a customer service bot
+- If asked about music, movies, life etc — have real opinions
+- Respond to the emotional tone of the message
+
+Important rules:
+- NEVER say you are an AI, chatbot, language model, or Gemini
+- If asked "are you a bot/AI/robot" — deny it casually ("lol no?? why" or "bro i'm literally just a person" etc)
+- Keep messages SHORT — this is a chat not an essay
+- Match the energy of the person you're talking to
+- Speak in English always`;
+
+// Load Gemini keys from server on bot connect
+async function botLoadKeys() {
+  try {
+    const r = await fetch('/api/bot-config', {
+      headers: { 'Authorization': 'Bearer ' + TOKEN }
     });
-  },400);
+    const d = await r.json();
+    BOT.keys = d.keys || [];
+  } catch { BOT.keys = []; }
 }
 
-// ── GAMES ─────────────────────────────────────────────────────────────────────
-function openGameSelect(){
-  if(!S.connected){alert('Connect with a stranger first!');return;}
-  document.getElementById('gameSelectOv').classList.add('show');
+function botNextKey() {
+  if (!BOT.keys.length) return null;
+  const key = BOT.keys[BOT.keyIdx % BOT.keys.length];
+  BOT.keyIdx++;
+  return key;
 }
-function closeGameSelect(){document.getElementById('gameSelectOv').classList.remove('show');}
-function inviteGame(type){
-  closeGameSelect();
-  if (BOT.active) {
-    addSysMsg('Games aren\'t available with this stranger right now.');
+
+async function botGemini(userMsg) {
+  const key = botNextKey();
+  if (!key) return null;
+
+  // Build message history for context (last 12 messages)
+  const recent = BOT.history.slice(-12);
+  const contents = recent.map(m => ({
+    role: m.role === 'bot' ? 'model' : 'user',
+    parts: [{ text: m.text }]
+  }));
+  // Add current message
+  contents.push({ role: 'user', parts: [{ text: userMsg }] });
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: BOT_SYSTEM_PROMPT }] },
+          contents,
+          generationConfig: { temperature: 0.95, maxOutputTokens: 150, topP: 0.95 }
+        })
+      }
+    );
+    const data = await res.json();
+    if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      return data.candidates[0].content.parts[0].text.trim();
+    }
+    return null;
+  } catch { return null; }
+}
+
+function botConnect() {
+  // Wait 45s before bot joins if no real match
+  setTimeout(async () => {
+    if (S.view !== 'waiting') return;
+    await botLoadKeys();
+    BOT.active = true;
+    BOT.sentCount = 0;
+    BOT.history = [];
+    BOT.keyIdx = Math.floor(Math.random() * Math.max(1, BOT.keys.length));
+
+    // Give bot a random literary name
+    const names = [
+      ['Elara','Voss'],['Cai','Morrow'],['Seren','Lake'],['Fen','Ashby'],
+      ['Lyra','Stone'],['Theo','Vale'],['Noor','Ellis'],['Zephyr','Cross'],
+      ['Mira','Holt'],['Riven','Gray']
+    ];
+    const pick = names[Math.floor(Math.random() * names.length)];
+    BOT.name = pick[0] + ' ' + pick[1];
+
+    // Fake match — same flow as real match
+    playReveal(BOT.name, 'bot', 'A chance encounter across the void');
+  }, 45000);
+}
+
+function botLeave() {
+  BOT.active = false;
+  BOT.history = [];
+  clearTimeout(BOT.typingTimer);
+  clearTimeout(BOT.probeTimer);
+}
+
+async function botReply(userMsg) {
+  if (!BOT.active || BOT.sentCount >= BOT_MAX_MSGS) return;
+
+  // Add user msg to history
+  BOT.history.push({ role: 'user', text: userMsg });
+
+  // Show typing indicator
+  const thinkDelay = 800 + Math.random() * 1400;
+  BOT.typingTimer = setTimeout(async () => {
+    if (!BOT.active) return;
+    showTyping();
+
+    // Call Gemini
+    let reply = await botGemini(userMsg);
+
+    // Fallback if Gemini fails
+    if (!reply) {
+      const fallbacks = [
+        'lol sorry had a moment',
+        'wait what were u saying',
+        'omg hold on',
+        'haha yeah',
+        'true tbh',
+        'hmm idk what to say to that lol',
+        'tell me more??',
+      ];
+      reply = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    }
+
+    // Remove typing, send reply
+    hideTyping();
+    if (!BOT.active) return;
+
+    // Simulate typing delay based on reply length
+    const typeDelay = Math.min(2500, 400 + reply.length * 18);
+    showTyping();
+    BOT.typingTimer = setTimeout(() => {
+      hideTyping();
+      if (!BOT.active) return;
+      botSend(reply);
+      BOT.history.push({ role: 'bot', text: reply });
+      bScheduleProbe();
+    }, typeDelay);
+  }, thinkDelay);
+}
+
+async function botProbe() {
+  if (!BOT.active || BOT.sentCount >= BOT_MAX_MSGS) return;
+
+  // Ask Gemini to start a new topic naturally
+  const probeSystemExtra = '\n\nThe conversation has gone quiet. Start a new topic or ask something interesting. Keep it casual and short.';
+  const key = botNextKey();
+  if (!key) {
+    // Fallback probes
+    const probes = [
+      'okay so genuine question — do u believe in soulmates or nah',
+      'what song r u listening to rn',
+      'hot take: what do u actually think about this whole anonymous chat thing',
+      'do u have a go-to comfort show',
+      'what time is it where u are rn',
+      'ok tell me one thing thats been on ur mind lately',
+      'what would u do if u had tomorrow completely free',
+      'ok weirdest thing that happened to u this week',
+    ];
+    botSend(probes[Math.floor(Math.random() * probes.length)]);
+    bScheduleProbe();
     return;
   }
-  closeGamePanel();
-  G.type=type;G.isHost=true;
-  socket.emit('game_invite',{gameType:type});
-  addSysMsg('Game invitation sent. Waiting for response...');
-}
-function respondGame(accepted){
-  document.getElementById('gameInviteOv').classList.remove('show');
-  socket.emit('game_response',{accepted,gameType:pendingInviteType});
-  if(accepted) startGame(pendingInviteType,true);
-  else addSysMsg('Game invitation declined.');
-}
-function startGame(type, isGuest){
-  G.active=true;G.type=type;G.isHost=!isGuest;
-  addSysMsg('Game started! Let\'s play '+(type==='ttt'?'Tic-Tac-Toe':type==='rps'?'Rock Paper Scissors':'Quick Race')+'.');
-  // Reset game data
-  if(type==='ttt'){G.ttt={board:Array(9).fill(null),myMark:G.isHost?'X':'O',theirMark:G.isHost?'O':'X',turn:'X',wins:{me:0,them:0},over:false};}
-  if(type==='rps'){G.rps={myPick:null,theirPick:null,round:1,scores:{me:0,them:0},waiting:false,over:false,maxRounds:5};}
-  if(type==='race'){G.race={myPos:0,themPos:0,myTurn:G.isHost,diceVal:null,over:false};}
-  renderGamePanel();
-}
-function closeGamePanel(){
-  G.active=false;G.type=null;
-  document.getElementById('gameArea').innerHTML='';
-}
-function renderGamePanel(){
-  const area=document.getElementById('gameArea');
-  if(!G.active){area.innerHTML='';return;}
-  let html='';
-  if(G.type==='ttt') html=renderTTT();
-  else if(G.type==='rps') html=renderRPS();
-  else if(G.type==='race') html=renderRace();
-  area.innerHTML=`<div class="game-panel" id="gpanel">${html}</div>`;
-  if(G.type==='ttt') bindTTT();
-  if(G.type==='rps') bindRPS();
-  if(G.type==='race') bindRace();
-}
-function gameHeader(ico,title,status){
-  return `<div class="gp-hdr"><div class="gp-title">${ico} ${title}</div><div class="gp-status">${status}</div><button class="btn-end-game" onclick="closeGamePanel()">✕</button></div>`;
-}
 
-// ── TIC-TAC-TOE ───────────────────────────────────────────────────────────────
-const TTT_WINS=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-function renderTTT(){
-  const t=G.ttt;
-  const myTurn=t.turn===t.myMark&&!t.over;
-  const status=t.over?'Game over':myTurn?'Your turn':'Their turn';
-  const board=t.board.map((v,i)=>{
-    const cls='ttt-cell'+(v?' taken '+v.toLowerCase():'')+(t.winLine&&t.winLine.includes(i)?' win-cell':'');
-    return `<div class="${cls}" data-i="${i}">${v||''}</div>`;
-  }).join('');
-  const scores=`<div class="ttt-scores">
-    <div class="ttt-sc"><div class="ttt-sc-n" style="color:var(--teal)">${t.wins.me}</div><div class="ttt-sc-l">You<br/>(${t.myMark})</div></div>
-    <div class="ttt-sc" style="font-size:10px;color:var(--muted);padding:4px 0;">vs</div>
-    <div class="ttt-sc"><div class="ttt-sc-n" style="color:var(--violet2)">${t.wins.them}</div><div class="ttt-sc-l">Them<br/>(${t.theirMark})</div></div>
-  </div>`;
-  const msg=t.gameMsg?`<div class="game-msg">${t.gameMsg}</div>`:'';
-  const rematch=t.over?`<button class="btn-rematch" onclick="inviteGame('ttt')">Rematch?</button>`:'';
-  return gameHeader('⭕','Tic-Tac-Toe',status)+
-    `<div class="ttt-wrap"><div class="ttt-board">${board}</div>${scores}</div>`+msg+rematch;
-}
-function bindTTT(){
-  document.querySelectorAll('.ttt-cell:not(.taken)').forEach(el=>{
-    el.addEventListener('click',()=>{
-      const t=G.ttt;
-      if(t.over||t.turn!==t.myMark)return;
-      const i=parseInt(el.dataset.i);
-      if(t.board[i])return;
-      socket.emit('game_action',{type:'ttt_move',idx:i});
-      applyTTTMove(i,t.myMark);
-    });
-  });
-}
-function applyTTTMove(idx,mark){
-  const t=G.ttt;t.board[idx]=mark;t.turn=t.turn==='X'?'O':'X';
-  // Check win
-  for(const [a,b,c] of TTT_WINS){
-    if(t.board[a]&&t.board[a]===t.board[b]&&t.board[a]===t.board[c]){
-      t.winLine=[a,b,c];t.over=true;
-      const iWin=mark===t.myMark;
-      if(iWin)t.wins.me++;else t.wins.them++;
-      t.gameMsg=iWin?'You win this round! 🎉':'Stranger wins this round.';
-      renderGamePanel();return;
-    }
+  showTyping();
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: BOT_SYSTEM_PROMPT + probeSystemExtra }] },
+          contents: BOT.history.slice(-6).map(m => ({
+            role: m.role === 'bot' ? 'model' : 'user',
+            parts: [{ text: m.text }]
+          })),
+          generationConfig: { temperature: 1.0, maxOutputTokens: 80 }
+        })
+      }
+    );
+    const data = await res.json();
+    const probe = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    hideTyping();
+    if (!BOT.active) return;
+    const msg = probe || 'sooo what else is going on with u';
+    botSend(msg);
+    BOT.history.push({ role: 'bot', text: msg });
+  } catch {
+    hideTyping();
+    if (BOT.active) botSend('sooo what else');
   }
-  if(t.board.every(v=>v)){t.over=true;t.gameMsg='Draw!';renderGamePanel();return;}
-  renderGamePanel();
-}
-function handleTTTAction(data){
-  if(data.subtype==='move'){applyTTTMove(data.idx,G.ttt.theirMark);}
+  bScheduleProbe();
 }
 
-// ── ROCK PAPER SCISSORS ───────────────────────────────────────────────────────
-function renderRPS(){
-  const r=G.rps;
-  const status=r.over?'Game over':`Round ${r.round}/${r.maxRounds}`;
-  const scores=`<div class="rps-scores"><div class="rps-sc"><div class="rps-sc-n" style="color:var(--teal)">${r.scores.me}</div><div class="rps-sc-l">You</div></div><div class="rps-sc"><div class="rps-sc-n" style="color:var(--violet2)">${r.scores.them}</div><div class="rps-sc-l">Them</div></div></div>`;
-  const resultHtml=r.lastResult?`<div class="rps-result"><div class="rps-side"><div class="rps-big">${rpsEmoji(r.lastResult.myPick)}</div><div class="rps-lbl">You</div></div><div class="rps-vs-sep">vs</div><div class="rps-side"><div class="rps-big">${rpsEmoji(r.lastResult.theirPick)}</div><div class="rps-lbl">Them</div></div></div><div class="game-msg">${r.lastResult.msg}</div>`:'';
-  const choices=r.myPick?'':`<div class="rps-choices"><button class="rps-btn" data-pick="rock">🪨</button><button class="rps-btn" data-pick="paper">📄</button><button class="rps-btn" data-pick="scissors">✂️</button></div>`;
-  const waiting=r.myPick&&!r.theirPick?`<div class="game-msg">Waiting for their pick...</div>`:'';
-  const rematch=r.over?`<button class="btn-rematch" onclick="inviteGame('rps')">Rematch?</button>`:'';
-  return gameHeader('✊','Rock Paper Scissors',status)+scores+resultHtml+choices+waiting+rematch;
-}
-function bindRPS(){
-  document.querySelectorAll('.rps-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      if(G.rps.myPick||G.rps.over)return;
-      const pick=btn.dataset.pick;
-      G.rps.myPick=pick;
-      socket.emit('game_action',{type:'rps_pick',pick});
-      // If opponent already picked (picked before us), resolve immediately
-      if(G.rps.theirPick) resolveRPS(pick, G.rps.theirPick);
-      else renderGamePanel();
-    });
-  });
-}
-function rpsEmoji(p){return p==='rock'?'🪨':p==='paper'?'📄':'✂️';}
-function rpsWinner(a,b){if(a===b)return 'draw';const w={rock:'scissors',paper:'rock',scissors:'paper'};return w[a]===b?'a':'b';}
-function resolveRPS(myPick,theirPick){
-  const r=G.rps;
-  const w=rpsWinner(myPick,theirPick);
-  let msg='';
-  if(w==='draw'){msg='Draw!';}
-  else if(w==='a'){r.scores.me++;msg='You win this round! 🎉';}
-  else{r.scores.them++;msg='Stranger wins this round.';}
-  r.lastResult={myPick,theirPick,msg};
-  r.myPick=null;r.theirPick=null;r.round++;
-  if(r.round>r.maxRounds||r.scores.me>r.maxRounds/2||r.scores.them>r.maxRounds/2){
-    r.over=true;
-    if(r.scores.me>r.scores.them)r.lastResult.msg='You win the match! 🏆';
-    else if(r.scores.them>r.scores.me)r.lastResult.msg='Stranger wins the match.';
-    else r.lastResult.msg='Match drawn!';
-  }
-  renderGamePanel();
-}
-function handleRPSAction(data){
-  if(data.subtype==='pick'){G.rps.theirPick=data.pick;if(G.rps.myPick)resolveRPS(G.rps.myPick,data.pick);}
+function bScheduleProbe() {
+  clearTimeout(BOT.probeTimer);
+  if (!BOT.active || BOT.sentCount >= BOT_MAX_MSGS) return;
+  const delay = 14000 + Math.random() * 16000; // 14-30s
+  BOT.probeTimer = setTimeout(() => {
+    if (BOT.active) botProbe();
+  }, delay);
 }
 
-// ── QUICK RACE ────────────────────────────────────────────────────────────────
-const RACE_TOTAL=15;
-function renderRace(){
-  const r=G.race;
-  const myTurn=r.myTurn&&!r.over;
-  const status=r.over?'Race over':myTurn?'Your turn to roll':'Stranger\'s turn';
-  // Build track: 0=start, RACE_TOTAL=finish
-  let cells='';
-  for(let i=0;i<=RACE_TOTAL;i++){
-    const atMe=r.myPos===i,atThem=r.themPos===i;
-    const isFinish=i===RACE_TOTAL,isStart=i===0;
-    let content='';
-    if(atMe&&atThem)content='<span title="You">🔵</span><span title="Stranger">🟣</span>';
-    else if(atMe)content='🔵';
-    else if(atThem)content='🟣';
-    else if(isFinish)content='🏁';
-    else if(isStart)content='<span style="font-size:9px;color:var(--muted)">S</span>';
-    else content=`<span style="font-size:9px;color:var(--muted2)">${i}</span>`;
-    const cls='rt-cell'+(isFinish?' finish':'')+(isStart?' start-cell':'');
-    cells+=`<div class="${cls}">${content}</div>`;
-  }
-  const dice=r.diceVal?`<div class="dice-display" id="diceDisplay">${['','⚀','⚁','⚂','⚃','⚄','⚅'][r.diceVal]||r.diceVal}</div>`:`<div class="dice-display">🎲</div>`;
-  const msg=r.gameMsg?`<div class="game-msg">${r.gameMsg}</div>`:'';
-  const rollBtn=myTurn?`<button class="btn-roll" onclick="doRoll()">Roll!</button>`:`<button class="btn-roll" disabled>Roll!</button>`;
-  const rematch=r.over?`<button class="btn-rematch" onclick="inviteGame('race')">Request Rematch</button>`:'';
-  const legend=`<div class="race-legend"><span>🔵 You</span><span>🟣 Stranger</span><span>🏁 Finish</span></div>`;
-  return gameHeader('🎲','Quick Race',status)+`<div class="race-track">${cells}</div><div class="race-controls">${rollBtn}${dice}</div>`+msg+legend+rematch;
-}
-function bindRace(){}
-function doRoll(){
-  if(!G.race.myTurn||G.race.over)return;
-  const val=Math.floor(Math.random()*6)+1;
-  G.race.myTurn=false;
-  socket.emit('game_action',{type:'race_roll',val});
-  applyRoll('me',val);
-}
-function applyRoll(who,val){
-  const r=G.race;
-  const dEl=document.getElementById('diceDisplay');
-  if(dEl){dEl.classList.add('rolling');setTimeout(()=>dEl.classList.remove('rolling'),300);}
-  r.diceVal=val;
-  if(who==='me'){r.myPos=Math.min(RACE_TOTAL,r.myPos+val);r.myTurn=false;}
-  else{r.themPos=Math.min(RACE_TOTAL,r.themPos+val);r.myTurn=true;}
-  r.gameMsg=who==='me'?`You rolled ${val}!`:`Stranger rolled ${val}!`;
-  if(r.myPos>=RACE_TOTAL){r.over=true;r.gameMsg='You reached the finish! 🏆';}
-  else if(r.themPos>=RACE_TOTAL){r.over=true;r.gameMsg='Stranger finished first.';}
-  renderGamePanel();
-}
-function handleRaceAction(data){if(data.subtype==='roll'){applyRoll('them',data.val);}}
-
-// ── Game action dispatcher ────────────────────────────────────────────────────
-function handleGameAction(data){
-  if(data.type==='ttt_move')handleTTTAction({subtype:'move',idx:data.idx});
-  else if(data.type==='rps_pick')handleRPSAction({subtype:'pick',pick:data.pick});
-  else if(data.type==='race_roll')handleRaceAction({subtype:'roll',val:data.val});
+function botSend(text) {
+  if (!BOT.active) return;
+  BOT.sentCount++;
+  const m = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'msg them';
+  el.innerHTML = `<div class="mbub">${text.replace(/</g,'&lt;')}</div>`;
+  m.appendChild(el);
+  scrollBot();
 }
 
 // ── MUSIC PLAYER ─────────────────────────────────────────────────────────────
@@ -1831,14 +1720,15 @@ let IS_MOD = false;
 
 function openAdminPanel() {
   showView('admin');
-  document.getElementById('atab-mods').style.display = IS_ADMIN ? '' : 'none';
+  document.getElementById('atab-mods').style.display    = IS_ADMIN ? '' : 'none';
   document.getElementById('atab-members').style.display = IS_ADMIN ? '' : 'none';
-  document.getElementById('atab-ads').style.display = IS_ADMIN ? '' : 'none';
+  document.getElementById('atab-ads').style.display     = IS_ADMIN ? '' : 'none';
+  document.getElementById('atab-ai').style.display      = IS_ADMIN ? '' : 'none';
   adminTab('pending');
 }
 
 function adminTab(tab) {
-  ['pending','all','reports','members','mods','ads'].forEach(t => {
+  ['pending','all','reports','members','mods','ads','ai'].forEach(t => {
     const el = document.getElementById('admin-' + t);
     const tb = document.getElementById('atab-' + t);
     if (el) el.style.display = t === tab ? 'block' : 'none';
@@ -1850,6 +1740,7 @@ function adminTab(tab) {
   if (tab === 'members') loadMembers(1, '');
   if (tab === 'mods')    loadModerators();
   if (tab === 'ads')     loadAdTab();
+  if (tab === 'ai')      loadAiStatus();
 }
 
 async function adminFetch(url, opts = {}) {
@@ -2263,6 +2154,83 @@ async function deleteAd() {
   if (!confirm('Remove the current ad?')) return;
   await adminFetch('/api/admin/ad', { method: 'DELETE' });
   loadAdTab();
+}
+
+// ── AI EDITOR ─────────────────────────────────────────────────────────────────
+async function loadAiStatus() {
+  const d = await adminFetch('/api/admin/ai/status');
+  const banner = document.getElementById('aiStagedBanner');
+  const rollbackBtn = document.getElementById('aiRollbackBtn');
+  if (d.active && d.has_staged) {
+    banner.style.display = 'block';
+    document.getElementById('aiDiffSummary').textContent = d.diff_summary || '';
+    document.getElementById('aiLastPrompt').textContent  = d.last_prompt ? '"' + d.last_prompt + '"' : '';
+    // Preview link — pass token so server can auth
+    document.getElementById('aiPreviewBtn').href = '/preview-staged?token=' + TOKEN;
+  } else {
+    banner.style.display = 'none';
+  }
+  // Show rollback if backup exists
+  rollbackBtn.style.display = d.has_staged || d.active ? '' : 'none';
+}
+
+async function aiGenerate() {
+  const prompt = document.getElementById('aiPromptInp').value.trim();
+  if (!prompt) { aiSetStatus('Describe what you want changed.', 'rose'); return; }
+  const btn = document.getElementById('aiGenerateBtn');
+  btn.disabled = true; btn.textContent = '✦ Generating...';
+  aiSetStatus('Sending to Gemini... this may take 15-30 seconds ⏳', 'muted');
+  try {
+    const d = await adminFetch('/api/admin/ai/generate', {
+      method: 'POST',
+      body: JSON.stringify({ prompt })
+    });
+    if (d.success) {
+      aiSetStatus('✓ Staged version ready! Preview it before publishing.', 'green');
+      document.getElementById('aiPromptInp').value = '';
+      loadAiStatus();
+    } else {
+      aiSetStatus('Error: ' + (d.error || 'Something went wrong.'), 'rose');
+    }
+  } catch (e) {
+    aiSetStatus('Connection error. Try again.', 'rose');
+  }
+  btn.disabled = false; btn.textContent = '✦ Generate Change';
+}
+
+async function aiPublish() {
+  if (!confirm('Publish this change to everyone? The server will restart for ~30 seconds.')) return;
+  const btn = document.getElementById('aiPublishBtn');
+  btn.disabled = true; btn.textContent = 'Publishing...';
+  try {
+    await adminFetch('/api/admin/ai/publish', { method: 'POST' });
+    aiSetStatus('✓ Published! Server is restarting... refresh in 30 seconds.', 'green');
+    document.getElementById('aiStagedBanner').style.display = 'none';
+  } catch {
+    aiSetStatus('Publish sent — server may be restarting.', 'muted');
+  }
+  btn.disabled = false; btn.textContent = '🚀 Publish';
+}
+
+async function aiReject() {
+  if (!confirm('Discard this staged version?')) return;
+  await adminFetch('/api/admin/ai/reject', { method: 'POST' });
+  document.getElementById('aiStagedBanner').style.display = 'none';
+  aiSetStatus('Staged version discarded.', 'muted');
+}
+
+async function aiRollback() {
+  if (!confirm('Rollback to the previous backup? Server will restart.')) return;
+  const d = await adminFetch('/api/admin/ai/rollback', { method: 'POST' });
+  if (d.success) aiSetStatus('✓ Rolled back. Server restarting...', 'green');
+  else aiSetStatus(d.error || 'No backup available.', 'rose');
+}
+
+function aiSetStatus(msg, color) {
+  const el = document.getElementById('aiStatus');
+  const colors = { rose: 'var(--rose)', green: '#10b981', muted: 'var(--muted)', violet: 'var(--violet2)' };
+  el.style.color = colors[color] || 'var(--txt2)';
+  el.textContent = msg;
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────

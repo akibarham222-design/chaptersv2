@@ -13,6 +13,23 @@ const multer = require('multer');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+
+// Bot Gemini keys — up to 5, named GEMINI_BOT_KEY_1 through GEMINI_BOT_KEY_5
+// Falls back to GEMINI_API_KEY if no bot keys set
+function getBotKeys() {
+  const keys = [];
+  for (let i = 1; i <= 5; i++) {
+    const k = process.env[`GEMINI_BOT_KEY_${i}`];
+    if (k) keys.push(k);
+  }
+  if (!keys.length && GEMINI_API_KEY) keys.push(GEMINI_API_KEY);
+  return keys;
+}
+const INDEX_PATH    = path.join(__dirname, 'public', 'index.html');
+const STAGED_PATH   = path.join(__dirname, 'public', 'index.staged.html');
+const BACKUP_PATH   = path.join(__dirname, 'public', 'index.backup.html');
+
 // Multer config — images only, max 5MB
 const adStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
@@ -218,6 +235,11 @@ db.exec(`
     image_url TEXT NOT NULL,
     link_url TEXT,
     created_at INTEGER DEFAULT (strftime('%s','now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS staging (
+    key TEXT PRIMARY KEY,
+    value TEXT
   );
 `);
 
@@ -534,7 +556,14 @@ app.get('/api/me', (req, res) => {
   res.json({ username: account.username, id: account.id, is_admin: account.is_admin || 0, is_moderator: account.is_moderator || 0 });
 });
 
-// ─── Confession Routes ────────────────────────────────────────────────────────
+// Bot Gemini keys — served only to authenticated users
+app.get('/api/bot-config', (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ keys: [] });
+  const account = getAccountByToken(token);
+  if (!account) return res.status(401).json({ keys: [] });
+  res.json({ keys: getBotKeys() });
+});
 
 // Get all confessions (newest first, paginated)
 app.get('/api/confessions', (req, res) => {
@@ -1078,6 +1107,141 @@ app.post('/api/admin/make-admin', (req, res) => {
   if (!acc) return res.status(404).json({ error: 'User not found.' });
   db.prepare(`UPDATE accounts SET is_admin = 1 WHERE id = ?`).run(acc.id);
   res.json({ success: true, message: `${username} is now admin.` });
+});
+
+// ── Staging Middleware — serve staged index.html to admin+mods ────────────────
+app.use((req, res, next) => {
+  if (req.path !== '/' && req.path !== '/index.html') return next();
+  if (!fs.existsSync(STAGED_PATH)) return next();
+  const stagingRow = db.prepare(`SELECT value FROM staging WHERE key='active'`).get();
+  if (!stagingRow || stagingRow.value !== '1') return next();
+  // Check if requester is admin or mod via token cookie/header
+  const token = req.query._t || '';
+  if (!token) return next(); // regular users see live version
+  const account = getAccountByToken(token);
+  if (account && (account.is_admin || account.is_moderator)) {
+    return res.sendFile(STAGED_PATH);
+  }
+  next();
+});
+
+// ── AI / Gemini Routes (admin only) ──────────────────────────────────────────
+
+// Get staging status
+app.get('/api/admin/ai/status', inAppAdminAuth, (req, res) => {
+  const active = db.prepare(`SELECT value FROM staging WHERE key='active'`).get();
+  const prompt = db.prepare(`SELECT value FROM staging WHERE key='last_prompt'`).get();
+  const diff   = db.prepare(`SELECT value FROM staging WHERE key='diff_summary'`).get();
+  const hasStagedFile = fs.existsSync(STAGED_PATH);
+  res.json({
+    active: active?.value === '1' && hasStagedFile,
+    last_prompt: prompt?.value || '',
+    diff_summary: diff?.value || '',
+    has_staged: hasStagedFile
+  });
+});
+
+// Generate staged version via Gemini
+app.post('/api/admin/ai/generate', inAppAdminAuth, async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt || prompt.trim().length < 5) return res.status(400).json({ error: 'Describe what you want changed.' });
+  if (!GEMINI_API_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY not set in environment.' });
+
+  try {
+    const currentHtml = fs.readFileSync(INDEX_PATH, 'utf8');
+
+    const systemPrompt = `You are a precise frontend code editor for a web app called "Chapters".
+You will receive the full index.html file and a change request from the admin.
+Your job: make ONLY the requested change. Do not change anything else.
+Return ONLY the complete modified HTML file — no explanation, no markdown, no code fences.
+The very first character of your response must be < (the start of the HTML).
+Keep all existing functionality intact.`;
+
+    const userPrompt = `Here is the current index.html:\n\n${currentHtml}\n\n---\nChange request: ${prompt.trim()}\n\nReturn the complete modified index.html only.`;
+
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ parts: [{ text: userPrompt }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 65536 }
+        })
+      }
+    );
+
+    const geminiData = await geminiRes.json();
+    if (!geminiRes.ok || !geminiData.candidates?.[0]) {
+      return res.status(500).json({ error: 'Gemini API error: ' + (geminiData.error?.message || 'Unknown error') });
+    }
+
+    let newHtml = geminiData.candidates[0].content.parts[0].text || '';
+    // Strip any accidental markdown fences
+    newHtml = newHtml.replace(/^```html\n?/i, '').replace(/^```\n?/, '').replace(/\n?```$/, '').trim();
+
+    if (!newHtml.startsWith('<')) {
+      return res.status(500).json({ error: 'Gemini returned invalid HTML. Try rephrasing your request.' });
+    }
+
+    // Save staged file
+    fs.writeFileSync(STAGED_PATH, newHtml, 'utf8');
+
+    // Generate a simple diff summary
+    const oldLines = currentHtml.split('\n').length;
+    const newLines = newHtml.split('\n').length;
+    const lineDiff = newLines - oldLines;
+    const diffSummary = `${lineDiff >= 0 ? '+' : ''}${lineDiff} lines · ${newHtml.length - currentHtml.length >= 0 ? '+' : ''}${newHtml.length - currentHtml.length} bytes`;
+
+    // Store staging state
+    db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('active','1')`).run();
+    db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('last_prompt',?)`).run(prompt.trim());
+    db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('diff_summary',?)`).run(diffSummary);
+
+    res.json({ success: true, diff_summary: diffSummary });
+  } catch (err) {
+    res.status(500).json({ error: 'Error: ' + err.message });
+  }
+});
+
+// Publish staged → live
+app.post('/api/admin/ai/publish', inAppAdminAuth, (req, res) => {
+  if (!fs.existsSync(STAGED_PATH)) return res.status(400).json({ error: 'No staged version to publish.' });
+  // Backup current live
+  fs.copyFileSync(INDEX_PATH, BACKUP_PATH);
+  // Replace live with staged
+  fs.copyFileSync(STAGED_PATH, INDEX_PATH);
+  fs.unlinkSync(STAGED_PATH);
+  db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('active','0')`).run();
+  res.json({ success: true });
+  // Restart server after response sent
+  setTimeout(() => process.exit(0), 500);
+});
+
+// Reject staged — discard
+app.post('/api/admin/ai/reject', inAppAdminAuth, (req, res) => {
+  if (fs.existsSync(STAGED_PATH)) fs.unlinkSync(STAGED_PATH);
+  db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('active','0')`).run();
+  res.json({ success: true });
+});
+
+// Rollback to backup
+app.post('/api/admin/ai/rollback', inAppAdminAuth, (req, res) => {
+  if (!fs.existsSync(BACKUP_PATH)) return res.status(400).json({ error: 'No backup available.' });
+  fs.copyFileSync(BACKUP_PATH, INDEX_PATH);
+  res.json({ success: true });
+  setTimeout(() => process.exit(0), 500);
+});
+
+// Serve staged file to admin/mod for preview (via direct URL with token query param)
+app.get('/preview-staged', (req, res) => {
+  const token = req.query.token || req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).send('Not authorized.');
+  const account = getAccountByToken(token);
+  if (!account || (!account.is_admin && !account.is_moderator)) return res.status(403).send('Not authorized.');
+  if (!fs.existsSync(STAGED_PATH)) return res.status(404).send('No staged version available.');
+  res.sendFile(STAGED_PATH);
 });
 
 // Serve admin panel
