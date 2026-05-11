@@ -13,22 +13,6 @@ const multer = require('multer');
 const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-
-// Bot Gemini keys — up to 5, named GEMINI_BOT_KEY_1 through GEMINI_BOT_KEY_5
-// Falls back to GEMINI_API_KEY if no bot keys set
-function getBotKeys() {
-  const keys = [];
-  for (let i = 1; i <= 5; i++) {
-    const k = process.env[`GEMINI_BOT_KEY_${i}`];
-    if (k) keys.push(k);
-  }
-  if (!keys.length && GEMINI_API_KEY) keys.push(GEMINI_API_KEY);
-  return keys;
-}
-const INDEX_PATH    = path.join(__dirname, 'public', 'index.html');
-const STAGED_PATH   = path.join(__dirname, 'public', 'index.staged.html');
-const BACKUP_PATH   = path.join(__dirname, 'public', 'index.backup.html');
 
 // Multer config — images only, max 5MB
 const adStorage = multer.diskStorage({
@@ -237,7 +221,7 @@ db.exec(`
     created_at INTEGER DEFAULT (strftime('%s','now'))
   );
 
-  CREATE TABLE IF NOT EXISTS staging (
+  CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
     value TEXT
   );
@@ -259,6 +243,21 @@ function sanitize(str) {
   if (!str) return '';
   return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();
 }
+
+
+const VALID_LAYOUTS = ['radio', 'train', 'confessional'];
+function getSetting(key, fallback = '') {
+  const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key);
+  return row ? row.value : fallback;
+}
+function setSetting(key, value) {
+  db.prepare('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)').run(key, value);
+}
+function getActiveLayout() {
+  const layout = getSetting('active_layout', 'radio');
+  return VALID_LAYOUTS.includes(layout) ? layout : 'radio';
+}
+
 
 function getAccountByToken(token) {
   const now = Math.floor(Date.now() / 1000);
@@ -362,20 +361,31 @@ async function sendVerificationEmail(email, username, verifyToken) {
 
 // ─── OAuth Helpers ────────────────────────────────────────────────────────────
 
-const ADMIN_EMAIL = 'n.i.farhan44@gmail.com';
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'n.i.farhan44@gmail.com').trim().toLowerCase();
 
 function oauthCreateOrFind(oauthProvider, oauthId, email, displayName) {
   // Check existing OAuth account
   const existing = db.prepare('SELECT * FROM accounts WHERE oauth_provider = ? AND oauth_id = ?').get(oauthProvider, oauthId);
   if (existing) {
     // Auto-grant admin if this is the admin email
-    if (email === ADMIN_EMAIL && !existing.is_admin) {
+    if ((email || '').toLowerCase() === ADMIN_EMAIL && !existing.is_admin) {
       db.prepare('UPDATE accounts SET is_admin = 1 WHERE id = ?').run(existing.id);
     }
     const token = uuidv4();
     const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
     db.prepare('INSERT INTO auth_tokens (token, account_id, expires_at) VALUES (?, ?, ?)').run(token, existing.id, expiresAt);
     return { token, username: existing.username, isNew: false };
+  }
+
+  // Link Google login to an existing email/password account if emails match.
+  const byEmail = email ? db.prepare('SELECT * FROM accounts WHERE lower(email) = lower(?)').get(email) : null;
+  if (byEmail) {
+    db.prepare('UPDATE accounts SET oauth_provider = ?, oauth_id = ?, email_verified = 1, is_admin = CASE WHEN lower(email) = ? THEN 1 ELSE is_admin END WHERE id = ?')
+      .run(oauthProvider, oauthId, ADMIN_EMAIL, byEmail.id);
+    const token = uuidv4();
+    const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
+    db.prepare('INSERT INTO auth_tokens (token, account_id, expires_at) VALUES (?, ?, ?)').run(token, byEmail.id, expiresAt);
+    return { token, username: byEmail.username, isNew: false };
   }
 
   // Generate a clean username from display name
@@ -389,7 +399,7 @@ function oauthCreateOrFind(oauthProvider, oauthId, email, displayName) {
   }
 
   const id = uuidv4();
-  const isAdmin = email === ADMIN_EMAIL ? 1 : 0;
+  const isAdmin = (email || '').toLowerCase() === ADMIN_EMAIL ? 1 : 0;
   db.prepare('INSERT INTO accounts (id, username, password_hash, email, email_verified, oauth_provider, oauth_id, is_admin) VALUES (?, ?, ?, ?, 1, ?, ?, ?)')
     .run(id, username, '', email || '', oauthProvider, oauthId, isAdmin);
 
@@ -556,13 +566,22 @@ app.get('/api/me', (req, res) => {
   res.json({ username: account.username, id: account.id, is_admin: account.is_admin || 0, is_moderator: account.is_moderator || 0 });
 });
 
-// Bot Gemini keys — served only to authenticated users
+
+app.get('/api/app-settings', (req, res) => {
+  res.json({
+    app_name: 'Aagontuk',
+    active_layout: getActiveLayout(),
+    layouts: [
+      { id: 'radio', name: 'Underground Radio', line: 'late-night frequency for real strangers' },
+      { id: 'train', name: 'Night Train', line: 'passing strangers, saved as journeys' },
+      { id: 'confessional', name: 'Digital Confessional', line: 'dark anonymous notes from private disasters' }
+    ]
+  });
+});
+
+// Bot fallback removed: Aagontuk connects real users only.
 app.get('/api/bot-config', (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ keys: [] });
-  const account = getAccountByToken(token);
-  if (!account) return res.status(401).json({ keys: [] });
-  res.json({ keys: getBotKeys() });
+  res.status(410).json({ error: 'Bot fallback is disabled. Real users only.', keys: [] });
 });
 
 // Get all confessions (newest first, paginated)
@@ -728,12 +747,14 @@ io.on('connection', (socket) => {
     const p = io.sockets.sockets.get(chat.partnerId);
     if (p?.connected) p.emit('game_response', { accepted, gameType });
   });
-  socket.on('game_action', (data) => {
+  const relayGameAction = (data) => {
     const chat = activeChats.get(socket.id);
     if (!chat) return;
     const p = io.sockets.sockets.get(chat.partnerId);
     if (p?.connected) p.emit('game_action', data);
-  });
+  };
+  socket.on('game_action', relayGameAction);
+  socket.on('game_move', relayGameAction);
 
   socket.on('leave_chat', () => handleLeave(socket));
   socket.on('cancel_search', () => { const i = waitingQueue.findIndex(q => q.socketId === socket.id); if (i !== -1) waitingQueue.splice(i, 1); socket.emit('search_cancelled'); });
@@ -766,7 +787,7 @@ setInterval(() => {
 
 // ─── Admin Routes ─────────────────────────────────────────────────────────────
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'chapters-admin-2024';
+// Legacy password admin is permanently disabled. Use the in-app admin panel tied to ADMIN_EMAIL.
 
 // Fix 2: Rate limit admin endpoints — prevents brute-forcing the admin password
 const adminLimiter = rateLimit({
@@ -777,17 +798,8 @@ const adminLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const crypto = require('crypto');
-
 function adminAuth(req, res, next) {
-  const pass = req.headers['x-admin-password'] || '';
-  // Constant-time comparison — prevents timing attacks on the password
-  const passBuffer = Buffer.from(pass.padEnd(ADMIN_PASSWORD.length));
-  const expectedBuffer = Buffer.from(ADMIN_PASSWORD);
-  const match = passBuffer.length === expectedBuffer.length &&
-    crypto.timingSafeEqual(passBuffer, expectedBuffer);
-  if (!match) return res.status(401).json({ error: 'Unauthorized.' });
-  next();
+  return res.status(410).json({ error: 'Legacy admin API is disabled. Use the in-app admin panel.' });
 }
 
 // Stats overview
@@ -900,6 +912,18 @@ function inAppAdminAuth(req, res, next) {
   req.adminAccount = account;
   next();
 }
+
+// Appearance settings — ADMIN ONLY
+app.get('/api/admin/settings', inAppAdminAuth, (req, res) => {
+  res.json({ active_layout: getActiveLayout(), valid_layouts: VALID_LAYOUTS });
+});
+
+app.post('/api/admin/settings/layout', inAppAdminAuth, (req, res) => {
+  const layout = (req.body.layout || '').trim().toLowerCase();
+  if (!VALID_LAYOUTS.includes(layout)) return res.status(400).json({ error: 'Invalid layout.' });
+  setSetting('active_layout', layout);
+  res.json({ success: true, active_layout: layout });
+});
 
 function inAppModAuth(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -1099,204 +1123,14 @@ app.delete('/api/admin/ad', inAppAdminAuth, (req, res) => {
   res.json({ success: true });
 });
 
-// Make a user admin (one-time setup — secured by ADMIN_PASSWORD)
+// Legacy password-based admin promotion disabled. Admin is controlled by ADMIN_EMAIL.
 app.post('/api/admin/make-admin', (req, res) => {
-  const { username, password } = req.body;
-  if (!password || password !== ADMIN_PASSWORD) return res.status(401).json({ error: 'Wrong password.' });
-  const acc = db.prepare(`SELECT * FROM accounts WHERE username = ?`).get(username);
-  if (!acc) return res.status(404).json({ error: 'User not found.' });
-  db.prepare(`UPDATE accounts SET is_admin = 1 WHERE id = ?`).run(acc.id);
-  res.json({ success: true, message: `${username} is now admin.` });
+  res.status(410).json({ error: 'Disabled. Admin is assigned by ADMIN_EMAIL.' });
 });
 
-// ── Staging Middleware — serve staged index.html to admin+mods ────────────────
-app.use((req, res, next) => {
-  if (req.path !== '/' && req.path !== '/index.html') return next();
-  if (!fs.existsSync(STAGED_PATH)) return next();
-  const stagingRow = db.prepare(`SELECT value FROM staging WHERE key='active'`).get();
-  if (!stagingRow || stagingRow.value !== '1') return next();
-  // Check if requester is admin or mod via token cookie/header
-  const token = req.query._t || '';
-  if (!token) return next(); // regular users see live version
-  const account = getAccountByToken(token);
-  if (account && (account.is_admin || account.is_moderator)) {
-    return res.sendFile(STAGED_PATH);
-  }
-  next();
-});
-
-// ── AI / Gemini Routes (admin only) ──────────────────────────────────────────
-
-// Get staging status
-app.get('/api/admin/ai/status', inAppAdminAuth, (req, res) => {
-  const active = db.prepare(`SELECT value FROM staging WHERE key='active'`).get();
-  const prompt = db.prepare(`SELECT value FROM staging WHERE key='last_prompt'`).get();
-  const diff   = db.prepare(`SELECT value FROM staging WHERE key='diff_summary'`).get();
-  const hasStagedFile = fs.existsSync(STAGED_PATH);
-  res.json({
-    active: active?.value === '1' && hasStagedFile,
-    last_prompt: prompt?.value || '',
-    diff_summary: diff?.value || '',
-    has_staged: hasStagedFile
-  });
-});
-
-// Generate staged version via Gemini
-app.post('/api/admin/ai/generate', inAppAdminAuth, async (req, res) => {
-  const { prompt } = req.body;
-  if (!prompt || prompt.trim().length < 5) return res.status(400).json({ error: 'Describe what you want changed.' });
-
-  const allKeys = [GEMINI_API_KEY, ...getBotKeys()].filter((k,i,a) => k && a.indexOf(k)===i);
-  if (!allKeys.length) return res.status(500).json({ error: 'No Gemini API keys configured.' });
-
-  try {
-    const currentHtml = fs.readFileSync(INDEX_PATH, 'utf8');
-
-    // Extract CSS variables (small — ~100 tokens)
-    const cssVarMatch = currentHtml.match(/:root\s*\{([^}]+)\}/);
-    const cssVars = cssVarMatch ? cssVarMatch[0] : '';
-
-    // Extract only CSS rules relevant to the prompt (keyword match)
-    const styleMatch = currentHtml.match(/<style>([\s\S]*?)<\/style>/);
-    const fullCss = styleMatch ? styleMatch[1] : '';
-    const promptWords = prompt.toLowerCase().match(/\w{4,}/g) || [];
-    const cssLines = fullCss.split('\n');
-    const relevantCss = cssLines.filter(line => {
-      const l = line.toLowerCase();
-      return promptWords.some(w => l.includes(w)) || line.includes(':root') || line.includes('--');
-    }).join('\n');
-
-    // Extract only HTML text content (strip tags, keep text nodes) for text changes
-    const htmlText = currentHtml
-      .replace(/<script[\s\S]*?<\/script>/g, '')
-      .replace(/<style[\s\S]*?<\/style>/g, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 2000); // first 2000 chars of visible text
-
-    const systemPrompt = `You are editing a web app called "Chapters". You will receive:
-1. CSS variables (:root block)  
-2. Relevant CSS rules
-3. A sample of visible text in the app
-
-Based on the change request, return ONLY a JSON object:
-{
-  "type": "css" | "text" | "both",
-  "cssVars": "full modified :root{} block if colors/theme changed, else null",
-  "cssRules": "only the specific CSS rules that changed (not the full CSS), else null", 
-  "find": "exact text to find in HTML if text change needed, else null",
-  "replace": "replacement text, else null"
-}
-Be minimal. Only include what actually changes.`;
-
-    const userPrompt = `CSS Variables:\n${cssVars}\n\nRelevant CSS:\n${relevantCss.slice(0,3000)}\n\nVisible app text (sample):\n${htmlText}\n\n---\nChange: ${prompt.trim()}`;
-
-    let raw = '';
-    let lastErr = '';
-    for (const key of allKeys) {
-      const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: systemPrompt }] },
-            contents: [{ parts: [{ text: userPrompt }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 4096 }
-          })
-        }
-      );
-      const d = await r.json();
-      if (r.status === 429) { lastErr = 'Quota exceeded'; continue; }
-      if (!r.ok || !d.candidates?.[0]) { lastErr = d.error?.message || 'API error'; continue; }
-      raw = d.candidates[0].content.parts[0].text || '';
-      break;
-    }
-    if (!raw) return res.status(429).json({ error: 'All Gemini keys are rate-limited. Wait a minute and try again.' });
-
-    raw = raw.replace(/^```json\n?/i,'').replace(/^```\n?/,'').replace(/\n?```$/,'').trim();
-    let parsed;
-    try { parsed = JSON.parse(raw); }
-    catch { return res.status(500).json({ error: 'Gemini returned invalid response. Rephrase and try again.' }); }
-
-    let newHtml = currentHtml;
-
-    // Apply CSS variable changes
-    if (parsed.cssVars) {
-      newHtml = newHtml.replace(/:root\s*\{[^}]+\}/, parsed.cssVars);
-    }
-
-    // Apply specific CSS rule changes (inject before </style>)
-    if (parsed.cssRules) {
-      newHtml = newHtml.replace(/<\/style>/, parsed.cssRules + '\n</style>');
-    }
-
-    // Apply text changes
-    if (parsed.find && parsed.replace && newHtml.includes(parsed.find)) {
-      newHtml = newHtml.replace(parsed.find, parsed.replace);
-    }
-
-    if (newHtml === currentHtml) {
-      return res.status(400).json({ error: 'Gemini could not identify what to change. Be more specific.' });
-    }
-
-    fs.writeFileSync(STAGED_PATH, newHtml, 'utf8');
-
-    const lineDiff = newHtml.split('\n').length - currentHtml.split('\n').length;
-    const diffSummary = `${lineDiff >= 0 ? '+' : ''}${lineDiff} lines · changed`;
-
-    db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('active','1')`).run();
-    db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('last_prompt',?)`).run(prompt.trim());
-    db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('diff_summary',?)`).run(diffSummary);
-
-    res.json({ success: true, diff_summary: diffSummary });
-  } catch (err) {
-    res.status(500).json({ error: 'Error: ' + err.message });
-  }
-});
-
-// Publish staged → live
-app.post('/api/admin/ai/publish', inAppAdminAuth, (req, res) => {
-  if (!fs.existsSync(STAGED_PATH)) return res.status(400).json({ error: 'No staged version to publish.' });
-  // Backup current live
-  fs.copyFileSync(INDEX_PATH, BACKUP_PATH);
-  // Replace live with staged
-  fs.copyFileSync(STAGED_PATH, INDEX_PATH);
-  fs.unlinkSync(STAGED_PATH);
-  db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('active','0')`).run();
-  res.json({ success: true });
-  // Restart server after response sent
-  setTimeout(() => process.exit(0), 500);
-});
-
-// Reject staged — discard
-app.post('/api/admin/ai/reject', inAppAdminAuth, (req, res) => {
-  if (fs.existsSync(STAGED_PATH)) fs.unlinkSync(STAGED_PATH);
-  db.prepare(`INSERT OR REPLACE INTO staging (key,value) VALUES ('active','0')`).run();
-  res.json({ success: true });
-});
-
-// Rollback to backup
-app.post('/api/admin/ai/rollback', inAppAdminAuth, (req, res) => {
-  if (!fs.existsSync(BACKUP_PATH)) return res.status(400).json({ error: 'No backup available.' });
-  fs.copyFileSync(BACKUP_PATH, INDEX_PATH);
-  res.json({ success: true });
-  setTimeout(() => process.exit(0), 500);
-});
-
-// Serve staged file to admin/mod for preview (via direct URL with token query param)
-app.get('/preview-staged', (req, res) => {
-  const token = req.query.token || req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).send('Not authorized.');
-  const account = getAccountByToken(token);
-  if (!account || (!account.is_admin && !account.is_moderator)) return res.status(403).send('Not authorized.');
-  if (!fs.existsSync(STAGED_PATH)) return res.status(404).send('No staged version available.');
-  res.sendFile(STAGED_PATH);
-});
-
+// AI layout editor and staged preview system removed.
 // Serve admin panel
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/admin', (req, res) => res.redirect('/')); // old password admin panel removed
 
 // ─── Static ───────────────────────────────────────────────────────────────────
 // Block direct access to admin.html (it's served only via the /admin route which requires auth)

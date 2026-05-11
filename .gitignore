@@ -1,10 +1,6 @@
 node_modules/
-chapters.db
-*.db-journal
-*.db-shm
-*.db-wal
 .env
-.env.local
-*.bak
-package-lock.json
-yarn.lock
+chapters.db
+public/index.staged.html
+public/index.backup.html
+.DS_Store
