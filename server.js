@@ -16,7 +16,7 @@ const io = new Server(server, {
   cors: { origin: ALLOWED_ORIGIN, methods: ['GET','POST'] }
 });
 
-app.use(express.json({ limit: '50kb' }));
+app.use(express.json({ limit: '2mb' }));
 app.set('trust proxy', 1);
 
 // ─── Security Headers ─────────────────────────────────────────────────────────
