@@ -1,0 +1,24 @@
+{
+  "name": "chapters",
+  "version": "3.0.0",
+  "description": "Strangers pass. Conversations stay.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^9.4.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.2.0",
+    "socket.io": "^4.7.4",
+    "uuid": "^9.0.0",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
