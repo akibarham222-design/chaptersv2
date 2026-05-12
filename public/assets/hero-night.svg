@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#09111d"/><stop offset=".55" stop-color="#0b1421"/><stop offset="1" stop-color="#020306"/></linearGradient>
+<linearGradient id="train" x1="0" x2="1"><stop stop-color="#172434"/><stop offset=".5" stop-color="#0e1824"/><stop offset="1" stop-color="#07101a"/></linearGradient>
+<filter id="blur"><feGaussianBlur stdDeviation="10"/></filter>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<g opacity=".28"><path d="M0 600 C260 540 330 620 520 575 C760 520 940 555 1600 470 L1600 900 L0 900Z" fill="#101b26"/></g>
+<g opacity=".16" stroke="#e8d6ae" stroke-width="2">
+<path d="M1090 0v900"/><path d="M1210 0v900"/><path d="M1340 0v900"/><path d="M1470 0v900"/>
+</g>
+<g transform="translate(585 235)">
+<path d="M0 305 C140 240 240 175 418 96 C555 35 742 52 865 152 C948 220 988 326 984 480 L0 480Z" fill="url(#train)" stroke="#294052" stroke-width="4"/>
+<path d="M165 280 L670 178 C734 166 795 190 835 245 L902 338 L815 338 L779 282 C756 246 718 232 676 241 L210 345Z" fill="#07101a" stroke="#375068" stroke-width="5"/>
+<rect x="230" y="355" width="110" height="78" rx="8" fill="#0b1622" stroke="#314a60" stroke-width="4"/>
+<rect x="376" y="328" width="118" height="92" rx="8" fill="#0b1622" stroke="#314a60" stroke-width="4"/>
+<rect x="532" y="292" width="126" height="105" rx="8" fill="#0b1622" stroke="#314a60" stroke-width="4"/>
+<circle cx="832" cy="182" r="43" fill="#ffd88a" opacity=".98"/><circle cx="832" cy="182" r="95" fill="#ffd88a" opacity=".12" filter="url(#blur)"/>
+<circle cx="760" cy="455" r="45" fill="#f4c86e"/><circle cx="760" cy="455" r="120" fill="#f4c86e" opacity=".12" filter="url(#blur)"/>
+<circle cx="314" cy="493" r="52" fill="#030507" stroke="#182330" stroke-width="12"/><circle cx="606" cy="493" r="52" fill="#030507" stroke="#182330" stroke-width="12"/>
+<text x="704" y="425" fill="#d8b36a" font-family="Georgia" font-size="42" letter-spacing="8">AAGONTUK</text>
+<text x="730" y="470" fill="#d8b36a" font-family="Arial" font-size="22" letter-spacing="12">EXPRESS</text>
+</g>
+<g opacity=".55">
+<path d="M930 740 L1510 900" stroke="#9b6e34" stroke-width="6"/><path d="M790 760 L1210 900" stroke="#9b6e34" stroke-width="5"/>
+<path d="M890 745 L1500 900" stroke="#2a2118" stroke-width="30" opacity=".5"/>
+</g>
+<g transform="translate(330 255)" opacity=".75">
+<rect x="0" y="0" width="210" height="78" rx="10" fill="#080b10" stroke="#d8b36a" stroke-width="2"/>
+<text x="38" y="49" fill="#d8b36a" font-family="Noto Serif Bengali, serif" font-size="36">কমলাপুর</text>
+</g>
+<circle cx="1020" cy="710" r="3" fill="#f4c86e"/><circle cx="1230" cy="640" r="4" fill="#f4c86e"/><circle cx="1390" cy="580" r="3" fill="#f4c86e"/>
+</svg>

@@ -1,517 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Aagontuk Express — Join</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
-<style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-:root{
-  --bg:#07070f;--s1:rgba(255,255,255,0.04);--s2:rgba(255,255,255,0.07);
-  --b1:rgba(255,255,255,0.08);--b2:rgba(255,255,255,0.15);
-  --txt:#f0eeff;--txt2:#a09ac0;--muted:#605a80;--muted2:#3a3558;
-  --violet:#8b5cf6;--violet2:#a78bfa;--teal:#06b6d4;
-  --rose:#f43f5e;--green:#10b981;
-}
-html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 80% 60% at 0% 0%,rgba(139,92,246,.18) 0%,transparent 60%),
-    radial-gradient(ellipse 60% 50% at 100% 10%,rgba(6,182,212,.13) 0%,transparent 55%),
-    radial-gradient(ellipse 50% 70% at 80% 100%,rgba(244,63,94,.07) 0%,transparent 55%);}
-body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.018;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
-.page{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;position:relative;z-index:2;}
-
-/* Left panel */
-.left-panel{display:flex;flex-direction:column;justify-content:space-between;padding:52px;
-  position:relative;overflow:hidden;border-right:1px solid var(--b1);}
-.left-panel::before{content:'';position:absolute;top:-60px;left:-60px;width:380px;height:380px;
-  background:radial-gradient(circle,rgba(139,92,246,.12) 0%,transparent 65%);pointer-events:none;}
-.lt-top{display:flex;align-items:center;gap:16px;}
-.lt-line{flex:1;height:1px;background:linear-gradient(90deg,var(--b2),transparent);}
-.lt-mark{font-family:'Playfair Display',serif;font-size:12px;color:var(--violet2);letter-spacing:3px;}
-.left-logo{margin-top:32px;}
-.left-logo-h{font-family:'Playfair Display',serif;font-size:58px;font-weight:700;line-height:1;
-  background:linear-gradient(130deg,#fff 20%,var(--violet2) 60%,var(--teal));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-2px;}
-.left-logo-sub{font-family:'DM Serif Display',serif;font-style:italic;font-size:16px;color:var(--txt2);letter-spacing:4px;margin-top:4px;}
-.left-mid{flex:1;display:flex;align-items:center;padding:40px 0;}
-.rq-text{font-family:'Playfair Display',serif;font-size:22px;font-weight:400;font-style:italic;
-  line-height:1.75;color:var(--txt2);animation:qfade 9s ease-in-out infinite;max-width:340px;}
-.rq-src{margin-top:16px;font-family:'DM Sans',sans-serif;font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;}
-@keyframes qfade{0%,12%{opacity:0;transform:translateY(8px);}22%,78%{opacity:1;transform:translateY(0);}88%,100%{opacity:0;transform:translateY(-8px);}}
-.story-dots{display:flex;gap:8px;margin-bottom:22px;}
-.sdot{width:7px;height:7px;border-radius:50%;background:var(--muted2);}
-.sdot:first-child{background:var(--violet);box-shadow:0 0 10px rgba(139,92,246,.5);}
-.sdot:nth-child(2){background:var(--teal);box-shadow:0 0 10px rgba(6,182,212,.4);}
-.left-footer{font-family:'DM Sans',sans-serif;font-size:10px;color:var(--muted2);letter-spacing:1.5px;line-height:2.2;text-transform:uppercase;}
-
-/* Right panel */
-.right-panel{display:flex;align-items:center;justify-content:center;padding:40px 32px;overflow-y:auto;min-height:100vh;}
-.form-wrap{width:100%;max-width:390px;}
-.mob-logo{display:none;margin-bottom:28px;}
-.mob-logo-h{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;
-  background:linear-gradient(130deg,#fff 20%,var(--violet2) 60%,var(--teal));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.mob-logo-s{font-family:'DM Serif Display',serif;font-style:italic;font-size:14px;color:var(--muted);letter-spacing:3px;}
-
-/* Tabs */
-.auth-tabs{display:flex;margin-bottom:28px;border-bottom:1px solid var(--b1);}
-.tab-btn{flex:1;background:none;border:none;padding:12px 0;font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .3s;}
-.tab-btn.active{color:var(--violet2);border-bottom-color:var(--violet2);}
-.form-heading{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;color:var(--txt);margin-bottom:4px;letter-spacing:-.5px;}
-.form-sub{font-size:14px;color:var(--txt2);margin-bottom:22px;font-style:italic;line-height:1.55;}
-
-/* OAuth */
-.oauth-buttons{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
-.oauth-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px 16px;border-radius:10px;border:1px solid var(--b2);background:var(--s1);color:var(--txt2);font-family:'DM Sans',sans-serif;font-size:11px;letter-spacing:.8px;cursor:pointer;transition:all .2s;text-decoration:none;}
-.oauth-btn:hover{background:var(--s2);color:var(--txt);border-color:rgba(139,92,246,.4);}
-.oauth-btn svg{width:18px;height:18px;flex-shrink:0;}
-.or-divider{display:flex;align-items:center;gap:12px;margin:4px 0 18px;}
-.or-line{flex:1;height:1px;background:var(--b1);}
-.or-text{font-family:'DM Sans',sans-serif;font-size:9px;color:var(--muted2);letter-spacing:2px;white-space:nowrap;text-transform:uppercase;}
-
-/* Fields */
-.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
-label{font-family:'DM Sans',sans-serif;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--violet2);font-weight:600;}
-input[type="text"],input[type="password"],input[type="email"]{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:13px 16px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;}
-input:focus{border-color:rgba(139,92,246,.5);box-shadow:0 0 0 3px rgba(139,92,246,.1);}
-input.err{border-color:rgba(244,63,94,.5)!important;}
-input.ok{border-color:rgba(16,185,129,.5)!important;}
-input::placeholder{color:var(--muted);font-style:italic;}
-.field-hint{font-family:'DM Sans',sans-serif;font-size:9px;color:var(--muted2);}
-
-/* Captcha */
-.captcha-block{margin:18px 0 14px;display:flex;flex-direction:column;gap:11px;}
-.captcha-header{display:flex;align-items:center;justify-content:space-between;}
-.captcha-label{font-family:'DM Sans',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--violet2);font-weight:600;}
-.btn-refresh{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;opacity:.6;transition:all .3s;}
-.btn-refresh:hover{opacity:1;color:var(--violet2);}
-.btn-refresh.spin{animation:spin .4s ease;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.captcha-card{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:18px 20px 14px;position:relative;overflow:hidden;}
-.captcha-card::before{content:'\201C';position:absolute;top:-14px;left:8px;font-family:'Playfair Display',serif;font-size:90px;color:rgba(139,92,246,.1);line-height:1;pointer-events:none;}
-.captcha-text{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;line-height:1.65;color:var(--txt);position:relative;z-index:1;min-height:26px;}
-.c-char.correct{color:var(--teal);}
-.c-char.wrong{color:var(--rose);text-decoration:underline wavy var(--rose);}
-.captcha-bar{height:2px;background:var(--b1);border-radius:2px;overflow:hidden;margin-top:10px;}
-.captcha-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--teal));width:0%;transition:width .1s;}
-.captcha-fill.done{background:linear-gradient(90deg,var(--teal),var(--green));}
-.captcha-inp-wrap{position:relative;}
-.captcha-inp{background:var(--s2)!important;font-size:15px!important;padding:11px 42px 11px 16px!important;}
-.captcha-check{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--teal);opacity:0;transition:opacity .3s;}
-.captcha-check.show{opacity:1;}
-.captcha-status{font-family:'DM Sans',sans-serif;font-size:9px;min-height:13px;}
-.captcha-status.ok{color:var(--teal);}
-.captcha-status.err{color:var(--rose);}
-.grad-divider{display:flex;align-items:center;gap:12px;margin:4px 0 16px;}
-.grad-divider-line{flex:1;height:1px;background:var(--b1);}
-.grad-divider-dot{width:4px;height:4px;border-radius:50%;background:var(--violet2);}
-
-/* Error */
-.error-box{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.25);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--rose);display:none;margin-bottom:12px;line-height:1.5;}
-.error-box.show{display:block;}
-.suggest-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
-.suggest-chip{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);border-radius:20px;padding:4px 12px;font-size:11px;color:#a78bfa;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
-.suggest-chip:hover{background:rgba(139,92,246,.25);color:#fff;}
-
-/* Submit */
-.btn-submit{width:100%;padding:14px;background:linear-gradient(135deg,var(--violet),var(--teal));border:none;border-radius:10px;cursor:pointer;font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:#fff;letter-spacing:.5px;transition:all .3s;position:relative;overflow:hidden;box-shadow:0 6px 22px rgba(139,92,246,.3);}
-.btn-submit:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 32px rgba(139,92,246,.45);}
-.btn-submit:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none;}
-.btn-submit.loading::after{content:'';position:absolute;bottom:0;left:0;height:2px;width:100%;background:rgba(255,255,255,.4);animation:shimmer 1.5s ease-in-out infinite;}
-@keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
-
-/* Screens */
-.screen{display:none;flex-direction:column;align-items:center;gap:18px;text-align:center;padding:8px 0;animation:fadeup .5s ease;}
-.screen.show{display:flex;}
-@keyframes fadeup{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-.screen-icon{font-size:34px;animation:float 3s ease-in-out infinite;}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
-.screen-title{font-family:'Playfair Display',serif;font-size:30px;font-style:italic;color:var(--txt);}
-.screen-body{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--txt2);letter-spacing:.4px;line-height:1.9;max-width:300px;}
-.email-hl{color:var(--violet2);}
-.btn-enter{padding:13px 40px;background:linear-gradient(135deg,var(--violet),var(--teal));border:none;color:#fff;font-family:'Playfair Display',serif;font-size:20px;font-style:italic;border-radius:10px;cursor:pointer;transition:all .3s;box-shadow:0 6px 22px rgba(139,92,246,.3);}
-.btn-enter:hover{transform:translateY(-1px);box-shadow:0 10px 32px rgba(139,92,246,.45);}
-.btn-sm{background:none;border:1px solid var(--b1);color:var(--muted);padding:9px 22px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;transition:all .2s;}
-.btn-sm:hover{border-color:var(--b2);color:var(--txt2);}
-.resend-row{font-family:'DM Sans',sans-serif;font-size:10px;color:var(--muted2);}
-.resend-row button{background:none;border:none;color:var(--violet2);cursor:pointer;font-size:10px;font-family:inherit;text-decoration:underline;}
-.resend-row button:hover{color:var(--violet);}
-
-@media(max-width:768px){
-  .page{grid-template-columns:1fr;}
-  .left-panel{display:none;}
-  .right-panel{padding:32px 24px;align-items:flex-start;padding-top:44px;min-height:100dvh;}
-  .mob-logo{display:block;}
-}
-@media(max-width:480px){.right-panel{padding:28px 20px;}.form-wrap{max-width:100%;}.form-heading{font-size:30px;}}
-@media(max-height:620px) and (max-width:768px){
-  /* Short phones — tighten vertical spacing so form fits without scroll */
-  .form-heading{font-size:26px;margin-bottom:2px;}
-  .form-sub{margin-bottom:12px;}
-  .field{margin-bottom:9px;}
-  .captcha-block{margin:10px 0 8px;}
-  .mob-logo{margin-bottom:16px;}
-  .right-panel{padding-top:28px;}
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aagontuk Express — Boarding</title>
+  <style>
+    :root{
+      --bg:#07090d;--panel:#0d121a;--line:rgba(232,214,174,.15);--text:#f4ead8;--muted:#b8ad9a;--gold:#d7a84f;--gold-soft:#f0ce82;
+      --serif:Georgia,"Times New Roman",serif;--sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at 70% 0%,rgba(215,168,79,.14),transparent 32rem),linear-gradient(135deg,#07090d,#101620);color:var(--text);font-family:var(--sans);display:grid;place-items:center;padding:24px}
+    .shell{width:min(1080px,100%);display:grid;grid-template-columns:1.1fr .9fr;border:1px solid var(--line);border-radius:30px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.5);background:rgba(255,255,255,.03)}
+    .poster{min-height:650px;background:linear-gradient(90deg,rgba(5,7,11,.95),rgba(5,7,11,.42)),url("assets/hero-night.svg");background-size:cover;background-position:center right;padding:42px;display:flex;flex-direction:column;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:12px}.brand-word{font-family:var(--serif);font-size:33px;font-weight:700;letter-spacing:-.04em}.brand-mark{font-size:13px;letter-spacing:.38em;color:var(--gold-soft);font-weight:800}
+    h1{font-family:var(--serif);font-size:clamp(54px,7vw,92px);line-height:.86;letter-spacing:-.07em;margin:0 0 20px}.poster p{font-size:19px;color:var(--muted);line-height:1.55;max-width:520px}
+    .panel{padding:42px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));display:flex;flex-direction:column;justify-content:center}
+    .eyebrow{font-size:12px;letter-spacing:.32em;color:var(--gold-soft);font-weight:800;text-transform:uppercase}
+    .panel h2{font-family:var(--serif);font-size:44px;line-height:.95;letter-spacing:-.06em;margin:12px 0 8px}.small{color:var(--muted);line-height:1.55}
+    form{display:grid;gap:14px;margin-top:24px}label{display:grid;gap:8px;color:var(--muted);font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+    input{border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--text);border-radius:16px;padding:15px;outline:none}
+    button{height:54px;border-radius:17px;border:1px solid var(--line);font:inherit;font-weight:800;cursor:pointer}
+    .primary{background:linear-gradient(135deg,#f1c979,#c28a34);color:#120d08}.secondary{background:rgba(255,255,255,.04);color:var(--text)}
+    .row{display:grid;grid-template-columns:1fr;gap:10px;margin-top:16px}.switch{margin-top:16px;color:var(--muted);font-size:14px}.switch button{height:auto;border:0;background:0;color:var(--gold-soft);padding:0}
+    @media(max-width:860px){.shell{grid-template-columns:1fr}.poster{min-height:420px}.panel{padding:30px}}
+  </style>
 </head>
 <body>
-<div class="page">
-  <div class="left-panel">
-    <div>
-      <div class="lt-top">
-        <div class="lt-line"></div>
-        <div class="lt-mark">✦</div>
-        <div class="lt-line" style="background:linear-gradient(90deg,transparent,var(--b2));"></div>
-      </div>
-      <div class="left-logo">
-        <div class="left-logo-h">Aagontuk Express</div>
-        <div class="left-logo-sub">night service</div>
-      </div>
-    </div>
-    <div class="left-mid">
+  <main class="shell">
+    <section class="poster">
+      <div class="brand"><span class="brand-word">Aagontuk</span><span class="brand-mark">EXPRESS</span></div>
       <div>
-        <div class="rq-text" id="panelQuote"></div>
-        <div class="rq-src" id="panelSource"></div>
+        <h1>Board without a name.</h1>
+        <p>Night service opens from 19:00 to 05:00 Bangladesh time. Confessions, music, journey logs, and table games stay ready on the platform.</p>
       </div>
-    </div>
-    <div>
-      <div class="story-dots">
-        <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
-        <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
+    </section>
+    <section class="panel">
+      <div class="eyebrow">Passenger boarding</div>
+      <h2 id="title">Sign in</h2>
+      <p class="small">Use email boarding for the clean local build. Google login can be reconnected through your existing backend/Firebase setup.</p>
+      <form id="authForm">
+        <label>Email<input id="email" type="email" placeholder="passenger@email.com" required></label>
+        <label>Password<input id="password" type="password" placeholder="••••••••" required></label>
+        <button class="primary" type="submit" id="submitBtn">Sign in</button>
+      </form>
+      <div class="row">
+        <button class="secondary" id="googleBtn">Continue with Google</button>
       </div>
-      <div class="left-footer">No profiles. No followers.<br/>Only quiet journeys after dark.</div>
-    </div>
-  </div>
-
-  <div class="right-panel">
-    <div class="form-wrap">
-      <div class="mob-logo">
-        <div class="mob-logo-h">Aagontuk Express</div>
-        <div class="mob-logo-s">night service</div>
-      </div>
-
-      <div class="auth-tabs" id="authTabs">
-        <button class="tab-btn active" id="tab-join" onclick="switchTab('join')">Create Account</button>
-        <button class="tab-btn" id="tab-enter" onclick="switchTab('enter')">Sign In</button>
-      </div>
-
-      <!-- Register -->
-      <div id="form-join">
-        <div class="form-heading">Begin your story.</div>
-        <p class="form-sub">Create an account to start collecting chapters.</p>
-        <div class="oauth-buttons">
-          <a class="oauth-btn" href="/api/auth/google">
-            <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-            Continue with Google
-          </a>
-        </div>
-        <div class="or-divider"><div class="or-line"></div><span class="or-text">or register with email</span><div class="or-line"></div></div>
-        <div class="field"><label for="reg-user">Username</label><input type="text" id="reg-user" placeholder="your_name" autocomplete="off" spellcheck="false" oninput="valUser()"/><span class="field-hint">3–20 characters. Letters, numbers, underscores only.</span></div>
-        <div class="field"><label for="reg-email">Email</label><input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email"/><span class="field-hint">For account recovery. Never shown to anyone.</span></div>
-        <div class="field"><label for="reg-pass">Password</label><input type="password" id="reg-pass" placeholder="Min 8 chars, 1 uppercase, 1 number" oninput="valPass()"/></div>
-        <div class="grad-divider"><div class="grad-divider-line"></div><div class="grad-divider-dot"></div><div class="grad-divider-line"></div></div>
-        <div class="captcha-block">
-          <div class="captcha-header"><span class="captcha-label">Prove you're human — type the line</span><button class="btn-refresh" id="btnRefresh" onclick="newCaptcha()" title="New line">↻</button></div>
-          <div class="captcha-card"><div class="captcha-text" id="captchaDisplay"></div><div class="captcha-bar"><div class="captcha-fill" id="captchaFill"></div></div></div>
-          <div class="captcha-inp-wrap"><input type="text" class="captcha-inp" id="captchaInput" placeholder="Type the line above..." oninput="checkCaptcha()" autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="none"/><span class="captcha-check" id="captchaCheck">✓</span></div>
-          <div class="captcha-status" id="captchaStatus"></div>
-        </div>
-        <div class="error-box" id="reg-err"></div>
-        <button class="btn-submit" id="reg-btn" onclick="register()">Create account</button>
-      </div>
-
-      <!-- Sign In -->
-      <div id="form-enter" style="display:none;">
-        <div class="form-heading">Welcome back.</div>
-        <p class="form-sub">Sign in to continue your night service.</p>
-        <div class="oauth-buttons">
-          <a class="oauth-btn" href="/api/auth/google">
-            <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-            Continue with Google
-          </a>
-        </div>
-        <div class="or-divider"><div class="or-line"></div><span class="or-text">or sign in with username</span><div class="or-line"></div></div>
-        <div class="field"><label for="log-user">Username</label><input type="text" id="log-user" placeholder="your_name" autocomplete="off" spellcheck="false"/></div>
-        <div class="field"><label for="log-pass">Password</label><input type="password" id="log-pass" placeholder="your password"/></div>
-        <div class="error-box" id="log-err"></div>
-        <button class="btn-submit" id="log-btn" onclick="login()">Enter the night service</button>
-      </div>
-
-      <!-- Screens -->
-      <div class="screen" id="screenVerify">
-        <div class="screen-icon">✉</div>
-        <div class="screen-title">Check your inbox.</div>
-        <div class="screen-body">A verification link was sent to<br/><span class="email-hl" id="verifyEmailShow"></span><br/><br/>Check spam if it doesn't arrive.</div>
-        <div class="resend-row">Didn't receive it? <button onclick="resendVerification()">Resend email</button></div>
-        <button class="btn-sm" onclick="switchTab('enter')">Back to sign in</button>
-      </div>
-      <div class="screen" id="screenVerified">
-        <div class="screen-icon" style="animation:none;">◆</div>
-        <div class="screen-title">Email verified.</div>
-        <div class="screen-body">Your account is ready.</div>
-        <button class="btn-enter" onclick="switchTab('enter')">Sign In →</button>
-      </div>
-      <div class="screen" id="screenVerifyFail">
-        <div class="screen-icon" style="font-size:26px;animation:none;">✗</div>
-        <div class="screen-title" style="color:var(--rose);">Link expired.</div>
-        <div class="screen-body">This link has expired or been used already.</div>
-        <button class="btn-sm" onclick="switchTab('join')">Try again</button>
-      </div>
-      <div class="screen" id="screenSuccess">
-        <div class="screen-icon" style="font-size:42px;">✦</div>
-        <div class="screen-title" id="successTitle">Your story begins.</div>
-        <div class="screen-body" id="successBody">Welcome to Aagontuk Express.</div>
-        <div style="width:180px;height:2px;background:var(--b1);border-radius:2px;overflow:hidden;margin-top:8px;">
-          <div id="successBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--violet),var(--teal));transition:width 1.5s linear;border-radius:2px;"></div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Taking you there...</div>
-        <button id="successFallback" class="btn-enter" onclick="goToApp()" style="display:none;margin-top:12px;">Open Aagontuk Express →</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-// ── Core UI helpers — defined FIRST so handleParams() can call them ─────────
-const SCREEN_IDS = ['screenVerify','screenVerified','screenVerifyFail','screenSuccess'];
-
-function showScreen(id) {
-  ['form-join','form-enter','authTabs'].forEach(x => {
-    document.getElementById(x).style.display = 'none';
-  });
-  SCREEN_IDS.forEach(sid => {
-    const el = document.getElementById(sid);
-    if (el) { el.style.display = 'none'; el.classList.remove('show'); }
-  });
-  const target = document.getElementById(id);
-  if (!target) return;
-  target.style.display = 'flex';
-  // Double-rAF ensures the display:flex is painted before CSS transition kicks in
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    target.classList.add('show');
-    if (id === 'screenSuccess') {
-      const b = document.getElementById('successBar');
-      if (b) b.style.width = '100%';
-    }
-  }));
-}
-
-function goToApp() { window.location.replace('/'); }
-
-function showSuccess(title, body) {
-  document.getElementById('successTitle').textContent = title;
-  document.getElementById('successBody').textContent = body;
-  showScreen('screenSuccess');
-  // Show fallback button after 2s in case auto-redirect is slow
-  setTimeout(() => {
-    const fb = document.getElementById('successFallback');
-    if (fb) fb.style.display = 'inline-block';
-  }, 2000);
-  // Auto-redirect after 1.5s
-  setTimeout(goToApp, 1500);
-}
-
-// ── Handle OAuth / verify params in URL ─────────────────────────────────────
-(function handleParams() {
-  const p = new URLSearchParams(window.location.search);
-  const tok = p.get('oauth_token'), usr = p.get('oauth_user');
-  if (tok && usr) {
-    localStorage.setItem('chapters_token', tok);
-    localStorage.setItem('chapters_username', usr);
-    history.replaceState({}, '', '/auth.html');
-    showSuccess('Welcome, ' + usr + '.', 'Your night service is ready.');
-    return;
-  }
-  const err = p.get('oauth_error');
-  if (err) {
-    history.replaceState({}, '', '/auth.html');
-    switchTab('enter');
-    showErr('log-err', decodeURIComponent(err));
-    return;
-  }
-  if (p.get('verified') === 'success') { showScreen('screenVerified'); history.replaceState({}, '', '/auth.html'); return; }
-  if (p.get('verified') === 'fail')    { showScreen('screenVerifyFail'); history.replaceState({}, '', '/auth.html'); return; }
-  // Already logged in → go straight to app
-  const existing = localStorage.getItem('chapters_token');
-  if (existing) {
-    fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + existing } })
-      .then(r => { if (r.ok) goToApp(); })
-      .catch(() => {});
-  }
-})();
-
-// ── Quotes ──────────────────────────────────────────────────────────────────
-const PANEL_QUOTES = [
-  {text:"Strangers pass. Conversations stay.",source:"Aagontuk Express"},
-  {text:"There is no greater agony than bearing an untold story inside you.",source:"Maya Angelou"},
-  {text:"We write to taste life twice, in the moment and in retrospect.",source:"Anaïs Nin"},
-  {text:"A reader lives a thousand lives before he dies.",source:"George R.R. Martin"},
-  {text:"I have always imagined that Paradise will be a kind of library.",source:"Borges"},
-  {text:"We are all strangers until we aren't.",source:"Aagontuk Express"},
-  {text:"The most important things are the hardest things to say.",source:"Stephen King"},
-];
-const LINES = [
-  "It was the best of times, it was the worst of times.",
-  "Call me Ishmael.","It is a truth universally acknowledged.",
-  "All happy families are alike; each unhappy family is unhappy in its own way.",
-  "It was a bright cold day in April, and the clocks were striking thirteen.",
-  "The sky above the port was the color of television, tuned to a dead channel.",
-  "It was a pleasure to burn.","I am an invisible man.",
-  "The man in black fled across the desert, and the gunslinger followed.",
-  "Last night I dreamt I went to Manderley again.",
-  "We accept the love we think we deserve.",
-  "I took a deep breath and listened to the old brag of my heart: I am, I am, I am.",
-  "It does not do to dwell on dreams and forget to live.",
-  "The most important things are the hardest things to say.",
-  "Fiction is the lie through which we tell the truth.",
-  "Not all those who wander are lost.",
-  "For small creatures such as we, the vastness is bearable only through love.",
-  "Without music, life would be a mistake.",
-  "Memory is the diary we all carry about with us.",
-];
-let currentLine = '', captchaPassed = false, pendingEmail = '';
-let pqi = 0;
-function rotatePanelQuote() {
-  const q = PANEL_QUOTES[pqi++ % PANEL_QUOTES.length];
-  document.getElementById('panelQuote').textContent = q.text;
-  document.getElementById('panelSource').textContent = '— ' + q.source;
-}
-rotatePanelQuote();
-setInterval(rotatePanelQuote, 9000);
-
-// ── UI ───────────────────────────────────────────────────────────────────────
-function switchTab(tab) {
-  document.getElementById('authTabs').style.display = 'flex';
-  SCREEN_IDS.forEach(sid => {
-    const el = document.getElementById(sid);
-    if (el) { el.style.display = 'none'; el.classList.remove('show'); }
-  });
-  document.getElementById('tab-join').classList.toggle('active', tab === 'join');
-  document.getElementById('tab-enter').classList.toggle('active', tab === 'enter');
-  document.getElementById('form-join').style.display  = tab === 'join'  ? 'block' : 'none';
-  document.getElementById('form-enter').style.display = tab === 'enter' ? 'block' : 'none';
-  clearErrors();
-}
-function clearErrors() { ['reg-err','log-err'].forEach(id => document.getElementById(id).classList.remove('show')); }
-function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.add('show'); }
-
-// ── Captcha ──────────────────────────────────────────────────────────────────
-function newCaptcha() {
-  captchaPassed = false;
-  currentLine = LINES[Math.floor(Math.random() * LINES.length)];
-  renderChars(currentLine, '');
-  const inp = document.getElementById('captchaInput');
-  inp.value = ''; inp.className = 'captcha-inp';
-  document.getElementById('captchaFill').style.width = '0%';
-  document.getElementById('captchaFill').classList.remove('done');
-  document.getElementById('captchaStatus').textContent = '';
-  document.getElementById('captchaStatus').className = 'captcha-status';
-  document.getElementById('captchaCheck').classList.remove('show');
-  const btn = document.getElementById('btnRefresh');
-  btn.classList.add('spin'); setTimeout(() => btn.classList.remove('spin'), 400);
-}
-function renderChars(line, typed) {
-  let html = '';
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i] === ' ' ? '&nbsp;' : line[i].replace(/&/g,'&amp;').replace(/</g,'&lt;');
-    let cls = 'c-char';
-    if (i < typed.length) cls += typed[i] === line[i] ? ' correct' : ' wrong';
-    html += '<span class="' + cls + '">' + ch + '</span>';
-  }
-  document.getElementById('captchaDisplay').innerHTML = html;
-}
-function checkCaptcha() {
-  const typed = document.getElementById('captchaInput').value;
-  renderChars(currentLine, typed);
-  const pct = Math.min(100, (typed.length / currentLine.length) * 100);
-  document.getElementById('captchaFill').style.width = pct + '%';
-  const st = document.getElementById('captchaStatus'), inp = document.getElementById('captchaInput');
-  if (typed === currentLine) {
-    captchaPassed = true;
-    document.getElementById('captchaFill').classList.add('done');
-    st.textContent = 'Perfect.'; st.className = 'captcha-status ok';
-    document.getElementById('captchaCheck').classList.add('show');
-    inp.className = 'captcha-inp ok';
-  } else if (typed.length === currentLine.length) {
-    captchaPassed = false; st.textContent = 'Not quite — try again or refresh.';
-    st.className = 'captcha-status err'; inp.className = 'captcha-inp err';
-  } else {
-    captchaPassed = false; st.textContent = ''; st.className = 'captcha-status';
-    document.getElementById('captchaCheck').classList.remove('show'); inp.className = 'captcha-inp';
-  }
-}
-function valUser() { const v = document.getElementById('reg-user').value; const ok = v.length>=3&&v.length<=20&&/^[a-zA-Z0-9_]+$/.test(v); document.getElementById('reg-user').className = v?(ok?'ok':'err'):''; }
-function valPass() { const v = document.getElementById('reg-pass').value; const ok = v.length>=8&&/[A-Z]/.test(v)&&/[0-9]/.test(v); document.getElementById('reg-pass').className = v?(ok?'ok':'err'):''; }
-
-// ── Register / Login ─────────────────────────────────────────────────────────
-async function register() {
-  clearErrors();
-  const username = document.getElementById('reg-user').value.trim();
-  const email    = document.getElementById('reg-email').value.trim();
-  const password = document.getElementById('reg-pass').value;
-  if (!username) return showErr('reg-err','Username is required.');
-  if (!email||!email.includes('@')) return showErr('reg-err','A valid email is required.');
-  if (password.length < 8) return showErr('reg-err','Password must be at least 8 characters.');
-  if (!/[A-Z]/.test(password)||!/[0-9]/.test(password)) return showErr('reg-err','Password needs one uppercase letter and one number.');
-  if (!captchaPassed) return showErr('reg-err','Please complete the captcha first.');
-  const btn = document.getElementById('reg-btn');
-  btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'Creating...';
-  try {
-    const r = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,email})});
-    const d = await r.json();
-    if (!r.ok) {
-      const errBox = document.getElementById('reg-err');
-      errBox.innerHTML = d.error || 'Something went wrong.';
-      if (d.suggestions && d.suggestions.length) {
-        errBox.innerHTML += `<div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.4);">Try one of these:</div><div class="suggest-row">${
-          d.suggestions.map(s => `<span class="suggest-chip" onclick="document.getElementById('reg-user').value='${s}';valUser();document.getElementById('reg-err').classList.remove('show');">${s}</span>`).join('')
-        }</div>`;
-      }
-      errBox.classList.add('show');
-      btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Create account'; return;
-    }
-    localStorage.setItem('chapters_token',d.token); localStorage.setItem('chapters_username',d.username);
-    showSuccess('Welcome, '+d.username+'.','Your story begins now.');
-  } catch { showErr('reg-err','Connection error.'); btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Create account'; }
-}
-
-async function login() {
-  clearErrors();
-  const username = document.getElementById('log-user').value.trim();
-  const password = document.getElementById('log-pass').value;
-  if (!username||!password) return showErr('log-err','Username and password are required.');
-  const btn = document.getElementById('log-btn');
-  btn.disabled = true; btn.classList.add('loading'); btn.textContent = 'Signing in...';
-  try {
-    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
-    const d = await r.json();
-    if (!r.ok) { showErr('log-err',d.error||'Something went wrong.'); btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Enter the night service'; return; }
-    localStorage.setItem('chapters_token',d.token); localStorage.setItem('chapters_username',d.username);
-    showSuccess('Welcome back, '+d.username+'.','Your chapters are waiting.');
-  } catch { showErr('log-err','Connection error.'); btn.disabled=false; btn.classList.remove('loading'); btn.textContent='Enter the night service'; }
-}
-
-async function resendVerification() {
-  if (!pendingEmail) return;
-  const btn = document.querySelector('.resend-row button');
-  if (btn) { btn.textContent='Sending...'; btn.disabled=true; }
-  try { await fetch('/api/resend-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:pendingEmail})}); } catch {}
-  if (btn) { btn.textContent='Sent!'; setTimeout(()=>{btn.textContent='Resend email';btn.disabled=false;},8000); }
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter' || e.target.id === 'captchaInput') return;
-  if (document.getElementById('form-join').style.display !== 'none') register();
-  else if (document.getElementById('form-enter').style.display !== 'none') login();
-});
-
-newCaptcha();
-</script>
+      <div class="switch"><span id="switchText">No account?</span> <button id="switchMode">Create one</button></div>
+    </section>
+  </main>
+  <script>
+    let mode="signin";
+    const title=document.getElementById("title"), submitBtn=document.getElementById("submitBtn"), switchText=document.getElementById("switchText"), switchMode=document.getElementById("switchMode");
+    switchMode.onclick=()=>{mode=mode==="signin"?"signup":"signin";title.textContent=mode==="signin"?"Sign in":"Create account";submitBtn.textContent=mode==="signin"?"Sign in":"Create account";switchText.textContent=mode==="signin"?"No account?":"Already boarded?";switchMode.textContent=mode==="signin"?"Create one":"Sign in";};
+    document.getElementById("authForm").onsubmit=e=>{e.preventDefault();localStorage.setItem("aagontuk_user",document.getElementById("email").value);location.href="index.html";};
+    document.getElementById("googleBtn").onclick=()=>{localStorage.setItem("aagontuk_user","google-passenger");location.href="index.html";};
+  </script>
 </body>
 </html>
