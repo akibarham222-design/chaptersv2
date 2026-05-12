@@ -1,1 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aagontuk Express Login</title><style>:root{--bg:#07080a;--line:#292c33;--text:#f3eadc;--muted:#b9ad9d;--gold:#d2aa58}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 80% 0,rgba(210,170,88,.18),transparent 35%),#07080a;color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;display:grid;place-items:center;padding:24px}.box{width:min(440px,100%);border:1px solid var(--line);background:linear-gradient(180deg,#15171b,#0d0f12);border-radius:28px;padding:30px;box-shadow:0 24px 80px rgba(0,0,0,.5)}h1{font-family:Georgia,serif;font-size:42px;line-height:.94;margin:0 0 8px}p{color:var(--muted);line-height:1.55;margin:0 0 22px}.k{letter-spacing:.38em;text-transform:uppercase;color:#f1d789;font-size:12px;font-weight:800;margin-bottom:14px}input,button{width:100%;height:50px;border-radius:16px;font:inherit}input{border:1px solid #30343c;background:#101216;color:var(--text);padding:0 14px;margin-bottom:10px}button{border:1px solid #cda458;background:linear-gradient(180deg,#e0b763,#bd8f3d);color:#140f08;font-weight:850;margin-top:6px}.ghost{background:#121419;color:var(--text);border-color:var(--line)}small{display:block;color:#80776c;margin-top:14px;line-height:1.45}</style></head><body><main class="box"><div class="k">Aagontuk Express</div><h1>Board quietly.</h1><p>Enter the carriage. No profiles. No follower games.</p><input id="email" placeholder="Email"><input id="password" type="password" placeholder="Password"><button id="login">Continue</button><button class="ghost" id="google">Continue with Google</button><small>Frontend page keeps the clean login shell. Existing backend/Firebase auth can be reconnected without changing the visual layer.</small></main><script>document.getElementById('login').onclick=()=>location.href='/';document.getElementById('google').onclick=()=>location.href='/';</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Passenger Login · Aagontuk Express</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#05070b;--surface:rgba(255,255,255,.055);--line:rgba(244,234,216,.13);--text:#f4ead8;--muted:rgba(244,234,216,.66);--faint:rgba(244,234,216,.43);--gold:#c6a15b;--gold2:#e1c37b;--danger:#d99286;--radius:28px;--shadow:0 30px 90px rgba(0,0,0,.48)}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,system-ui,sans-serif;color:var(--text);background:#05070b;overflow-x:hidden}body:before{content:"";position:fixed;inset:0;background:url('/assets/platform-bg.svg') center/cover no-repeat,linear-gradient(135deg,#05070b,#071018);z-index:-3}body:after{content:"";position:fixed;inset:0;background:linear-gradient(90deg,rgba(5,7,11,.68),rgba(5,7,11,.42),rgba(5,7,11,.88)),radial-gradient(circle at 18% 22%,rgba(198,161,91,.12),transparent 32%);z-index:-2}button,input{font:inherit}button{cursor:pointer}.auth-page{min-height:100vh;display:grid;grid-template-columns:1.2fr .8fr;gap:34px;align-items:center;padding:clamp(20px,4vw,56px);max-width:1280px;margin:0 auto}.intro{padding:24px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:80px}.mark{width:36px;height:36px;border:1px solid rgba(198,161,91,.32);border-radius:50%;display:grid;place-items:center;color:var(--gold2);font-family:Playfair Display,serif;font-weight:700;background:rgba(198,161,91,.08)}.brand h1{font-family:Playfair Display,serif;font-size:25px;margin:0}.eyebrow{color:var(--gold2);font-size:12px;text-transform:uppercase;letter-spacing:.22em;font-weight:700}.headline{font-family:Playfair Display,serif;font-size:clamp(44px,7vw,76px);line-height:.96;letter-spacing:.005em;margin:16px 0 18px;max-width:650px}.copy{font-size:17px;color:var(--muted);line-height:1.8;max-width:560px}.note{margin-top:30px;color:var(--faint);font-size:14px;line-height:1.7;max-width:450px}.station-chip{display:inline-flex;align-items:center;gap:10px;margin-top:34px;padding:12px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.04);color:var(--muted);font-size:13px}.dot{width:7px;height:7px;border-radius:50%;background:var(--gold2);box-shadow:0 0 18px rgba(198,161,91,.35)}.card{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.045));box-shadow:var(--shadow);backdrop-filter:blur(26px);padding:28px;position:relative;overflow:hidden}.card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(198,161,91,.12),transparent 38%);pointer-events:none}.card > *{position:relative}.card h2{font-family:Playfair Display,serif;font-size:34px;margin:0 0 8px}.sub{color:var(--muted);line-height:1.65;margin:0 0 24px}.google{width:100%;border:1px solid rgba(244,234,216,.18);background:rgba(255,255,255,.06);color:var(--text);border-radius:999px;padding:14px 16px;font-weight:700}.google:hover{background:rgba(255,255,255,.095)}.divider{display:flex;align-items:center;gap:14px;color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.15em;margin:20px 0}.divider:before,.divider:after{content:"";height:1px;flex:1;background:rgba(244,234,216,.12)}.field{display:grid;gap:8px;margin-bottom:13px}label{color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:800}input{width:100%;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.045);color:var(--text);padding:15px;outline:none}input:focus{border-color:rgba(198,161,91,.55);box-shadow:0 0 0 4px rgba(198,161,91,.08)}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.mainbtn,.ghostbtn{border-radius:999px;padding:14px 16px;border:1px solid var(--line);font-weight:800}.mainbtn{background:linear-gradient(180deg,rgba(225,195,123,.98),rgba(177,137,64,.98));color:#171107;border-color:rgba(255,225,151,.28);box-shadow:0 14px 36px rgba(198,161,91,.18)}.ghostbtn{background:rgba(255,255,255,.045);color:var(--text)}.ghostbtn:hover{background:rgba(255,255,255,.08)}.small{margin-top:16px;color:var(--faint);font-size:12px;line-height:1.6}.error{display:none;margin-top:13px;padding:12px;border:1px solid rgba(217,146,134,.28);background:rgba(217,146,134,.08);color:#ffd8d1;border-radius:14px;font-size:13px}.error.show{display:block}.platform-line{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.42;margin:26px 0}.footer{position:fixed;left:28px;bottom:22px;color:rgba(244,234,216,.36);font-size:13px}
+    @media(max-width:880px){.auth-page{grid-template-columns:1fr;padding:22px;gap:18px}.brand{margin-bottom:44px}.intro{padding:8px}.card{padding:22px}.actions{grid-template-columns:1fr}.footer{position:static;padding:0 22px 22px}.headline{font-size:44px}}
+  </style>
+</head>
+<body>
+  <main class="auth-page">
+    <section class="intro">
+      <div class="brand"><span class="mark">A</span><h1>Aagontuk Express</h1></div>
+      <div class="eyebrow">The Empty Platform</div>
+      <h2 class="headline">Board the night quietly.</h2>
+      <p class="copy">Aagontuk Express opens for anonymous conversations from 19:00 to 05:00.</p>
+      <p class="note">No followers. No public identity. Just a temporary seat beside a stranger.</p>
+      <div class="station-chip"><span class="dot"></span><span id="stateText">Preparing the platform</span></div>
+    </section>
+    <section class="card" aria-label="Passenger login">
+      <h2>Passenger Login</h2>
+      <p class="sub">Enter the platform with Google or email. The rest stays quiet.</p>
+      <button class="google" id="googleBtn">Continue with Google</button>
+      <div class="divider">or</div>
+      <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com" /></div>
+      <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password" placeholder="••••••••" /></div>
+      <div class="actions"><button class="mainbtn" id="signinBtn">Sign in</button><button class="ghostbtn" id="signupBtn">Create account</button></div>
+      <div class="error" id="errorBox"></div>
+      <div class="platform-line"></div>
+      <div class="small">If the backend auth route is available, this page uses it. Otherwise it creates a local demo passenger session for testing the UI.</div>
+    </section>
+  </main>
+  <div class="footer">About Aagontuk stays inside the platform.</div>
+  <script>
+    const $=s=>document.querySelector(s); const err=t=>{const e=$('#errorBox');e.textContent=t;e.classList.add('show')};
+    function bdState(){const h=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Dhaka'})).getHours(); if(h>=5&&h<17)return 'Platform Resting'; if(h>=17&&h<19)return 'Preparing to Board'; return 'Boarding Now'} $('#stateText').textContent=bdState();
+    async function post(path,payload){try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(r.ok)return await r.json();throw new Error('route failed')}catch(e){return null}}
+    function enter(user){localStorage.setItem('aagontukUser',JSON.stringify(user)); location.href='/index.html'}
+    $('#signinBtn').onclick=async()=>{const email=$('#email').value.trim();const password=$('#password').value;if(!email||!password)return err('Email and password needed.'); const data=await post('/api/login',{email,password}); enter(data?.user||{email,mode:'local'})};
+    $('#signupBtn').onclick=async()=>{const email=$('#email').value.trim();const password=$('#password').value;if(!email||!password)return err('Email and password needed.'); const data=await post('/api/register',{email,password}); enter(data?.user||{email,mode:'local'})};
+    $('#googleBtn').onclick=()=>{location.href='/auth/google'};
+  </script>
+</body>
+</html>

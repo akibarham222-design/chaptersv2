@@ -1,75 +1,230 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Aagontuk Express</title>
-<style>
-:root{--bg:#07080a;--panel:#101216;--panel2:#15171b;--line:#25282f;--text:#f3eadc;--muted:#b9ad9d;--gold:#d2aa58;--gold2:#f1d789;--green:#63d68c;--blue:#75dbff;--danger:#d56a6a;--radius:24px;--shadow:0 24px 80px rgba(0,0,0,.45)}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}body{overflow-x:hidden}.serif{font-family:Georgia,Times New Roman,serif}.app{min-height:100vh;background:radial-gradient(circle at 80% -10%,rgba(210,170,88,.15),transparent 34%),linear-gradient(180deg,#07080a,#090a0d 34%,#07080a)}
-.top{position:sticky;top:0;z-index:20;height:86px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(7,8,10,.84);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}.brand{display:flex;align-items:baseline;gap:13px;letter-spacing:.01em}.brand strong{font-family:Georgia,serif;font-size:31px;line-height:1}.brand span{font-size:14px;letter-spacing:.42em;color:var(--gold2);font-weight:800}.nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.pill,.nav button{height:44px;border:1px solid var(--line);background:#111318;color:var(--muted);border-radius:18px;padding:0 18px;font-size:15px;display:inline-flex;align-items:center;gap:9px}.dot{width:10px;height:10px;border-radius:99px;background:var(--green);box-shadow:0 0 20px rgba(99,214,140,.45)}.dot.blue{background:var(--blue)}button{cursor:pointer;font:inherit}.nav button:hover,.side button:hover,.btn:hover{border-color:#49402e;color:var(--text);background:#16181d}.themeDot{width:34px;height:34px;border-radius:50%;background:var(--gold);box-shadow:0 0 25px rgba(210,170,88,.44)}
-.shell{display:grid;grid-template-columns:280px 1fr;gap:28px;padding:28px 32px 44px}.side{position:sticky;top:114px;height:calc(100vh - 142px);border:1px solid var(--line);background:linear-gradient(180deg,rgba(21,24,28,.92),rgba(9,10,13,.92));border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}.sideCard{border:1px solid #2c3037;background:linear-gradient(180deg,#1a1d21,#101216);border-radius:22px;padding:20px;margin-bottom:18px}.kicker{letter-spacing:.36em;text-transform:uppercase;color:var(--gold2);font-size:12px;font-weight:800}.side h2{font-family:Georgia,serif;font-size:30px;line-height:.95;margin:18px 0 14px}.side p{color:var(--muted);line-height:1.55;margin:0}.side nav{display:grid;gap:10px}.side button{height:48px;text-align:left;border:1px solid transparent;background:transparent;color:var(--muted);border-radius:15px;padding:0 14px;font-size:16px}.side button.active{border-color:#50432d;background:linear-gradient(90deg,rgba(210,170,88,.12),rgba(210,170,88,.03));color:var(--text)}
-.main{min-width:0}.hero{position:relative;min-height:520px;border:1px solid #27313d;border-radius:28px;overflow:hidden;background:#080a0d;box-shadow:var(--shadow)}.heroBg{position:absolute;inset:0;background-image:var(--hero);background-size:cover;background-position:center right;opacity:.9}.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,8,10,.98) 0%,rgba(7,8,10,.86) 36%,rgba(7,8,10,.45) 64%,rgba(7,8,10,.18) 100%)}.heroInner{position:relative;z-index:1;max-width:650px;padding:64px}.servicePill{display:inline-flex;align-items:center;gap:10px;max-width:100%;border:1px solid rgba(210,170,88,.35);background:rgba(42,27,60,.68);border-radius:999px;padding:12px 18px;color:var(--gold2);letter-spacing:.22em;text-transform:uppercase;font-weight:800;font-size:13px}.hero h1{font-family:Georgia,serif;font-size:66px;line-height:.93;letter-spacing:-.055em;margin:34px 0 20px}.hero p{font-size:20px;line-height:1.55;color:#d1c5b6;margin:0 0 26px}.cta{display:flex;gap:12px;flex-wrap:wrap}.btn{height:54px;border-radius:18px;border:1px solid var(--line);padding:0 22px;background:#14161b;color:var(--text);font-weight:750}.btn.gold{background:linear-gradient(180deg,#e0b763,#bd8f3d);color:#1a1208;border-color:#cfa253}.btn.ghost{color:var(--muted)}
-.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;margin-top:22px}.card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(20,22,27,.92),rgba(10,11,14,.92));border-radius:24px;padding:28px;box-shadow:0 20px 50px rgba(0,0,0,.22)}.card h3{font-family:Georgia,serif;font-size:34px;line-height:1;margin:8px 0 12px}.card p{color:var(--muted);line-height:1.6;margin:0 0 18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{border-top:1px solid var(--line);padding-top:15px}.stat b{font-size:22px}.stat span{display:block;color:var(--muted);font-size:13px;margin-top:4px}.section{display:none}.section.active{display:block}.empty{color:#82796e;border:1px dashed #343840;border-radius:18px;padding:18px}.list{display:grid;gap:12px}.item{border:1px solid #272b32;background:#101217;border-radius:18px;padding:16px}.item strong{display:block;margin-bottom:5px}.item small{color:var(--muted)}
-.player{position:fixed;right:22px;bottom:22px;z-index:30;width:min(420px,calc(100vw - 44px));border:1px solid #343840;background:rgba(11,12,15,.92);backdrop-filter:blur(18px);border-radius:22px;padding:14px;box-shadow:var(--shadow);display:none}.player.show{display:block}.playerTop{display:flex;align-items:center;justify-content:space-between;gap:10px}.trackTitle{font-weight:800}.trackSub{color:var(--muted);font-size:13px;margin-top:3px}.controls{display:flex;gap:8px;margin-top:12px}.controls button{height:38px;border-radius:13px;border:1px solid var(--line);background:#15171b;color:var(--text);padding:0 13px}.progress{width:100%;accent-color:var(--gold);margin-top:10px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:50;display:none;align-items:center;justify-content:center;padding:22px}.modal.show{display:flex}.box{width:min(760px,100%);max-height:88vh;overflow:auto;border:1px solid #333741;background:#0d0f13;border-radius:26px;padding:26px;box-shadow:var(--shadow)}.boxHead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.box h2{font-family:Georgia,serif;font-size:36px;margin:0}.x{width:40px;height:40px;border-radius:14px;border:1px solid var(--line);background:#15171b;color:var(--text)}.form{display:grid;gap:12px}.form input,.form textarea{width:100%;border:1px solid #30343c;background:#111318;color:var(--text);border-radius:15px;padding:14px 15px;font:inherit}.form textarea{min-height:130px;resize:vertical}.searchResults{display:grid;gap:8px;max-height:270px;overflow:auto;margin-top:10px}.songChoice{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #282c34;background:#111318;border-radius:15px;padding:12px}.songChoice button{border:1px solid #3a3324;background:#171511;color:var(--gold2);border-radius:12px;height:34px;padding:0 12px}.selectedSong{border:1px solid rgba(210,170,88,.42);background:rgba(210,170,88,.08);border-radius:15px;padding:12px;color:var(--gold2)}.tiny{font-size:12px;color:var(--muted);line-height:1.5}.chatPanel{display:none;border:1px solid var(--line);border-radius:24px;background:#0c0e12;margin-top:22px;overflow:hidden}.chatPanel.show{display:block}.chatLog{height:300px;overflow:auto;padding:18px;display:grid;align-content:start;gap:10px}.bubble{max-width:75%;padding:12px 14px;border-radius:16px;background:#171a20;color:#e9dfd0}.bubble.me{margin-left:auto;background:#2a2215;border:1px solid #5e4a25}.chatBar{display:flex;gap:10px;border-top:1px solid var(--line);padding:12px}.chatBar input{flex:1;border:1px solid #30343c;background:#111318;color:var(--text);border-radius:14px;padding:0 14px}.chatBar button{height:44px;border:1px solid #3a3324;background:#d2aa58;color:#100d08;border-radius:14px;padding:0 18px;font-weight:800}
-@media(max-width:980px){.top{height:auto;min-height:80px;padding:18px;align-items:flex-start}.shell{grid-template-columns:1fr;padding:18px}.side{position:relative;top:auto;height:auto}.heroInner{padding:38px 26px}.hero h1{font-size:48px}.grid{grid-template-columns:1fr}.brand strong{font-size:26px}.nav{justify-content:flex-start}.pill,.nav button{height:40px;font-size:14px;padding:0 13px}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aagontuk Express</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#05070b;
+      --bg2:#081018;
+      --surface:rgba(255,255,255,.045);
+      --surface2:rgba(255,255,255,.07);
+      --line:rgba(244,234,216,.12);
+      --line2:rgba(198,161,91,.26);
+      --text:#f4ead8;
+      --muted:rgba(244,234,216,.64);
+      --faint:rgba(244,234,216,.42);
+      --gold:#c6a15b;
+      --gold2:#e1c37b;
+      --green:#8dcf9b;
+      --danger:#d99286;
+      --shadow:0 24px 80px rgba(0,0,0,.46);
+      --radius:26px;
+    }
+    *{box-sizing:border-box}
+    html{height:100%;scroll-behavior:smooth}
+    body{
+      min-height:100%;margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);overflow-x:hidden;
+    }
+    body:before{
+      content:"";position:fixed;inset:0;z-index:-3;background:url('/assets/platform-bg.svg') center/cover no-repeat,linear-gradient(135deg,#05070b,#071018 55%,#05070b);
+    }
+    body:after{
+      content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(circle at 50% 10%,rgba(198,161,91,.08),transparent 35%),linear-gradient(180deg,rgba(5,7,11,.38),rgba(5,7,11,.82));pointer-events:none;
+    }
+    a{color:inherit;text-decoration:none}
+    button,input,textarea{font:inherit}
+    button{cursor:pointer}
+    .page{min-height:100vh;padding:24px clamp(16px,3vw,42px) 110px;position:relative}
+    .topbar{
+      height:72px;display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid var(--line);border-radius:999px;background:rgba(5,7,11,.58);backdrop-filter:blur(22px);padding:0 18px 0 24px;box-shadow:0 10px 36px rgba(0,0,0,.22)
+    }
+    .brand{display:flex;align-items:center;gap:12px;min-width:max-content}
+    .mark{width:30px;height:30px;border:1px solid var(--line2);border-radius:50%;display:grid;place-items:center;color:var(--gold2);font-family:Playfair Display,serif;font-weight:700;background:rgba(198,161,91,.08)}
+    .brand h1{font-family:Playfair Display,serif;font-size:22px;line-height:1;margin:0;letter-spacing:.02em}
+    .rail-status{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;white-space:nowrap}
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 18px rgba(141,207,155,.35)}
+    .top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .navbtn,.ghostbtn,.mainbtn,.quietbtn,.dangerbtn{border:1px solid var(--line);color:var(--text);background:rgba(255,255,255,.045);border-radius:999px;padding:11px 14px;transition:.18s ease;line-height:1}
+    .navbtn{font-size:13px;color:var(--muted)}
+    .navbtn:hover,.ghostbtn:hover,.quietbtn:hover{background:rgba(255,255,255,.08);border-color:rgba(244,234,216,.22);color:var(--text)}
+    .mainbtn{background:linear-gradient(180deg,rgba(225,195,123,.98),rgba(177,137,64,.98));color:#171107;border-color:rgba(255,225,151,.28);font-weight:700;box-shadow:0 14px 36px rgba(198,161,91,.18)}
+    .mainbtn:hover{transform:translateY(-1px);filter:brightness(1.04)}
+    .quietbtn{color:var(--muted);font-size:13px}
+    .dangerbtn{color:#ffe1dc;border-color:rgba(217,146,134,.28);background:rgba(217,146,134,.08)}
+    .shell{max-width:1180px;margin:0 auto}
+    .mainstage{min-height:calc(100vh - 210px);display:grid;place-items:center;padding:56px 0 34px}
+    .board-wrap{width:min(920px,100%)}
+    .eyebrow{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.18em;margin-bottom:18px}
+    .eyebrow:before,.eyebrow:after{content:"";width:52px;height:1px;background:linear-gradient(90deg,transparent,var(--line2))}.eyebrow:after{background:linear-gradient(90deg,var(--line2),transparent)}
+    .departure-board{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid rgba(244,234,216,.15);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.035));box-shadow:var(--shadow);backdrop-filter:blur(28px);padding:42px clamp(22px,5vw,64px)}
+    .departure-board:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(198,161,91,.12),transparent 35%,rgba(141,207,155,.04));pointer-events:none}.departure-board:after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.42}
+    .board-inner{position:relative;display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:center}
+    .kicker{color:var(--gold2);font-size:12px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:12px;font-weight:700}
+    .title{font-family:Playfair Display,serif;font-size:clamp(40px,5vw,60px);letter-spacing:.01em;line-height:.96;margin:0 0 14px}
+    .subtitle{color:var(--muted);font-size:16px;line-height:1.8;margin:0;max-width:520px}
+    .actionrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:28px}
+    .window-seat{margin-top:18px;color:var(--faint);font-size:13px}.board-panel{border:1px solid var(--line);border-radius:22px;background:rgba(5,7,11,.42);padding:22px;position:relative;overflow:hidden}.board-panel:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent 0 34px,rgba(244,234,216,.035) 35px);opacity:.65;pointer-events:none}.panel-content{position:relative}.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;border-bottom:1px solid rgba(244,234,216,.08);font-size:13px}.row:last-child{border-bottom:0}.label{color:var(--faint);text-transform:uppercase;letter-spacing:.13em;font-size:11px}.value{font-weight:700;color:var(--text);text-align:right}.time{font-family:Playfair Display,serif;font-size:31px;color:var(--gold2);letter-spacing:.04em}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.feature{border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.042);padding:22px;min-height:166px;transition:.18s ease;backdrop-filter:blur(18px)}.feature:hover{background:rgba(255,255,255,.065);border-color:rgba(198,161,91,.28);transform:translateY(-2px)}.comp{color:var(--gold2);font-size:11px;letter-spacing:.18em;text-transform:uppercase}.feature h3{font-family:Playfair Display,serif;font-size:24px;margin:14px 0 9px}.feature p{color:var(--muted);line-height:1.65;font-size:14px;margin:0 0 18px}.small-link{color:var(--gold2);font-size:13px;font-weight:700}.footer-low{position:fixed;left:26px;bottom:22px;z-index:20;color:rgba(244,234,216,.44);font-size:13px}.footer-low button{color:inherit;background:transparent;border:0;padding:0}.footer-low button:hover{color:rgba(244,234,216,.78)}
+    .player{position:fixed;right:22px;bottom:20px;z-index:35;width:min(390px,calc(100vw - 44px));border:1px solid var(--line);border-radius:22px;background:rgba(5,7,11,.78);backdrop-filter:blur(24px);box-shadow:0 18px 55px rgba(0,0,0,.35);overflow:hidden}.player.min{width:72px}.player.min .player-body,.player.min .player-meta,.player.min .tracklist{display:none}.player-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid rgba(244,234,216,.08)}.player-title{font-size:12px;color:var(--gold2);letter-spacing:.16em;text-transform:uppercase;font-weight:700}.iconbtn{border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--text);width:34px;height:34px;border-radius:50%;display:grid;place-items:center}.player-body{padding:14px}.player-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.trackname{font-weight:700}.tracksub{font-size:12px;color:var(--faint);margin-top:4px}.controls{display:flex;align-items:center;gap:8px}.volume{width:86px}.tracklist{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:11px}.trackpill{border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--muted);border-radius:999px;padding:8px 6px;font-size:11px}.trackpill.active{color:#171107;background:var(--gold2);border-color:var(--gold2);font-weight:700}
+    .modal{position:fixed;inset:0;z-index:50;display:none;place-items:center;padding:18px;background:rgba(0,0,0,.58);backdrop-filter:blur(18px)}.modal.show{display:grid}.dialog{width:min(720px,100%);max-height:88vh;overflow:auto;border:1px solid var(--line);border-radius:28px;background:linear-gradient(180deg,rgba(13,18,26,.97),rgba(5,7,11,.97));box-shadow:var(--shadow);padding:24px}.dialog.big{width:min(980px,100%)}.dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}.dialog h2{font-family:Playfair Display,serif;font-size:34px;margin:0}.dialog p{color:var(--muted);line-height:1.7}.close{border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--text);border-radius:50%;width:38px;height:38px}.formgrid{display:grid;gap:12px}label{color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:700}input,textarea{width:100%;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.045);color:var(--text);padding:14px 14px;outline:none}textarea{min-height:118px;resize:vertical}input:focus,textarea:focus{border-color:rgba(198,161,91,.5);box-shadow:0 0 0 4px rgba(198,161,91,.08)}.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.song-results{display:grid;gap:8px;margin-top:10px;max-height:230px;overflow:auto}.song-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:16px;padding:12px;text-align:left}.song-item:hover{background:rgba(255,255,255,.07)}.song-title{font-weight:700}.song-artist{font-size:12px;color:var(--faint);margin-top:4px}.spotify{font-size:12px;color:var(--gold2);white-space:nowrap}.attached{display:none;border:1px solid rgba(198,161,91,.35);background:rgba(198,161,91,.08);border-radius:16px;padding:12px;margin-top:10px}.attached.show{display:flex;justify-content:space-between;gap:12px;align-items:center}.confessions-list{display:grid;gap:12px;margin-top:18px}.conf-card{border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.04);padding:16px}.conf-route{display:flex;gap:8px;align-items:center;color:var(--gold2);font-size:13px;font-weight:700}.conf-msg{color:var(--text);margin:12px 0;line-height:1.65}.conf-song{font-size:13px;color:var(--muted)}
+    .boarding{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(5,7,11,.92);backdrop-filter:blur(20px);padding:18px}.boarding.show{display:grid}.ticket{width:min(680px,100%);border:1px solid rgba(198,161,91,.35);border-radius:30px;background:linear-gradient(145deg,rgba(244,234,216,.11),rgba(255,255,255,.04));box-shadow:var(--shadow);padding:30px;position:relative;overflow:hidden}.ticket:before,.ticket:after{content:"";position:absolute;top:50%;width:34px;height:34px;border-radius:50%;background:#05070b;border:1px solid rgba(198,161,91,.22)}.ticket:before{left:-18px}.ticket:after{right:-18px}.ticket-top{display:flex;justify-content:space-between;gap:18px;border-bottom:1px dashed rgba(244,234,216,.22);padding-bottom:18px;margin-bottom:18px}.ticket h2{font-family:Playfair Display,serif;font-size:38px;margin:0}.stamp{color:var(--gold2);font-size:12px;letter-spacing:.18em;text-transform:uppercase}.ticket-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.ticket-field{border:1px solid var(--line);border-radius:16px;padding:14px;background:rgba(5,7,11,.35)}.railmove{height:4px;border-radius:999px;background:linear-gradient(90deg,transparent,var(--gold2),transparent);margin:22px 0;animation:rail 1.7s infinite linear}.waitline{color:var(--muted);line-height:1.7}.carriage-windows{display:flex;gap:7px;margin:18px 0}.win{height:18px;flex:1;border-radius:4px;background:rgba(244,234,216,.08);animation:window 1.6s infinite ease-in-out}.win:nth-child(2){animation-delay:.15s}.win:nth-child(3){animation-delay:.3s}.win:nth-child(4){animation-delay:.45s}.win:nth-child(5){animation-delay:.6s}@keyframes rail{from{transform:translateX(-45%)}to{transform:translateX(45%)}}@keyframes window{0%,100%{background:rgba(244,234,216,.08)}50%{background:rgba(225,195,123,.62)}}
+    .chat{display:none}.chat.show{display:block}.chat-shell{max-width:980px;margin:40px auto 0;border:1px solid var(--line);border-radius:28px;background:rgba(5,7,11,.68);backdrop-filter:blur(24px);overflow:hidden;box-shadow:var(--shadow)}.chat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px;border-bottom:1px solid var(--line)}.chat-title{font-family:Playfair Display,serif;font-size:28px}.chat-actions{display:flex;gap:8px;flex-wrap:wrap}.messages{height:430px;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}.msg{max-width:76%;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.07);color:var(--text);line-height:1.55}.msg.me{align-self:flex-end;background:rgba(198,161,91,.16);border:1px solid rgba(198,161,91,.25)}.msg.them{align-self:flex-start}.sendbar{display:flex;gap:10px;padding:14px;border-top:1px solid var(--line)}.sendbar input{border-radius:999px}
+    .about-creator{display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:18px;padding:14px;background:rgba(255,255,255,.04);margin-top:16px}.creator-pic{width:62px;height:62px;border-radius:50%;object-fit:cover;border:1px solid rgba(198,161,91,.35);background:rgba(255,255,255,.06)}.creator-name{font-weight:800}.creator-bio{font-size:13px;color:var(--muted);line-height:1.55;margin-top:4px}.admin-tabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.notice{color:var(--faint);font-size:12px;line-height:1.6}.toast{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:100;background:rgba(5,7,11,.9);border:1px solid var(--line2);color:var(--text);border-radius:999px;padding:12px 16px;display:none}.toast.show{display:block}
+    @media(max-width:900px){.topbar{height:auto;border-radius:26px;align-items:flex-start;flex-direction:column;padding:18px}.top-actions{width:100%;justify-content:flex-start}.board-inner{grid-template-columns:1fr}.features{grid-template-columns:1fr}.split,.ticket-grid,.admin-tabs{grid-template-columns:1fr}.mainstage{padding-top:36px}.player{right:12px;bottom:12px;width:calc(100vw - 24px)}.footer-low{position:static;margin:24px 0 0 4px}.page{padding-bottom:170px}.messages{height:360px}.title{font-size:40px}}
+  </style>
 </head>
 <body>
-<div class="app">
-<header class="top"><div class="brand"><strong>Aagontuk</strong><span>EXPRESS</span></div><div class="nav"><div class="pill"><i class="dot"></i><span id="serviceText">service open</span></div><div class="pill"><i class="dot blue"></i><span id="onlineCount">1 online</span></div><button data-open="music">♪ Music</button><button data-open="confessions">Station Confessions</button><button data-open="logs">Journey Logs</button><div class="themeDot"></div><button id="signOutBtn">Sign out</button></div></header>
-<div class="shell"><aside class="side"><div class="sideCard"><div class="kicker">Aagontuk Express</div><h2>Quiet strangers. Clean departures.</h2><p>No bots. No follower games. Just real passengers boarding the same late train.</p></div><nav><button class="active" data-open="home">⌂ Find Stranger</button><button data-open="logs">☼ My Chapters</button><button data-open="confessions">✎ Station Confessions</button><button data-open="music">♪ Onboard Audio</button><button data-open="games">⌘ Table Games</button></nav></aside>
-<main class="main">
-<section id="home" class="section active"><div class="hero" id="hero"><div class="heroBg"></div><div class="heroInner"><div class="servicePill" id="heroPill">Kamalapur Night Service • Night Service</div><h1>Strangers board. Chapters remain.</h1><p id="heroCopy">Real anonymous conversations from 19:00 to 05:00. No profiles. No followers. No staged prompts.</p><div class="cta"><button class="btn gold" id="findBtn">Find Stranger</button><button class="btn ghost" id="writeConfessionBtn">Write Confession</button><button class="btn ghost" id="playBgBtn">Play Background Music</button></div></div></div><div class="chatPanel" id="chatPanel"><div class="chatLog" id="chatLog"><div class="bubble">A quiet carriage is ready. Waiting for a real passenger.</div></div><div class="chatBar"><input id="chatInput" placeholder="Write quietly..."/><button id="sendBtn">Send</button></div></div><div class="grid"><div class="card"><div class="kicker">Live carriage</div><h3>Board your next conversation</h3><p>Search for a stranger when the night service is open. During the day the station stays off-duty with a countdown.</p><button class="btn gold" id="findBtn2">Find Stranger</button></div><div class="card"><div class="kicker">Journey so far</div><h3>Night ledger</h3><div class="stats"><div class="stat"><b id="statConvo">0</b><span>Conversations</span></div><div class="stat"><b id="statChapter">0</b><span>Chapters</span></div><div class="stat"><b id="statConfess">0</b><span>Confessions</span></div></div></div></div></section>
-<section id="confessions" class="section"><div class="card"><div class="kicker">Station Confessions</div><h3>From. To. Message. Song.</h3><p>Confessions stay personal. The song is selected through a searchable picker and can open on Spotify.</p><button class="btn gold" id="openConfessionModal">Write Confession</button></div><div class="grid"><div class="card"><h3>Recent confessions</h3><div id="confessionList" class="list"></div></div><div class="card"><h3>Song search</h3><p>This picker behaves like a lightweight Instagram-style selector inside the site. Spotify’s real catalog search needs Spotify API credentials on the backend.</p><input id="inlineSongSearch" placeholder="Search song or artist" style="width:100%;height:48px;border:1px solid #30343c;background:#111318;color:var(--text);border-radius:15px;padding:0 14px;font:inherit"><div id="inlineSongResults" class="searchResults"></div></div></div></section>
-<section id="music" class="section"><div class="card"><div class="kicker">Onboard Audio</div><h3>Background music</h3><p>This uses your local four MP3 files and keeps playing while the user stays on the site. Browser autoplay is blocked until the user presses play once.</p><button class="btn gold" id="openPlayerBtn">Open Player</button></div><div class="grid"><div class="card"><h3>Tracks</h3><div id="trackList" class="list"></div></div><div class="card"><h3>Rule</h3><p>Confession song choices are Spotify-linked. Onboard Audio is separate and uses local files from <b>public/music</b>.</p></div></div></section>
-<section id="logs" class="section"><div class="card"><div class="kicker">Journey Logs</div><h3>Saved chapters</h3><p>Conversations can be archived as chapters.</p><div id="chapterList" class="list"><div class="empty">No saved chapters yet.</div></div></div></section>
-<section id="games" class="section"><div class="card"><div class="kicker">Table Games</div><h3>Small carriage games</h3><p>Clean placeholders kept ready for table games without cluttering the main screen.</p><div class="grid"><button class="btn ghost">Tic Tac Toe</button><button class="btn ghost">Truth Card</button></div></div></section>
-</main></div></div>
-<div class="player" id="player"><div class="playerTop"><div><div class="trackTitle" id="nowTitle">No track playing</div><div class="trackSub" id="nowSub">Background player</div></div><button class="x" id="closePlayer">×</button></div><audio id="audio" preload="metadata"></audio><input class="progress" id="progress" type="range" min="0" max="100" value="0"><div class="controls"><button id="prevTrack">Prev</button><button id="togglePlay">Play</button><button id="nextTrack">Next</button><button id="volDown">Vol -</button><button id="volUp">Vol +</button></div></div>
-<div class="modal" id="confessionModal"><div class="box"><div class="boxHead"><h2>Write Confession</h2><button class="x" data-close="confessionModal">×</button></div><div class="form"><input id="fromInput" placeholder="From"><input id="toInput" placeholder="To"><textarea id="messageInput" placeholder="Message"></textarea><input id="songSearch" placeholder="Search song or artist"><div id="selectedSong" class="selectedSong" style="display:none"></div><div id="songResults" class="searchResults"></div><button class="btn gold" id="submitConfession">Submit Confession</button><div class="tiny">Real Spotify live catalog search cannot work without a Spotify API client and backend token route. This build gives the correct searchable picker structure and Spotify redirect behavior.</div></div></div></div>
-<script>
-const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
-const state={section:'home',service:'night',track:0,selectedSong:null,playing:false};
-const onboardTracks=[{title:'Aces',src:'/music/aces.mp3'},{title:'Escape',src:'/music/escape.mp3'},{title:'Heartheal',src:'/music/heartheal.mp3'},{title:'Love',src:'/music/love.mp3'}];
-const spotifySongs=[
-{title:'Apocalypse',artist:'Cigarettes After Sex',spotify:'https://open.spotify.com/search/Apocalypse%20Cigarettes%20After%20Sex'},
-{title:'K.',artist:'Cigarettes After Sex',spotify:'https://open.spotify.com/search/K.%20Cigarettes%20After%20Sex'},
-{title:'Space Oddity',artist:'David Bowie',spotify:'https://open.spotify.com/search/Space%20Oddity%20David%20Bowie'},
-{title:'505',artist:'Arctic Monkeys',spotify:'https://open.spotify.com/search/505%20Arctic%20Monkeys'},
-{title:'I Wanna Be Yours',artist:'Arctic Monkeys',spotify:'https://open.spotify.com/search/I%20Wanna%20Be%20Yours%20Arctic%20Monkeys'},
-{title:'The Night We Met',artist:'Lord Huron',spotify:'https://open.spotify.com/search/The%20Night%20We%20Met%20Lord%20Huron'},
-{title:'Sweet',artist:'Cigarettes After Sex',spotify:'https://open.spotify.com/search/Sweet%20Cigarettes%20After%20Sex'},
-{title:'Sparks',artist:'Coldplay',spotify:'https://open.spotify.com/search/Sparks%20Coldplay'},
-{title:'Yellow',artist:'Coldplay',spotify:'https://open.spotify.com/search/Yellow%20Coldplay'},
-{title:'Mystery of Love',artist:'Sufjan Stevens',spotify:'https://open.spotify.com/search/Mystery%20of%20Love%20Sufjan%20Stevens'},
-{title:'To Build A Home',artist:'The Cinematic Orchestra',spotify:'https://open.spotify.com/search/To%20Build%20A%20Home%20The%20Cinematic%20Orchestra'},
-{title:'Anchor',artist:'Novo Amor',spotify:'https://open.spotify.com/search/Anchor%20Novo%20Amor'},
-{title:'Fourth of July',artist:'Sufjan Stevens',spotify:'https://open.spotify.com/search/Fourth%20of%20July%20Sufjan%20Stevens'},
-{title:'No Surprises',artist:'Radiohead',spotify:'https://open.spotify.com/search/No%20Surprises%20Radiohead'},
-{title:'Let Down',artist:'Radiohead',spotify:'https://open.spotify.com/search/Let%20Down%20Radiohead'},
-{title:'About You',artist:'The 1975',spotify:'https://open.spotify.com/search/About%20You%20The%201975'},
-{title:'Somewhere Only We Know',artist:'Keane',spotify:'https://open.spotify.com/search/Somewhere%20Only%20We%20Know%20Keane'},
-{title:'Je te laisserai des mots',artist:'Patrick Watson',spotify:'https://open.spotify.com/search/Je%20te%20laisserai%20des%20mots%20Patrick%20Watson'},
-{title:'Until I Found You',artist:'Stephen Sanchez',spotify:'https://open.spotify.com/search/Until%20I%20Found%20You%20Stephen%20Sanchez'},
-{title:'Line of Sight',artist:'Odesza',spotify:'https://open.spotify.com/search/Line%20of%20Sight%20Odesza'}
-];
-function bdHour(){const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Dhaka',hour:'2-digit',hour12:false}).formatToParts(new Date());return Number(parts.find(p=>p.type==='hour').value)}
-function updateService(){const h=bdHour();let mode='day';if(h>=19||h<5)mode='night';else if(h>=17)mode='dusk';state.service=mode;const hero=$('#hero');hero.style.setProperty('--hero',`url('/assets/hero-${mode}.svg')`);$('#serviceText').textContent=mode==='night'?'service open':mode==='dusk'?'boarding soon':'off duty';$('#heroPill').textContent=mode==='night'?'Kamalapur Night Service • Night Service':mode==='dusk'?'Kamalapur Dusk Boarding • Opens 19:00':'Day Platform • Opens 19:00';$('#heroCopy').textContent=mode==='night'?'Real anonymous conversations from 19:00 to 05:00. No profiles. No followers. No staged prompts.':mode==='dusk'?'The station is getting ready. Night service starts at 19:00 Bangladesh time.':'The train rests during daylight. Return at 19:00 Bangladesh time for live service.'}
-function showSection(id){state.section=id;$$('.section').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-open]').forEach(b=>b.classList.toggle('active',b.dataset.open===id));window.scrollTo({top:0,behavior:'smooth'})}
-$$('[data-open]').forEach(b=>b.onclick=()=>showSection(b.dataset.open));
-function openModal(id){$('#'+id).classList.add('show')}function closeModal(id){$('#'+id).classList.remove('show')}$$('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));$('#writeConfessionBtn').onclick=()=>openModal('confessionModal');$('#openConfessionModal').onclick=()=>openModal('confessionModal');
-function confessions(){return JSON.parse(localStorage.getItem('aagontuk_confessions')||'[]')}function saveConfessions(v){localStorage.setItem('aagontuk_confessions',JSON.stringify(v))}
-function renderConfessions(){const arr=confessions();$('#statConfess').textContent=arr.length;$('#confessionList').innerHTML=arr.length?arr.map(c=>`<div class="item"><strong>${esc(c.to)} ← ${esc(c.from)}</strong><small>${esc(c.message)}</small><div style="margin-top:10px"><button class="btn ghost" onclick="window.open('${c.song.spotify}','_blank')">♪ ${esc(c.song.title)} — ${esc(c.song.artist)}</button></div></div>`).join(''):'<div class="empty">No confessions yet.</div>'}
-function esc(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
-function renderSongs(q='',target='#songResults',selectable=true){const query=q.trim().toLowerCase();const list=(query?spotifySongs.filter(s=>(s.title+' '+s.artist).toLowerCase().includes(query)):spotifySongs).slice(0,24);$(target).innerHTML=list.map((s,i)=>`<div class="songChoice"><div><strong>${esc(s.title)}</strong><small> — ${esc(s.artist)}</small></div><div>${selectable?`<button data-pick="${spotifySongs.indexOf(s)}">Select</button>`:''}<button onclick="window.open('${s.spotify}','_blank')">Spotify</button></div></div>`).join('') || '<div class="empty">No match. Search another title or artist.</div>';$$(`${target} [data-pick]`).forEach(b=>b.onclick=()=>{state.selectedSong=spotifySongs[Number(b.dataset.pick)];$('#selectedSong').style.display='block';$('#selectedSong').textContent=`Selected: ${state.selectedSong.title} — ${state.selectedSong.artist}`})}
-$('#songSearch').oninput=e=>renderSongs(e.target.value,'#songResults',true);$('#inlineSongSearch').oninput=e=>renderSongs(e.target.value,'#inlineSongResults',false);renderSongs('', '#songResults', true);renderSongs('', '#inlineSongResults', false);
-$('#submitConfession').onclick=()=>{const from=$('#fromInput').value.trim(),to=$('#toInput').value.trim(),message=$('#messageInput').value.trim();if(!from||!to||!message||!state.selectedSong){alert('Fill From, To, Message, and select a song.');return}const arr=confessions();arr.unshift({from,to,message,song:state.selectedSong,at:new Date().toISOString()});saveConfessions(arr);['#fromInput','#toInput','#messageInput','#songSearch'].forEach(s=>$(s).value='');state.selectedSong=null;$('#selectedSong').style.display='none';renderConfessions();closeModal('confessionModal');showSection('confessions')};
-const audio=$('#audio');audio.volume=.55;function loadTrack(i){state.track=(i+onboardTracks.length)%onboardTracks.length;const t=onboardTracks[state.track];audio.src=t.src;$('#nowTitle').textContent=t.title;$('#nowSub').textContent=t.src}function playTrack(){if(!audio.src)loadTrack(state.track);$('#player').classList.add('show');audio.play().then(()=>{$('#togglePlay').textContent='Pause';state.playing=true}).catch(()=>{alert('Browser blocked playback. Press Play once, and check that the MP3 files exist in public/music.')})}function pauseTrack(){audio.pause();$('#togglePlay').textContent='Play';state.playing=false}$('#openPlayerBtn').onclick=()=>{$('#player').classList.add('show');};$('#playBgBtn').onclick=playTrack;$('#closePlayer').onclick=()=>$('#player').classList.remove('show');$('#togglePlay').onclick=()=>audio.paused?playTrack():pauseTrack();$('#prevTrack').onclick=()=>{loadTrack(state.track-1);playTrack()};$('#nextTrack').onclick=()=>{loadTrack(state.track+1);playTrack()};$('#volDown').onclick=()=>audio.volume=Math.max(0,audio.volume-.1);$('#volUp').onclick=()=>audio.volume=Math.min(1,audio.volume+.1);audio.ontimeupdate=()=>{$('#progress').value=audio.duration?audio.currentTime/audio.duration*100:0};$('#progress').oninput=e=>{if(audio.duration)audio.currentTime=Number(e.target.value)/100*audio.duration};audio.onended=()=>{$('#nextTrack').click()};
-function renderTracks(){loadTrack(0);$('#trackList').innerHTML=onboardTracks.map((t,i)=>`<div class="item"><strong>${esc(t.title)}</strong><small>${esc(t.src)}</small><div style="margin-top:10px"><button class="btn ghost" data-track="${i}">Play in background</button></div></div>`).join('');$$('[data-track]').forEach(b=>b.onclick=()=>{loadTrack(Number(b.dataset.track));playTrack()})}
-$('#findBtn').onclick=$('#findBtn2').onclick=()=>{if(state.service!=='night'){alert('Night service opens at 19:00 Bangladesh time.');return}$('#chatPanel').classList.add('show');$('#statConvo').textContent=Number($('#statConvo').textContent)+1};$('#sendBtn').onclick=()=>{const v=$('#chatInput').value.trim();if(!v)return;$('#chatLog').insertAdjacentHTML('beforeend',`<div class="bubble me">${esc(v)}</div>`);$('#chatInput').value='';$('#chatLog').scrollTop=$('#chatLog').scrollHeight};$('#chatInput').onkeydown=e=>{if(e.key==='Enter')$('#sendBtn').click()};$('#signOutBtn').onclick=()=>{location.href='/auth.html'};
-updateService();setInterval(updateService,60000);renderTracks();renderConfessions();$('#onlineCount').textContent=(Math.floor(Math.random()*3)+1)+' online';
-</script>
+  <div class="toast" id="toast"></div>
+  <div class="page" id="homePage">
+    <header class="topbar shell">
+      <a class="brand" href="#home" aria-label="Aagontuk Express home"><span class="mark">A</span><h1>Aagontuk Express</h1></a>
+      <div class="rail-status"><span class="dot" id="statusDot"></span><span id="statusText">Boarding Now</span><span>·</span><span id="onlineCount">3 passengers</span></div>
+      <nav class="top-actions" aria-label="Main navigation">
+        <button class="navbtn" data-open="audio">Music</button>
+        <button class="navbtn" data-open="confessions">Confessions</button>
+        <button class="navbtn" data-open="logs">Logs</button>
+        <button class="navbtn" id="adminOpen">Control Room</button>
+        <button class="navbtn" id="signOut">Sign out</button>
+      </nav>
+    </header>
+
+    <main class="shell mainstage" id="home">
+      <div class="board-wrap">
+        <div class="eyebrow">Kamalapur Night Line</div>
+        <section class="departure-board" aria-label="Aagontuk departure board">
+          <div class="board-inner">
+            <div>
+              <div class="kicker">Next Departure</div>
+              <h2 class="title">Stranger Conversation</h2>
+              <p class="subtitle">A quiet seat for anonymous conversations when the night line starts boarding.</p>
+              <div class="actionrow">
+                <button class="mainbtn" id="boardBtn">Board Stranger</button>
+                <button class="ghostbtn" data-open="confessions">Leave a Confession</button>
+              </div>
+              <div class="window-seat">A seat beside the window is kept empty until someone arrives.</div>
+            </div>
+            <aside class="board-panel" aria-label="Departure details">
+              <div class="panel-content">
+                <div class="row"><span class="label">Line</span><span class="value">AAGONTUK EXPRESS</span></div>
+                <div class="row"><span class="label">Window</span><span class="value time">19:00 — 05:00</span></div>
+                <div class="row"><span class="label">Current State</span><span class="value" id="boardState">Boarding Now</span></div>
+                <div class="row"><span class="label">Platform</span><span class="value">7</span></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="features" aria-label="Aagontuk features">
+          <button class="feature" data-open="confessions">
+            <div class="comp">Compartment 01</div><h3>Station Confessions</h3>
+            <p>Leave something from one heart to another, with a song attached.</p><span class="small-link">Open confessions</span>
+          </button>
+          <button class="feature" data-open="audio">
+            <div class="comp">Compartment 02</div><h3>Onboard Audio</h3>
+            <p>Play the four quiet tracks in the background while the platform stays open.</p><span class="small-link">Open player</span>
+          </button>
+          <button class="feature" data-open="logs">
+            <div class="comp">Compartment 03</div><h3>Journey Logs</h3>
+            <p>Keep the chapters that felt worth saving after the ride ends.</p><span class="small-link">View logs</span>
+          </button>
+        </section>
+      </div>
+    </main>
+
+    <div class="footer-low"><button id="aboutOpen">About Aagontuk</button></div>
+  </div>
+
+  <section class="chat shell" id="chatPage">
+    <div class="chat-shell">
+      <div class="chat-head">
+        <div><div class="chat-title">Carriage 7</div><div class="notice">Anonymous passenger connected</div></div>
+        <div class="chat-actions"><button class="quietbtn" id="gameBtn">Play a round</button><button class="quietbtn" id="reportBtn">Report</button><button class="dangerbtn" id="endChatBtn">End Chat</button></div>
+      </div>
+      <div class="messages" id="messages"><div class="msg them">Passenger boarded. Say something.</div></div>
+      <div class="sendbar"><input id="messageInput" placeholder="Write inside the carriage..."/><button class="mainbtn" id="sendBtn">Send</button></div>
+    </div>
+  </section>
+
+  <div class="player" id="player">
+    <div class="player-head"><div class="player-title">Onboard Audio</div><button class="iconbtn" id="minPlayer" title="Minimize">–</button></div>
+    <div class="player-body">
+      <div class="player-meta"><div><div class="trackname" id="trackName">aces</div><div class="tracksub">Click play once; it keeps running in the background.</div></div><div class="controls"><button class="iconbtn" id="playPause">▶</button><button class="iconbtn" id="nextTrack">↷</button></div></div>
+      <input class="volume" id="volume" type="range" min="0" max="1" step="0.01" value="0.55" aria-label="Volume" />
+      <div class="tracklist" id="trackList"></div>
+    </div>
+    <audio id="audio" preload="metadata"></audio>
+  </div>
+
+  <div class="boarding" id="boardingScreen" role="dialog" aria-modal="true">
+    <div class="ticket">
+      <div class="ticket-top"><div><div class="stamp">Aagontuk Express</div><h2>Boarding Pass</h2></div><div class="stamp">Platform 7</div></div>
+      <div class="ticket-grid">
+        <div class="ticket-field"><div class="label">Route</div><div class="value">Stranger Conversation</div></div>
+        <div class="ticket-field"><div class="label">Seat</div><div class="value" id="seatState">Pending</div></div>
+        <div class="ticket-field"><div class="label">Passenger</div><div class="value">Anonymous</div></div>
+        <div class="ticket-field"><div class="label">Status</div><div class="value">Waiting</div></div>
+      </div>
+      <div class="railmove"></div><div class="carriage-windows"><span class="win"></span><span class="win"></span><span class="win"></span><span class="win"></span><span class="win"></span></div>
+      <p class="waitline" id="waitLine">Waiting for another passenger to board.</p>
+      <div class="actionrow"><button class="dangerbtn" id="cancelBoarding">Cancel Boarding</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="confessionsModal"><div class="dialog big"><div class="dialog-head"><div><h2>Station Confessions</h2><p>From one quiet platform to another. Attach a song and leave it there.</p></div><button class="close" data-close="confessionsModal">×</button></div>
+    <div class="formgrid">
+      <div class="split"><div><label>From</label><input id="confFrom" placeholder="anonymous / your name" /></div><div><label>To</label><input id="confTo" placeholder="someone / stranger / initials" /></div></div>
+      <div><label>Message</label><textarea id="confMessage" placeholder="Write what usually stays unsent..."></textarea></div>
+      <div><label>Choose a song</label><input id="songSearch" placeholder="Search a song or artist" autocomplete="off" /><div class="attached" id="attachedSong"><div><div class="song-title" id="attachedTitle"></div><div class="song-artist" id="attachedArtist"></div></div><button class="quietbtn" id="clearSong">Remove</button></div><div class="song-results" id="songResults"></div></div>
+      <button class="mainbtn" id="submitConfession">Submit Confession</button>
+    </div><div class="confessions-list" id="confessionsList"></div></div></div>
+
+  <div class="modal" id="aboutModal"><div class="dialog"><div class="dialog-head"><h2>About Aagontuk</h2><button class="close" data-close="aboutModal">×</button></div><p id="aboutText"></p><div class="about-creator"><img class="creator-pic" id="creatorPhoto" alt="Creator photo"/><div><div class="creator-name" id="creatorName"></div><div class="creator-bio" id="creatorBio"></div></div></div></div></div>
+  <div class="modal" id="logsModal"><div class="dialog"><div class="dialog-head"><div><h2>Journey Logs</h2><p>Saved chapters appear here.</p></div><button class="close" data-close="logsModal">×</button></div><div id="logsList" class="confessions-list"></div></div></div>
+  <div class="modal" id="audioModal"><div class="dialog"><div class="dialog-head"><div><h2>Onboard Audio</h2><p>Use the bottom player. It stays on while you move through the platform.</p></div><button class="close" data-close="audioModal">×</button></div><p class="notice">Browser autoplay is blocked before a click. Press play once and the track will keep running in the background.</p></div></div>
+  <div class="modal" id="adminModal"><div class="dialog big"><div class="dialog-head"><div><h2>Control Room</h2><p>Creator profile and small app note.</p></div><button class="close" data-close="adminModal">×</button></div>
+    <div class="admin-tabs">
+      <div class="formgrid"><label>Creator photo URL</label><input id="adminPhoto"/><label>Creator name</label><input id="adminName"/><label>Creator bio</label><textarea id="adminBio"></textarea></div>
+      <div class="formgrid"><label>About text</label><textarea id="adminAbout"></textarea><button class="mainbtn" id="saveSettings">Save Changes</button><p class="notice">This uses the settings API if available. If not, it saves locally in this browser.</p></div>
+    </div></div></div>
+  <div class="modal" id="gameModal"><div class="dialog"><div class="dialog-head"><div><h2>Table Game</h2><p>A small round inside the carriage. Available only after matching.</p></div><button class="close" data-close="gameModal">×</button></div><button class="mainbtn" id="coinBtn">Flip coin</button><p id="coinResult"></p></div></div>
+  <div class="modal" id="reportModal"><div class="dialog"><div class="dialog-head"><div><h2>Report Passenger</h2><p>Keep the carriage safe.</p></div><button class="close" data-close="reportModal">×</button></div><textarea id="reportText" placeholder="What happened?"></textarea><div class="actionrow"><button class="mainbtn" id="sendReport">Send Report</button></div></div></div>
+
+  <script>
+    const $ = (s)=>document.querySelector(s); const $$=(s)=>Array.from(document.querySelectorAll(s));
+    const toast=(t)=>{const el=$('#toast'); el.textContent=t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2400)};
+    const defaultSettings={aboutText:`Aagontuk Express is just a small night train on the internet.\n\nYou come in, sit for a while, maybe talk to a stranger, maybe leave a confession, maybe just play a song in the background.\n\nNothing too serious. No profile drama, no followers, no trying to look cool.\n\nJust a quiet little platform for random conversations and things people usually keep to themselves.`,creatorName:'Nazmul Islam Farhan',creatorBio:'Building small cinematic corners on the internet.',creatorPhoto:'/assets/platform-bg.svg'};
+    let settings={...defaultSettings};
+    async function loadSettings(){try{const r=await fetch('/api/settings'); if(r.ok) settings={...settings,...await r.json()}}catch(e){const local=localStorage.getItem('aagontukSettings'); if(local) settings={...settings,...JSON.parse(local)}} renderSettings();}
+    function renderSettings(){ $('#aboutText').textContent=settings.aboutText; $('#creatorName').textContent=settings.creatorName; $('#creatorBio').textContent=settings.creatorBio; $('#creatorPhoto').src=settings.creatorPhoto||'/assets/platform-bg.svg'; $('#adminPhoto').value=settings.creatorPhoto||''; $('#adminName').value=settings.creatorName||''; $('#adminBio').value=settings.creatorBio||''; $('#adminAbout').value=settings.aboutText||''; }
+    function openModal(id){$('#'+id).classList.add('show')} function closeModal(id){$('#'+id).classList.remove('show')}
+    $$('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close)); $$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show')}));
+    $$('[data-open]').forEach(b=>b.onclick=()=>{const x=b.dataset.open; if(x==='confessions')openModal('confessionsModal'); if(x==='audio')openModal('audioModal'); if(x==='logs'){renderLogs();openModal('logsModal')}});
+    $('#aboutOpen').onclick=()=>openModal('aboutModal'); $('#adminOpen').onclick=()=>openModal('adminModal'); $('#signOut').onclick=()=>{try{localStorage.removeItem('aagontukUser')}catch(e){}; location.href='/auth.html'};
+    function bdNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Dhaka'}))}
+    function setState(){const h=bdNow().getHours();let label='Boarding Now', open=true;if(h>=5&&h<17){label='Platform Resting';open=false}else if(h>=17&&h<19){label='Preparing to Board';open=false} $('#statusText').textContent=label; $('#boardState').textContent=label; $('#statusDot').style.background=open?'var(--green)':'var(--gold)'; return open}
+    setState(); setInterval(setState,60000);
+    $('#onlineCount').textContent=(Math.floor(Math.random()*5)+2)+' passengers';
+    const tracks=[{title:'aces',src:'/music/aces.mp3'},{title:'escape',src:'/music/escape.mp3'},{title:'heartheal',src:'/music/heartheal.mp3'},{title:'love',src:'/music/love.mp3'}]; let ti=0; const audio=$('#audio'); audio.volume=.55; function loadTrack(i){ti=i; audio.src=tracks[ti].src; $('#trackName').textContent=tracks[ti].title; renderTracks()} function renderTracks(){ $('#trackList').innerHTML=tracks.map((t,i)=>`<button class="trackpill ${i===ti?'active':''}" data-track="${i}">${t.title}</button>`).join(''); $$('[data-track]').forEach(b=>b.onclick=()=>{loadTrack(+b.dataset.track); audio.play().then(()=>$('#playPause').textContent='❚❚').catch(()=>toast('Press play once to start audio.'))})} loadTrack(0);
+    $('#playPause').onclick=()=>{ if(audio.paused){audio.play().then(()=>$('#playPause').textContent='❚❚').catch(()=>toast('Browser needs one click to start music.'))}else{audio.pause();$('#playPause').textContent='▶'}}; $('#nextTrack').onclick=()=>{loadTrack((ti+1)%tracks.length);audio.play().then(()=>$('#playPause').textContent='❚❚').catch(()=>{})}; $('#volume').oninput=e=>audio.volume=e.target.value; audio.onended=()=>$('#nextTrack').click(); $('#minPlayer').onclick=()=>{$('#player').classList.toggle('min'); $('#minPlayer').textContent=$('#player').classList.contains('min')?'♪':'–'};
+    const songs=[
+      ['Aankhon Se Batana','Dikshant','https://open.spotify.com/search/Aankhon%20Se%20Batana%20Dikshant'],['Iraaday','Abdul Hannan, Rovalio','https://open.spotify.com/search/Iraaday%20Abdul%20Hannan'],['Kahani Suno 2.0','Kaifi Khalil','https://open.spotify.com/search/Kahani%20Suno%202.0'],['Sajni','Arijit Singh','https://open.spotify.com/search/Sajni%20Arijit%20Singh'],['Alag Aasmaan','Anuv Jain','https://open.spotify.com/search/Alag%20Aasmaan'],['Gul','Anuv Jain','https://open.spotify.com/search/Gul%20Anuv%20Jain'],['Until I Found You','Stephen Sanchez','https://open.spotify.com/search/Until%20I%20Found%20You'],['Apocalypse','Cigarettes After Sex','https://open.spotify.com/search/Apocalypse%20Cigarettes%20After%20Sex'],['Sweet','Cigarettes After Sex','https://open.spotify.com/search/Sweet%20Cigarettes%20After%20Sex'],['No Surprises','Radiohead','https://open.spotify.com/search/No%20Surprises%20Radiohead'],['505','Arctic Monkeys','https://open.spotify.com/search/505%20Arctic%20Monkeys'],['Space Oddity','David Bowie','https://open.spotify.com/search/Space%20Oddity%20David%20Bowie'],['The Night We Met','Lord Huron','https://open.spotify.com/search/The%20Night%20We%20Met'],['Fix You','Coldplay','https://open.spotify.com/search/Fix%20You%20Coldplay'],['Yellow','Coldplay','https://open.spotify.com/search/Yellow%20Coldplay'],['Raat Bhar','Amit Trivedi','https://open.spotify.com/search/Raat%20Bhar%20Amit%20Trivedi'],['Tumi Robe Nirobe','Rabindra Sangeet','https://open.spotify.com/search/Tumi%20Robe%20Nirobe'],['Shey Je Boshe Ache','Arnob','https://open.spotify.com/search/Shey%20Je%20Boshe%20Ache%20Arnob'],['Tomake Chai','Kabir Suman','https://open.spotify.com/search/Tomake%20Chai%20Kabir%20Suman'],['Ei Obelay','Shironamhin','https://open.spotify.com/search/Ei%20Obelay%20Shironamhin']
+    ].map(([title,artist,spotify])=>({title,artist,spotify})); let selectedSong=null;
+    function renderSongResults(q=''){const list=songs.filter(s=>(s.title+' '+s.artist).toLowerCase().includes(q.toLowerCase())).slice(0,8); $('#songResults').innerHTML=list.map((s,i)=>`<button class="song-item" data-song="${songs.indexOf(s)}"><span><span class="song-title">${s.title}</span><span class="song-artist">${s.artist}</span></span><span class="spotify">Spotify</span></button>`).join(''); $$('[data-song]').forEach(b=>b.onclick=()=>selectSong(songs[+b.dataset.song]));}
+    function selectSong(s){selectedSong=s; $('#attachedTitle').textContent=s.title; $('#attachedArtist').textContent=s.artist; $('#attachedSong').classList.add('show'); $('#songResults').innerHTML=''; $('#songSearch').value=''} $('#songSearch').oninput=e=>renderSongResults(e.target.value); $('#songSearch').onfocus=e=>renderSongResults(e.target.value); $('#clearSong').onclick=()=>{selectedSong=null;$('#attachedSong').classList.remove('show')};
+    function getConfessions(){return JSON.parse(localStorage.getItem('aagontukConfessions')||'[]')} function setConfessions(x){localStorage.setItem('aagontukConfessions',JSON.stringify(x))}
+    function renderConfessions(){const c=getConfessions(); $('#confessionsList').innerHTML=c.length?c.map(x=>`<div class="conf-card"><div class="conf-route">${x.from||'Anonymous'} <span>→</span> ${x.to||'Someone'}</div><div class="conf-msg">${x.message}</div>${x.song?`<div class="conf-song">${x.song.title} — ${x.song.artist} · <a class="spotify" href="${x.song.spotify}" target="_blank" rel="noopener">Open on Spotify</a></div>`:''}</div>`).join(''):'<p class="notice">No confessions yet.</p>'} renderConfessions();
+    $('#submitConfession').onclick=()=>{const message=$('#confMessage').value.trim(); if(!message)return toast('Write the confession first.'); const c=getConfessions(); c.unshift({from:$('#confFrom').value.trim(),to:$('#confTo').value.trim(),message,song:selectedSong,createdAt:Date.now()}); setConfessions(c); $('#confFrom').value='';$('#confTo').value='';$('#confMessage').value='';selectedSong=null;$('#attachedSong').classList.remove('show'); renderConfessions(); toast('Confession left on the platform.')};
+    let waitTimer=null, matchTimer=null; const lines=['The carriage is quiet.','A seat has been kept beside the window.','Footsteps echo somewhere down the platform.','The next stranger may board any moment.'];
+    $('#boardBtn').onclick=()=>{ if(!setState()){toast($('#boardState').textContent+'. Boarding starts at 19:00.'); return;} $('#boardingScreen').classList.add('show'); let i=0; waitTimer=setInterval(()=>{$('#waitLine').textContent=lines[i++%lines.length]},1800); matchTimer=setTimeout(()=>{$('#seatState').textContent='Confirmed';$('#waitLine').textContent='Seat confirmed. Passenger boarded. Opening carriage.'; setTimeout(()=>{cancelBoarding(false); $('#homePage').style.display='none'; $('#chatPage').classList.add('show'); window.scrollTo(0,0)},1100)},4600)};
+    function cancelBoarding(show=true){clearInterval(waitTimer);clearTimeout(matchTimer);$('#boardingScreen').classList.remove('show');$('#seatState').textContent='Pending'; if(show)toast('Boarding cancelled.')} $('#cancelBoarding').onclick=()=>cancelBoarding(true);
+    $('#sendBtn').onclick=()=>{const v=$('#messageInput').value.trim(); if(!v)return; $('#messages').insertAdjacentHTML('beforeend',`<div class="msg me">${v}</div>`); $('#messageInput').value=''; $('#messages').scrollTop=$('#messages').scrollHeight}; $('#messageInput').addEventListener('keydown',e=>{if(e.key==='Enter')$('#sendBtn').click()}); $('#endChatBtn').onclick=()=>{$('#chatPage').classList.remove('show'); $('#homePage').style.display='block'; toast('Carriage closed.')}; $('#gameBtn').onclick=()=>openModal('gameModal'); $('#coinBtn').onclick=()=>$('#coinResult').textContent=Math.random()>.5?'Heads.':'Tails.'; $('#reportBtn').onclick=()=>openModal('reportModal'); $('#sendReport').onclick=()=>{closeModal('reportModal');toast('Report sent.')};
+    function renderLogs(){const logs=JSON.parse(localStorage.getItem('aagontukLogs')||'[]'); $('#logsList').innerHTML=logs.length?logs.map(l=>`<div class="conf-card">${l}</div>`).join(''):'<p class="notice">No saved chapters yet.</p>'}
+    $('#saveSettings').onclick=async()=>{settings={aboutText:$('#adminAbout').value,creatorName:$('#adminName').value,creatorBio:$('#adminBio').value,creatorPhoto:$('#adminPhoto').value}; let saved=false; try{const r=await fetch('/api/admin/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)}); saved=r.ok}catch(e){} if(!saved)localStorage.setItem('aagontukSettings',JSON.stringify(settings)); renderSettings(); toast('Settings saved.')};
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.modal.show').forEach(m=>m.classList.remove('show'))}); loadSettings();
+  </script>
 </body>
 </html>

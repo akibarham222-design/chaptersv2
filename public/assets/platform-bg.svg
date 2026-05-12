@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" fill="none">
+  <rect width="1600" height="1000" fill="#05070B"/>
+  <radialGradient id="g1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1260 270) rotate(135) scale(790 520)">
+    <stop stop-color="#192435" stop-opacity=".86"/>
+    <stop offset=".45" stop-color="#08111A" stop-opacity=".82"/>
+    <stop offset="1" stop-color="#05070B" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="1600" height="1000" fill="url(#g1)"/>
+  <radialGradient id="g2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(275 710) rotate(-18) scale(700 360)">
+    <stop stop-color="#4A3518" stop-opacity=".32"/>
+    <stop offset=".6" stop-color="#0A0D12" stop-opacity=".24"/>
+    <stop offset="1" stop-color="#05070B" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="1600" height="1000" fill="url(#g2)"/>
+  <path d="M0 725 C230 690 405 675 605 696 C848 721 1002 692 1220 666 C1370 648 1495 653 1600 665" stroke="#D1AE68" stroke-opacity=".12" stroke-width="2"/>
+  <path d="M0 756 C235 724 410 709 620 730 C860 754 1010 726 1228 700 C1380 682 1496 687 1600 699" stroke="#F4EAD8" stroke-opacity=".065" stroke-width="1"/>
+  <path d="M128 807 L1518 595" stroke="#F4EAD8" stroke-opacity=".06" stroke-width="2"/>
+  <path d="M42 873 L1558 646" stroke="#C6A15B" stroke-opacity=".09" stroke-width="2"/>
+  <g opacity=".13">
+    <rect x="1040" y="365" width="430" height="120" rx="8" fill="#0E1722" stroke="#F4EAD8" stroke-opacity=".22"/>
+    <rect x="1072" y="389" width="54" height="32" rx="3" fill="#D8AE61" fill-opacity=".55"/>
+    <rect x="1150" y="389" width="54" height="32" rx="3" fill="#F4EAD8" fill-opacity=".22"/>
+    <rect x="1228" y="389" width="54" height="32" rx="3" fill="#D8AE61" fill-opacity=".32"/>
+    <rect x="1306" y="389" width="54" height="32" rx="3" fill="#F4EAD8" fill-opacity=".16"/>
+    <rect x="1384" y="389" width="54" height="32" rx="3" fill="#D8AE61" fill-opacity=".45"/>
+    <path d="M1060 485 H1450" stroke="#F4EAD8" stroke-opacity=".18"/>
+  </g>
+  <g opacity=".42">
+    <rect x="170" y="178" width="174" height="62" rx="8" fill="#0B1118" stroke="#C6A15B" stroke-opacity=".28"/>
+    <text x="257" y="216" text-anchor="middle" font-family="serif" font-size="25" fill="#DCC48E" fill-opacity=".8">কমলাপুর</text>
+  </g>
+  <g opacity=".08">
+    <circle cx="180" cy="822" r="2" fill="#F4EAD8"/><circle cx="350" cy="784" r="1.5" fill="#F4EAD8"/><circle cx="748" cy="760" r="2" fill="#F4EAD8"/><circle cx="1290" cy="612" r="1.5" fill="#F4EAD8"/><circle cx="1410" cy="642" r="2" fill="#F4EAD8"/>
+  </g>
+  <rect width="1600" height="1000" fill="url(#grain)" opacity=".25"/>
+  <defs>
+    <pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="18" r="1" fill="#fff" opacity=".05"/>
+      <circle cx="70" cy="40" r="1" fill="#fff" opacity=".035"/>
+      <circle cx="38" cy="82" r="1" fill="#fff" opacity=".025"/>
+    </pattern>
+  </defs>
+</svg>
