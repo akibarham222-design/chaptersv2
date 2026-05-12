@@ -1,6 +1,0 @@
-node_modules/
-.env
-chapters.db
-public/index.staged.html
-public/index.backup.html
-.DS_Store
