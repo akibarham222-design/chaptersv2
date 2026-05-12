@@ -203,7 +203,7 @@ textarea::placeholder{color:var(--muted);font-style:italic;}
 .rend{text-align:center;padding:26px 0;display:flex;flex-direction:column;align-items:center;gap:9px;}
 .rend-ln{width:70px;height:1px;background:linear-gradient(90deg,transparent,var(--b2),transparent);}
 .rend-tx{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:var(--muted);}
-/* Confessions */
+/* Station Notes */
 #view-confessions{overflow:hidden;}
 .conf-hdr2{padding:18px 28px 0;border-bottom:1px solid var(--b1);flex-shrink:0;background:rgba(7,7,15,.65);backdrop-filter:blur(12px);}
 .conf-hdr-top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px;}
@@ -489,39 +489,68 @@ body[data-layout="confessional"] .wring{border-radius:28px;box-shadow:0 0 44px r
 body[data-layout] .cconf,body[data-layout] .hcard,body[data-layout] .acard,body[data-layout] .game-panel{backdrop-filter:blur(18px);}
 .layout-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px;}.layout-card{border:1px solid var(--b1);background:var(--s1);border-radius:18px;padding:16px;cursor:pointer;transition:transform .18s,border-color .18s,background .18s;position:relative;overflow:hidden;min-height:150px;}.layout-card:hover{transform:translateY(-2px);border-color:var(--b2);background:var(--s2);}.layout-card.active{border-color:var(--violet2);box-shadow:0 0 0 1px rgba(255,255,255,.03),0 16px 45px rgba(0,0,0,.22);}.layout-card::before{content:'';position:absolute;inset:-20%;opacity:.32;pointer-events:none;}.layout-card[data-layout-choice="radio"]::before{background:radial-gradient(circle at 20% 20%,#00e5ff,transparent 34%),radial-gradient(circle at 80% 70%,#a3ff12,transparent 30%);}.layout-card[data-layout-choice="train"]::before{background:linear-gradient(90deg,transparent 0 12%,rgba(255,209,135,.45) 13%,transparent 14% 28%,rgba(125,211,252,.28) 29%,transparent 30%),radial-gradient(circle at 70% 85%,#f5c36b,transparent 40%);}.layout-card[data-layout-choice="confessional"]::before{background:radial-gradient(circle at 50% 0,#e11d48,transparent 45%),radial-gradient(circle at 85% 70%,#fbbf24,transparent 35%);}.layout-card>*{position:relative;z-index:1;}.layout-name{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:6px;color:var(--txt);}.layout-line{font-size:12px;color:var(--txt2);line-height:1.55;margin-bottom:12px;}.layout-tag{display:inline-flex;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--amber);border:1px solid var(--b1);border-radius:999px;padding:5px 8px;background:rgba(0,0,0,.18);}
 @media (max-width:760px){body[data-layout="radio"] .land-wrap{display:flex;text-align:center;align-items:center;max-width:540px;}body[data-layout="radio"] .land-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;}.layout-grid{grid-template-columns:1fr;}}
+
+/* AAGONTUK EXPRESS NIGHT SERVICE */
+.service-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(245,195,107,.24);background:rgba(10,14,22,.66);border-radius:999px;padding:7px 10px;color:var(--txt2);font-size:11px;letter-spacing:.4px;white-space:nowrap}.service-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.55)}.service-pill.closed .service-dot{background:#f5c36b;box-shadow:0 0 10px rgba(245,195,107,.55)}
+#view-offhours{background:radial-gradient(circle at 22% 18%,rgba(245,195,107,.13),transparent 34%),radial-gradient(circle at 82% 72%,rgba(125,211,252,.10),transparent 35%),linear-gradient(120deg,#05070b,#08111b 56%,#0b0a08);overflow:hidden}.off-scene{position:absolute;inset:0;opacity:.55;background:linear-gradient(90deg,rgba(0,0,0,.78),rgba(0,0,0,.26),rgba(0,0,0,.75)),radial-gradient(ellipse at 50% 105%,rgba(245,195,107,.16),transparent 48%)}.off-train{position:absolute;left:-18%;right:-18%;bottom:12%;height:32%;background:linear-gradient(180deg,rgba(20,30,42,.8),rgba(3,7,12,.96));border-top:1px solid rgba(245,195,107,.18);border-bottom:1px solid rgba(245,195,107,.10);box-shadow:0 -18px 90px rgba(0,0,0,.55);transform:skewX(-7deg);animation:trainRest 10s ease-in-out infinite}.off-train:before{content:'কমলাপুর';position:absolute;left:9%;top:-62px;font-family:serif;font-size:26px;color:#0b0b0b;background:#b99a61;border:1px solid rgba(0,0,0,.4);padding:8px 18px;letter-spacing:1px;box-shadow:0 18px 50px rgba(0,0,0,.55);transform:skewX(7deg)}.off-window{position:absolute;top:28px;height:62px;width:120px;border-radius:12px;background:linear-gradient(135deg,rgba(245,195,107,.45),rgba(125,211,252,.15));box-shadow:160px 0 0 rgba(245,195,107,.28),320px 0 0 rgba(245,195,107,.22),480px 0 0 rgba(245,195,107,.30),640px 0 0 rgba(245,195,107,.18),800px 0 0 rgba(245,195,107,.25);opacity:.38}.off-wrap{position:relative;z-index:2;min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px}.off-card{width:min(760px,calc(100vw - 28px));border:1px solid rgba(245,195,107,.20);background:rgba(5,8,14,.72);backdrop-filter:blur(18px);border-radius:28px;padding:34px;box-shadow:0 34px 120px rgba(0,0,0,.52);text-align:left}.off-kicker{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--amber);margin-bottom:12px}.off-title{font-family:'Playfair Display',serif;font-size:clamp(34px,6vw,64px);line-height:.96;color:var(--txt);margin-bottom:16px}.off-sub{font-size:16px;line-height:1.7;color:var(--txt2);max-width:520px;margin-bottom:22px}.off-count{display:grid;grid-template-columns:repeat(4,minmax(70px,1fr));gap:10px;margin:22px 0}.off-unit{border:1px solid var(--b1);border-radius:16px;background:rgba(255,255,255,.035);padding:14px 10px;text-align:center}.off-num{font-family:'DM Serif Display',serif;font-size:30px;color:var(--amber)}.off-lbl{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}.off-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.btn-ghost{padding:12px 16px;border:1px solid var(--b1);border-radius:12px;background:rgba(255,255,255,.03);color:var(--txt);cursor:pointer;font-family:inherit}.btn-ghost:hover{border-color:var(--b2);background:rgba(255,255,255,.06)}.btn-find[disabled]{opacity:.55;cursor:not-allowed;filter:grayscale(.15);transform:none!important;box-shadow:none!important}@keyframes trainRest{0%,100%{transform:translateX(0) skewX(-7deg)}50%{transform:translateX(10px) skewX(-7deg)}}
+body[data-layout="train"] .logo{font-family:'Playfair Display',serif;letter-spacing:.4px}body[data-layout="train"] .logo::after{content:'Express';font-size:12px;color:var(--amber);margin-left:7px;letter-spacing:1.4px;text-transform:uppercase}body[data-layout="train"] .land-badge::before{content:'Kamalapur night service · ';}body[data-layout="train"] .btn-find{background:linear-gradient(135deg,#c5944b,#8f6734);box-shadow:0 10px 35px rgba(197,148,75,.24)}
+@media (max-width:680px){.service-pill{font-size:10px;padding:6px 8px}.off-card{padding:22px;border-radius:22px}.off-count{grid-template-columns:repeat(2,1fr)}.off-actions{flex-direction:column}.btn-ghost{width:100%}.off-train{height:25%;bottom:7%}.off-train:before{font-size:18px;left:8%;top:-48px}}
+
 @media (max-width:680px){html,body{overflow:hidden;}.topbar{padding:10px 12px;gap:8px;align-items:flex-start;}.logo{font-size:19px;min-width:max-content;}.logo::after{display:none!important;}.topbar-r{gap:6px;max-width:100%;padding-bottom:2px;}.nbtn,.mptbtn,.uchip,.pill{font-size:11px;padding:6px 9px;}#view-landing{padding:14px;overflow-y:auto;}.land-wrap{gap:14px;width:100%;}.land-h1{font-size:clamp(31px,12vw,48px);}.land-p{font-size:14px;line-height:1.65;}.land-cards{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px;}.lcard{min-width:0;max-width:none;padding:12px 8px;}.btn-find{width:100%;padding:14px 16px;}.chat-hdr{padding:9px 11px;gap:8px;align-items:flex-start;}.ch-acts{gap:5px;flex-wrap:wrap;justify-content:flex-end;}.btn-game,.btn-lv,.btn-more{font-size:11px;padding:7px 9px;}.nplates{padding:8px 11px;overflow-x:auto;}.msgs{padding:14px 10px;}.msg{max-width:92%;}.chat-inp-area{padding:9px 10px calc(9px + env(safe-area-inset-bottom));}.inp-row{gap:6px;}.btn-song-pick,.btn-send{width:40px;min-width:40px;height:40px;}textarea#msgInput{font-size:14px;padding:11px 50px 11px 12px;max-height:128px;}.vhdr,.conf-hdr2{padding:14px 14px 12px;}.conf-hdr-top{align-items:flex-start;gap:10px;}.write-sc,.slist,.conf-list,.reader-msgs{padding:14px;}.cconf,.acard,.hcard{border-radius:15px;padding:15px;}.game-panel{margin:8px 10px;max-width:calc(100vw - 20px);}#mp{max-height:82dvh;overflow-y:auto;}.modal,.gmodal{width:calc(100vw - 24px);max-width:420px;}}
 
 </style>
 </head>
-<body data-layout="radio">
+<body data-layout="train">
 <div id="app">
   <div class="topbar">
-    <div class="logo" onclick="goHome()">Chapters</div>
+    <div class="logo" onclick="goHome()">Aagontuk</div>
     <div class="topbar-r">
-      <div class="pill"><div class="gdot"></div><span id="onlineCount">—</span> online</div>
+      <div class="pill"><div class="gdot"></div><span id="onlineCount">—</span> online</div><div class="service-pill" id="servicePill"><span class="service-dot"></span><span id="serviceText">checking service</span></div>
       <button class="mptbtn" id="mpToggleBtn" onclick="togglePlayer()">♪ <span class="lbl">Music</span></button>
-      <button class="nbtn ac" onclick="showView('confessions')">Confessions</button>
-      <button class="nbtn" onclick="showHistory()">My Chapters</button>
+      <button class="nbtn ac" onclick="showView('confessions')">Station Notes</button>
+      <button class="nbtn" onclick="showHistory()">Journey Logs</button>
       <button class="nbtn" id="adminNavBtn" onclick="openAdminPanel()" style="display:none;color:var(--amber);">⚙ Admin</button>
       <span class="uchip" id="usernameTag"></span>
       <button class="nbtn" onclick="logout()" style="color:var(--muted);">Sign out</button>
     </div>
   </div>
   <div id="content">
+  <!-- OFF HOURS / AT PLATFORM -->
+  <div class="view hidden" id="view-offhours">
+    <div class="off-scene"><div class="off-train"><div class="off-window"></div></div></div>
+    <div class="off-wrap">
+      <div class="off-card">
+        <div class="off-kicker" id="offPhase">At platform</div>
+        <div class="off-title" id="offTitle">Aagontuk Express is resting at Kamalapur</div>
+        <div class="off-sub" id="offSub">Night boarding opens at 19:00. Until then, the live carriage stays quiet.</div>
+        <div class="off-count" aria-label="Countdown to night service">
+          <div class="off-unit"><div class="off-num" id="cdH">00</div><div class="off-lbl">hours</div></div>
+          <div class="off-unit"><div class="off-num" id="cdM">00</div><div class="off-lbl">minutes</div></div>
+          <div class="off-unit"><div class="off-num" id="cdS">00</div><div class="off-lbl">seconds</div></div>
+          <div class="off-unit"><div class="off-num">19:00</div><div class="off-lbl">boarding</div></div>
+        </div>
+        <div class="off-actions">
+          <button class="btn-find" onclick="showView('confessions')">Read Station Notes →</button>
+          <button class="btn-ghost" onclick="showHistory()">Open Journey Logs</button>
+          <button class="btn-ghost" onclick="togglePlayer()">Onboard Audio</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- LANDING -->
   <div class="view" id="view-landing">
     <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;">
       <div class="land-wrap">
-        <div class="land-badge" id="layoutBadge">underground radio</div>
-        <h1 class="land-h1"><span id="layoutHero">Aagontuk</span><br/><span id="layoutHeroSub">tune into someone real</span></h1>
-        <p class="land-p" id="layoutLead">No profiles. No followers. No bots. Just a late-night frequency for real conversations.</p>
+        <div class="land-badge" id="layoutBadge">night service</div>
+        <h1 class="land-h1"><span id="layoutHero">Aagontuk Express</span><br/><span id="layoutHeroSub">strangers board, chapters remain</span></h1>
+        <p class="land-p" id="layoutLead">Open from 19:00 to 05:00. No profiles. No followers. No bots. Just a quiet carriage for real conversations.</p>
         <div class="land-cards">
-          <div class="lcard"><div class="lcard-ico">👤</div><div class="lcard-txt">Real humans only</div></div>
-          <div class="lcard"><div class="lcard-ico">📖</div><div class="lcard-txt">Saved chapters</div></div>
-          <div class="lcard"><div class="lcard-ico">🎭</div><div class="lcard-txt">No profile pressure</div></div>
-          <div class="lcard"><div class="lcard-ico">🎮</div><div class="lcard-txt">Music + games</div></div>
+          <div class="lcard"><div class="lcard-ico">👤</div><div class="lcard-txt">Real passengers only</div></div>
+          <div class="lcard"><div class="lcard-ico">📖</div><div class="lcard-txt">Journey logs</div></div>
+          <div class="lcard"><div class="lcard-ico">🎭</div><div class="lcard-txt">No names on ticket</div></div>
+          <div class="lcard"><div class="lcard-ico">🎮</div><div class="lcard-txt">Music + table games</div></div>
         </div>
-        <button class="btn-find" onclick="findStranger()"><span id="layoutFindBtn">Tune in</span> →</button>
+        <button class="btn-find" id="findBtn" onclick="findStranger()"><span id="layoutFindBtn">Board anonymously</span> →</button>
       </div>
     </div>
   </div>
@@ -529,9 +558,9 @@ body[data-layout] .cconf,body[data-layout] .hcard,body[data-layout] .acard,body[
   <div class="view hidden" id="view-waiting">
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;">
       <div class="wring"></div>
-      <div class="w-title"><span id="layoutWaitingTitle">Waiting for someone real</span><span class="wdots"><span>.</span><span>.</span><span>.</span></span></div>
-      <div class="w-sub" id="layoutWaitingSub">No bots will answer for them.</div>
-      <button class="btn-cancel" onclick="cancelSearch()"><span id="layoutCancelText">cut the signal</span></button>
+      <div class="w-title"><span id="layoutWaitingTitle">Waiting for a co-passenger</span><span class="wdots"><span>.</span><span>.</span><span>.</span></span></div>
+      <div class="w-sub" id="layoutWaitingSub">No bots on this route.</div>
+      <button class="btn-cancel" onclick="cancelSearch()"><span id="layoutCancelText">leave the cabin</span></button>
     </div>
   </div>
   <!-- REVEAL -->
@@ -597,21 +626,21 @@ body[data-layout] .cconf,body[data-layout] .hcard,body[data-layout] .acard,body[
       <div class="sleft-h">The chapter has ended.</div>
       <div class="sleft-p">The stranger has left. This conversation is saved in your chapters.</div>
       <div class="sleft-acts">
-        <button class="btn-pri" onclick="findStranger()">Find another stranger</button>
+        <button class="btn-pri" onclick="findStranger()">Board another journey</button>
         <button class="btn-sec" onclick="goHome()">Go home</button>
       </div>
     </div>
   </div>
   <!-- HISTORY -->
   <div class="view hidden" id="view-history">
-    <div class="vhdr"><div class="vhdr-l"><div class="vlbl">Your anthology</div><div class="vtit">My Chapters</div></div><button class="btn-back" onclick="goHome()">← Back</button></div>
+    <div class="vhdr"><div class="vhdr-l"><div class="vlbl">Your anthology</div><div class="vtit">Journey Logs</div></div><button class="btn-back" onclick="goHome()">← Back</button></div>
     <div class="slist" id="historyList"></div>
   </div>
   <!-- READER -->
   <div class="view hidden" id="view-chapter">
     <div class="vhdr">
       <div class="vhdr-l"><div class="vlbl">Reading</div><div class="vtit" id="readerNum">—</div></div>
-      <div style="text-align:right;"><div style="font-size:11px;color:var(--muted);margin-bottom:3px;" id="readerMeta">—</div><button class="btn-back" onclick="showHistory()">← My Chapters</button></div>
+      <div style="text-align:right;"><div style="font-size:11px;color:var(--muted);margin-bottom:3px;" id="readerMeta">—</div><button class="btn-back" onclick="showHistory()">← Journey Logs</button></div>
     </div>
     <div class="reader-msgs" id="readerMessages"></div>
   </div>
@@ -619,7 +648,7 @@ body[data-layout] .cconf,body[data-layout] .hcard,body[data-layout] .acard,body[
   <div class="view hidden" id="view-confessions">
     <div class="conf-hdr2">
       <div class="conf-hdr-top">
-        <div class="vhdr-l"><div class="vlbl">Public Wall</div><div class="vtit">Confessions</div></div>
+        <div class="vhdr-l"><div class="vlbl">Public Wall</div><div class="vtit">Station Notes</div></div>
         <div style="display:flex;gap:8px;align-items:center;">
           <button class="btn-back" onclick="goHome()">← Back</button>
           <button class="btn-pri" style="padding:8px 16px;font-size:13px;" onclick="showView('write')">Write one →</button>
@@ -631,8 +660,8 @@ body[data-layout] .cconf,body[data-layout] .hcard,body[data-layout] .acard,body[
       </div>
     </div>
     <div class="conf-sbar" id="confSearchBar" style="display:none;">
-      <input type="text" class="conf-sinp" id="confSearchInput" placeholder="Type a name..." onkeydown="if(event.key==='Enter')searchConfessions()"/>
-      <button class="btn-srch" onclick="searchConfessions()">Search</button>
+      <input type="text" class="conf-sinp" id="confSearchInput" placeholder="Type a name..." onkeydown="if(event.key==='Enter')searchStation Notes()"/>
+      <button class="btn-srch" onclick="searchStation Notes()">Search</button>
     </div>
     <div class="conf-list" id="confessionsList"></div>
   </div>
@@ -653,7 +682,7 @@ body[data-layout] .cconf,body[data-layout] .hcard,body[data-layout] .acard,body[
       </div>
       <div class="werr" id="writeErr"></div>
       <button class="btn-post" id="postBtn" onclick="postConfession()">Post confession</button>
-      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:12px;">Confessions are reviewed by our team before being posted.</p>
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:12px;">Station Notes are reviewed by our team before being posted.</p>
     </div>
   </div>
 
@@ -667,12 +696,11 @@ body[data-layout] .cconf,body[data-layout] .hcard,body[data-layout] .acard,body[
       <!-- Tabs -->
       <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
         <button class="ctab on" id="atab-pending" onclick="adminTab('pending')">⏳ Pending</button>
-        <button class="ctab" id="atab-all" onclick="adminTab('all')">📋 All Confessions</button>
+        <button class="ctab" id="atab-all" onclick="adminTab('all')">📋 All Station Notes</button>
         <button class="ctab" id="atab-reports" onclick="adminTab('reports')">🚨 Reports</button>
         <button class="ctab" id="atab-members" onclick="adminTab('members')" style="display:none;">👥 Members</button>
         <button class="ctab" id="atab-mods" onclick="adminTab('mods')" style="display:none;">🛡 Moderators</button>
         <button class="ctab" id="atab-ads" onclick="adminTab('ads')" style="display:none;">📢 Ads</button>
-        <button class="ctab" id="atab-appearance" onclick="adminTab('appearance')" style="display:none;color:var(--violet2);">🎛 Appearance</button>
       </div>
 
       <!-- Pending confessions -->
@@ -740,17 +768,6 @@ body[data-layout] .cconf,body[data-layout] .hcard,body[data-layout] .acard,body[
             <button class="btn-approve" onclick="postAd()" style="font-size:13px;padding:8px 16px;" id="adPostBtn">📢 Post Ad</button>
           </div>
           <div id="adErr" style="font-size:12px;color:var(--rose);margin-top:8px;"></div>
-        </div>
-      </div>
-
-      <!-- Appearance (admin only) -->
-      <div id="admin-appearance" style="display:none;">
-        <div class="acard" style="padding:20px 22px;">
-          <div style="font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Global layout</div>
-          <div style="font-family:'Playfair Display',serif;font-size:24px;color:var(--txt);margin-bottom:6px;">Switch the whole app mood</div>
-          <div style="font-size:13px;color:var(--txt2);line-height:1.7;max-width:620px;">This changes the full visual shell for everyone after refresh. Features stay the same. Real strangers only.</div>
-          <div class="layout-grid" id="layoutGrid"></div>
-          <div id="layoutStatus" style="font-size:12px;color:var(--muted);margin-top:12px;min-height:18px;"></div>
         </div>
       </div>
 
@@ -914,7 +931,7 @@ function logout(){ localStorage.removeItem('chapters_token'); localStorage.remov
 })();
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-const S = { view:'landing', history:[], connected:false, typingTO:null, myName:'', theirName:'' };
+const S = { serviceOpen: true, service: null, view:'landing', history:[], connected:false, typingTO:null, myName:'', theirName:'' };
 let selSong=null, confPage=1, confLoading=false, selRsn=null;
 let pendingInviteType=null;
 // Game state object
@@ -932,6 +949,14 @@ socket.on('auth_error', () => { localStorage.removeItem('chapters_token'); windo
 socket.on('authed', () => {});
 socket.on('online_count', c => { document.getElementById('onlineCount').textContent = Math.max(0, parseInt(c) || 0); });
 socket.on('history', h => { S.history = h; if (S.view==='history') renderHistory(); });
+
+socket.on('service_closed', (status) => {
+  S.service = status || S.service;
+  S.serviceOpen = false;
+  updateServiceUI();
+  showOffHours();
+});
+
 socket.on('matched', ({ chapter, myName, theirName, pairRef, pairBond }) => {
   S.connected=true; S.myName=myName; S.theirName=theirName;
   document.getElementById('chatChapterNum').textContent=toRoman(chapter);
@@ -1050,7 +1075,7 @@ async function loadConf(reset=false) {
 
 // ── VIEWS ─────────────────────────────────────────────────────────────────────
 function showView(name) {
-  ['landing','waiting','reveal','chat','history','chapter','confessions','write','admin'].forEach(v => {
+  ['offhours','landing','waiting','reveal','chat','history','chapter','confessions','write','admin'].forEach(v => {
     document.getElementById('view-'+v).classList.toggle('hidden', v!==name);
   });
   S.view=name;
@@ -1063,6 +1088,10 @@ function showHistory() { renderHistory(); showView('history'); }
 // ── CHAT ──────────────────────────────────────────────────────────────────────
 function findStranger() {
   closeGamePanel();
+  if (!S.serviceOpen) {
+    showOffHours();
+    return;
+  }
   showView('waiting');
   socket.emit('find_stranger');
 }
@@ -1385,7 +1414,7 @@ function switchConfTab(tab){
   else document.getElementById('confessionsList').innerHTML=`<div class="empty-st"><div class="emt-s">Enter a name to search.</div></div>`;
 }
 
-async function searchConfessions(){
+async function searchStation Notes(){
   const q=document.getElementById('confSearchInput').value.trim();
   if(!q)return;
   const el=document.getElementById('confessionsList');
@@ -1694,7 +1723,8 @@ function openAdminPanel() {
 }
 
 function adminTab(tab) {
-  ['pending','all','reports','members','mods','ads','appearance'].forEach(t => {
+  if (tab === 'appearance') tab = 'pending';
+  ['pending','all','reports','members','mods','ads'].forEach(t => {
     const el = document.getElementById('admin-' + t);
     const tb = document.getElementById('atab-' + t);
     if (el) el.style.display = t === tab ? 'block' : 'none';
@@ -1706,7 +1736,6 @@ function adminTab(tab) {
   if (tab === 'members') loadMembers(1, '');
   if (tab === 'mods')    loadModerators();
   if (tab === 'ads')     loadAdTab();
-  if (tab === 'appearance') loadAppearanceTab();
 }
 
 async function adminFetch(url, opts = {}) {
@@ -2123,39 +2152,47 @@ async function deleteAd() {
 }
 
 
-// ── APPEARANCE / LAYOUT ADMIN ───────────────────────────────────────────────
+// ── AAGONTUK EXPRESS SINGLE LAYOUT + NIGHT SERVICE ─────────────────────────
 const LAYOUT_COPY = {
-  radio: { badge:'underground radio', hero:'Aagontuk', sub:'tune into someone real', lead:'No profiles. No followers. No bots. Just a late-night frequency for real conversations.', find:'Tune in', waitingTitle:'Tuning for someone real', waitingSub:'No bots on this frequency.', cancel:'cut the signal' },
-  train: { badge:'night train', hero:'Aagontuk', sub:'same train different ghosts', lead:'Anonymous passengers. One stop together. Every conversation becomes a saved ticket.', find:'Board the train', waitingTitle:'Waiting on platform zero', waitingSub:'A real co-passenger is worth the delay.', cancel:'leave the platform' },
-  confessional: { badge:'digital confessional', hero:'Aagontuk', sub:'confess without becoming content', lead:'For things you cannot send to people you know. Real strangers only. No fake comfort.', find:'Enter the booth', waitingTitle:'The booth is quiet', waitingSub:'Nobody yet, which is sad but honest.', cancel:'close the booth' }
+  train: { badge:'night service', hero:'Aagontuk Express', sub:'strangers board, chapters remain', lead:'Open from 19:00 to 05:00. No profiles. No followers. No bots. Just a quiet carriage for real conversations.', find:'Board anonymously', waitingTitle:'Waiting for a co-passenger', waitingSub:'No bots on this route.', cancel:'leave the cabin' }
 };
-let ACTIVE_LAYOUT = 'radio';
-function applyLayout(layout){
-  if(!LAYOUT_COPY[layout]) layout='radio'; ACTIVE_LAYOUT=layout; document.body.setAttribute('data-layout',layout);
-  const c=LAYOUT_COPY[layout];
+let ACTIVE_LAYOUT = 'train';
+function applyLayout(){
+  ACTIVE_LAYOUT='train'; document.body.setAttribute('data-layout','train');
+  const c=LAYOUT_COPY.train;
   const map={layoutBadge:c.badge,layoutHero:c.hero,layoutHeroSub:c.sub,layoutLead:c.lead,layoutFindBtn:c.find,layoutWaitingTitle:c.waitingTitle,layoutWaitingSub:c.waitingSub,layoutCancelText:c.cancel};
   Object.entries(map).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
-  localStorage.setItem('aagontuk_layout_cache',layout);
 }
+function formatCountdown(total){
+  total=Math.max(0,Number(total)||0); const h=Math.floor(total/3600); const m=Math.floor((total%3600)/60); const s=Math.floor(total%60);
+  return {h:String(h).padStart(2,'0'),m:String(m).padStart(2,'0'),s:String(s).padStart(2,'0')};
+}
+function phaseCopy(phase){
+  if(phase==='pre_departure') return {k:'pre-departure',t:'Aagontuk Express departs at 19:00',s:'Carriage lights are coming on. Boarding begins soon.'};
+  if(phase==='dawn_arrival') return {k:'dawn arrival',t:'The night journey has ended',s:'Aagontuk Express has reached the platform. Night service resumes at 19:00.'};
+  return {k:'at platform',t:'Aagontuk Express is resting at Kamalapur',s:'Night boarding opens at 19:00. Until then, the live carriage stays quiet.'};
+}
+function updateServiceUI(){
+  const st=S.service||{}; S.serviceOpen=!!st.open;
+  const pill=document.getElementById('servicePill'); const txt=document.getElementById('serviceText');
+  if(pill){pill.classList.toggle('closed',!S.serviceOpen);} if(txt){txt.textContent=S.serviceOpen?'now boarding until 05:00':'boarding opens 19:00';}
+  const find=document.getElementById('findBtn'); if(find){find.disabled=!S.serviceOpen; const span=document.getElementById('layoutFindBtn'); if(span) span.textContent=S.serviceOpen?'Board anonymously':'Boarding opens at 19:00';}
+  const cd=formatCountdown(S.serviceOpen?st.seconds_until_close:st.seconds_until_open);
+  ['H','M','S'].forEach((x,i)=>{const el=document.getElementById('cd'+x); if(el) el.textContent=[cd.h,cd.m,cd.s][i];});
+  const c=phaseCopy(st.phase); const k=document.getElementById('offPhase'), t=document.getElementById('offTitle'), sub=document.getElementById('offSub');
+  if(k)k.textContent=c.k; if(t)t.textContent=c.t; if(sub)sub.textContent=c.s;
+}
+async function refreshServiceStatus(go=false){
+  try{const r=await fetch('/api/service-status'); const d=await r.json(); S.service=d; updateServiceUI(); if(go && !d.open) showOffHours();}catch{updateServiceUI();}
+}
+function showOffHours(){ showView('offhours'); }
 async function loadAppSettings(){
-  applyLayout(localStorage.getItem('aagontuk_layout_cache')||'radio');
-  try{const r=await fetch('/api/app-settings');const d=await r.json();if(d.active_layout)applyLayout(d.active_layout);}catch{}
+  applyLayout();
+  try{const r=await fetch('/api/app-settings');const d=await r.json(); if(d.service){S.service=d.service;updateServiceUI(); if(!d.service.open && S.view==='landing') showOffHours();}}catch{}
+  refreshServiceStatus(); setInterval(()=>refreshServiceStatus(false),30000); setInterval(()=>{if(S.service&&!S.service.open){S.service.seconds_until_open=Math.max(0,(S.service.seconds_until_open||0)-1);updateServiceUI();}},1000);
 }
-async function loadAppearanceTab(){
-  const grid=document.getElementById('layoutGrid'); if(!grid)return;
-  const layouts=[
-    {id:'radio',name:'Underground Radio',line:'late-night, music-forward, frequency-room mood',tag:'cool daily driver'},
-    {id:'train',name:'Night Train',line:'cinematic transit layout for passing strangers',tag:'premium emotional'},
-    {id:'confessional',name:'Digital Confessional',line:'dark anonymous booth for unsent thoughts',tag:'cult mode'}
-  ];
-  grid.innerHTML=layouts.map(l=>`<div class="layout-card ${ACTIVE_LAYOUT===l.id?'active':''}" data-layout-choice="${l.id}" onclick="setLayout('${l.id}')"><div class="layout-name">${esc(l.name)}</div><div class="layout-line">${esc(l.line)}</div><span class="layout-tag">${esc(l.tag)}</span></div>`).join('');
-}
-async function setLayout(layout){
-  const st=document.getElementById('layoutStatus'); if(st)st.textContent='Saving layout...';
-  const d=await adminFetch('/api/admin/settings/layout',{method:'POST',body:JSON.stringify({layout})});
-  if(d.success){applyLayout(d.active_layout);loadAppearanceTab();if(st){st.style.color='var(--green)';st.textContent='Layout switched. Everyone will see it after refresh.';}}
-  else if(st){st.style.color='var(--rose)';st.textContent=d.error||'Could not switch layout.';}
-}
+function loadAppearanceTab(){}
+async function setLayout(){return false;}
 loadAppSettings();
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────

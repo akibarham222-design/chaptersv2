@@ -245,7 +245,7 @@ function sanitize(str) {
 }
 
 
-const VALID_LAYOUTS = ['radio', 'train', 'confessional'];
+const VALID_LAYOUTS = ['train'];
 function getSetting(key, fallback = '') {
   const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key);
   return row ? row.value : fallback;
@@ -254,10 +254,85 @@ function setSetting(key, value) {
   db.prepare('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)').run(key, value);
 }
 function getActiveLayout() {
-  const layout = getSetting('active_layout', 'radio');
-  return VALID_LAYOUTS.includes(layout) ? layout : 'radio';
+  return 'train';
 }
 
+
+
+
+// ─── Aagontuk Express Night Service Window ───────────────────────────────────
+// Live matching runs only from 19:00 to 05:00 Bangladesh time.
+const SERVICE_TZ = process.env.SERVICE_TZ || 'Asia/Dhaka';
+const SERVICE_OPEN_HOUR = Number(process.env.SERVICE_OPEN_HOUR || 19);
+const SERVICE_CLOSE_HOUR = Number(process.env.SERVICE_CLOSE_HOUR || 5);
+
+function dhakaNowParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: SERVICE_TZ,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  }).formatToParts(date).reduce((a, p) => { a[p.type] = p.value; return a; }, {});
+  return {
+    year: Number(parts.year), month: Number(parts.month), day: Number(parts.day),
+    hour: Number(parts.hour), minute: Number(parts.minute), second: Number(parts.second)
+  };
+}
+
+function dhakaDateToUtcMs(y, m, d, h, min = 0, sec = 0) {
+  // Bangladesh is UTC+06:00 all year.
+  return Date.UTC(y, m - 1, d, h - 6, min, sec);
+}
+
+function addDhakaDays(parts, days) {
+  const ms = dhakaDateToUtcMs(parts.year, parts.month, parts.day, 12) + days * 86400000;
+  return dhakaNowParts(new Date(ms));
+}
+
+function getServiceStatus() {
+  const now = new Date();
+  const p = dhakaNowParts(now);
+  const open = p.hour >= SERVICE_OPEN_HOUR || p.hour < SERVICE_CLOSE_HOUR;
+  let nextOpenParts;
+  let nextCloseParts;
+
+  if (open) {
+    if (p.hour < SERVICE_CLOSE_HOUR) nextCloseParts = { ...p, hour: SERVICE_CLOSE_HOUR, minute: 0, second: 0 };
+    else nextCloseParts = { ...addDhakaDays(p, 1), hour: SERVICE_CLOSE_HOUR, minute: 0, second: 0 };
+    nextOpenParts = p.hour < SERVICE_CLOSE_HOUR
+      ? { ...addDhakaDays(p, -1), hour: SERVICE_OPEN_HOUR, minute: 0, second: 0 }
+      : { ...p, hour: SERVICE_OPEN_HOUR, minute: 0, second: 0 };
+  } else {
+    nextOpenParts = { ...p, hour: SERVICE_OPEN_HOUR, minute: 0, second: 0 };
+    nextCloseParts = { ...addDhakaDays(p, 1), hour: SERVICE_CLOSE_HOUR, minute: 0, second: 0 };
+  }
+
+  const nextOpenMs = dhakaDateToUtcMs(nextOpenParts.year, nextOpenParts.month, nextOpenParts.day, nextOpenParts.hour);
+  const nextCloseMs = dhakaDateToUtcMs(nextCloseParts.year, nextCloseParts.month, nextCloseParts.day, nextCloseParts.hour);
+  const nowMs = now.getTime();
+
+  let phase = 'day_idle';
+  if (open) phase = 'in_service';
+  else if (p.hour >= 17 && p.hour < SERVICE_OPEN_HOUR) phase = 'pre_departure';
+  else if (p.hour >= SERVICE_CLOSE_HOUR && p.hour < 8) phase = 'dawn_arrival';
+
+  return {
+    open,
+    phase,
+    timezone: SERVICE_TZ,
+    current_hour: p.hour,
+    open_hour: SERVICE_OPEN_HOUR,
+    close_hour: SERVICE_CLOSE_HOUR,
+    next_open_at: new Date(nextOpenMs).toISOString(),
+    next_close_at: new Date(nextCloseMs).toISOString(),
+    seconds_until_open: Math.max(0, Math.floor((nextOpenMs - nowMs) / 1000)),
+    seconds_until_close: Math.max(0, Math.floor((nextCloseMs - nowMs) / 1000))
+  };
+}
+
+function isServiceOpen() {
+  return getServiceStatus().open;
+}
 
 function getAccountByToken(token) {
   const now = Math.floor(Date.now() / 1000);
@@ -569,14 +644,17 @@ app.get('/api/me', (req, res) => {
 
 app.get('/api/app-settings', (req, res) => {
   res.json({
-    app_name: 'Aagontuk',
-    active_layout: getActiveLayout(),
+    app_name: 'Aagontuk Express',
+    active_layout: 'train',
     layouts: [
-      { id: 'radio', name: 'Underground Radio', line: 'late-night frequency for real strangers' },
-      { id: 'train', name: 'Night Train', line: 'passing strangers, saved as journeys' },
-      { id: 'confessional', name: 'Digital Confessional', line: 'dark anonymous notes from private disasters' }
-    ]
+      { id: 'train', name: 'Aagontuk Express', line: 'night-only anonymous journey' }
+    ],
+    service: getServiceStatus()
   });
+});
+
+app.get('/api/service-status', (req, res) => {
+  res.json(getServiceStatus());
 });
 
 // Bot fallback removed: Aagontuk connects real users only.
@@ -689,6 +767,11 @@ io.on('connection', (socket) => {
 
   socket.on('find_stranger', () => {
     if (!socket.accountId || activeChats.has(socket.id)) return;
+    const status = getServiceStatus();
+    if (!status.open) {
+      socket.emit('service_closed', status);
+      return;
+    }
     const existing = waitingQueue.findIndex(q => q.socketId === socket.id);
     if (existing !== -1) waitingQueue.splice(existing, 1);
 
@@ -913,16 +996,13 @@ function inAppAdminAuth(req, res, next) {
   next();
 }
 
-// Appearance settings — ADMIN ONLY
+// Single-layout service. Theme switching has been removed.
 app.get('/api/admin/settings', inAppAdminAuth, (req, res) => {
-  res.json({ active_layout: getActiveLayout(), valid_layouts: VALID_LAYOUTS });
+  res.json({ active_layout: 'train', valid_layouts: ['train'], service: getServiceStatus() });
 });
 
 app.post('/api/admin/settings/layout', inAppAdminAuth, (req, res) => {
-  const layout = (req.body.layout || '').trim().toLowerCase();
-  if (!VALID_LAYOUTS.includes(layout)) return res.status(400).json({ error: 'Invalid layout.' });
-  setSetting('active_layout', layout);
-  res.json({ success: true, active_layout: layout });
+  res.status(410).json({ error: 'Theme switching is removed. Aagontuk Express is the only active layout.' });
 });
 
 function inAppModAuth(req, res, next) {
