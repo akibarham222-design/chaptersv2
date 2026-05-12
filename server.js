@@ -6,30 +6,6 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
-
-// Ensure uploads directory exists
-const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-
-
-// Multer config — images only, max 5MB
-const adStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    cb(null, 'ad_' + Date.now() + ext);
-  }
-});
-const adUpload = multer({
-  storage: adStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (/^image\//.test(file.mimetype)) cb(null, true);
-    else cb(new Error('Images only.'));
-  }
-});
 
 const app = express();
 const server = http.createServer(app);
@@ -139,44 +115,6 @@ function pickTwoNames() {
 }
 
 
-
-// ─── Night Service Clock (Bangladesh Time) ───────────────────────────────────
-function getBDParts(date = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Dhaka', hour12: false,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  }).formatToParts(date).reduce((acc, p) => { acc[p.type] = p.value; return acc; }, {});
-  return {
-    year: Number(parts.year), month: Number(parts.month), day: Number(parts.day),
-    hour: Number(parts.hour), minute: Number(parts.minute), second: Number(parts.second)
-  };
-}
-function getNightServiceStatus() {
-  const p = getBDParts();
-  const mins = p.hour * 60 + p.minute;
-  const open = mins >= 19 * 60 || mins < 5 * 60;
-  const phase = open ? 'night' : (mins >= 17 * 60 ? 'dusk' : 'day');
-  const nextOpen = new Date(Date.UTC(p.year, p.month - 1, p.day, 13, 0, 0)); // 19:00 BD = 13:00 UTC
-  if (mins >= 19 * 60) nextOpen.setUTCDate(nextOpen.getUTCDate() + 1);
-  const nextClose = new Date(Date.UTC(p.year, p.month - 1, p.day, 23, 0, 0)); // 05:00 BD next day? if already after 19, close is next UTC 23
-  if (mins < 5 * 60) {
-    // current BD day 05:00 is current UTC previous? Use local BD date 05:00 = previous UTC 23:00 of previous day if currently after midnight.
-    nextClose.setUTCDate(nextClose.getUTCDate() - 1);
-  }
-  if (mins >= 5 * 60) nextClose.setUTCDate(nextClose.getUTCDate() + 1);
-  const target = open ? nextClose : nextOpen;
-  const ms = Math.max(0, target.getTime() - Date.now());
-  return {
-    open, phase,
-    bd_time: `${String(p.hour).padStart(2,'0')}:${String(p.minute).padStart(2,'0')}:${String(p.second).padStart(2,'0')}`,
-    next_open_iso: nextOpen.toISOString(),
-    next_close_iso: nextClose.toISOString(),
-    seconds_until_change: Math.floor(ms / 1000),
-    message: open ? 'Night service is open.' : 'Night service resumes at 19:00 Bangladesh time.'
-  };
-}
-
 // ─── Database ─────────────────────────────────────────────────────────────────
 
 const db = new Database('chapters.db');
@@ -252,14 +190,14 @@ db.exec(`
     created_at INTEGER DEFAULT (strftime('%s','now'))
   );
 
-  CREATE TABLE IF NOT EXISTS ads (
-    id TEXT PRIMARY KEY,
-    image_url TEXT NOT NULL,
-    link_url TEXT,
-    created_at INTEGER DEFAULT (strftime('%s','now'))
+
+  CREATE TABLE IF NOT EXISTS moderators (
+    email TEXT PRIMARY KEY,
+    added_by TEXT,
+    added_at INTEGER DEFAULT (strftime('%s','now'))
   );
 
-  CREATE TABLE IF NOT EXISTS app_settings (
+  CREATE TABLE IF NOT EXISTS site_settings (
     key TEXT PRIMARY KEY,
     value TEXT
   );
@@ -267,13 +205,15 @@ db.exec(`
 
 // Migrate existing accounts table — safe no-op if columns already exist
 try { db.prepare('ALTER TABLE accounts ADD COLUMN email TEXT').run(); } catch {}
+
+try { db.prepare('ALTER TABLE confessions ADD COLUMN song_album TEXT').run(); } catch {}
+try { db.prepare('ALTER TABLE confessions ADD COLUMN song_artwork TEXT').run(); } catch {}
+try { db.prepare('ALTER TABLE confessions ADD COLUMN song_preview TEXT').run(); } catch {}
+try { db.prepare('ALTER TABLE confessions ADD COLUMN song_apple_url TEXT').run(); } catch {}
+try { db.prepare('ALTER TABLE confessions ADD COLUMN song_spotify_url TEXT').run(); } catch {}
 try { db.prepare('ALTER TABLE accounts ADD COLUMN email_verified INTEGER DEFAULT 0').run(); } catch {}
 try { db.prepare('ALTER TABLE accounts ADD COLUMN oauth_provider TEXT').run(); } catch {}
 try { db.prepare('ALTER TABLE accounts ADD COLUMN oauth_id TEXT').run(); } catch {}
-try { db.prepare('ALTER TABLE accounts ADD COLUMN is_admin INTEGER DEFAULT 0').run(); } catch {}
-try { db.prepare('ALTER TABLE accounts ADD COLUMN is_moderator INTEGER DEFAULT 0').run(); } catch {}
-try { db.prepare('ALTER TABLE confessions ADD COLUMN poster_account_id TEXT').run(); } catch {}
-try { db.prepare('ALTER TABLE confessions ADD COLUMN status TEXT DEFAULT \'approved\'').run(); } catch {}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -281,21 +221,6 @@ function sanitize(str) {
   if (!str) return '';
   return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();
 }
-
-
-const VALID_LAYOUTS = ['radio', 'train', 'confessional'];
-function getSetting(key, fallback = '') {
-  const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(key);
-  return row ? row.value : fallback;
-}
-function setSetting(key, value) {
-  db.prepare('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)').run(key, value);
-}
-function getActiveLayout() {
-  const layout = getSetting('active_layout', 'radio');
-  return VALID_LAYOUTS.includes(layout) ? layout : 'radio';
-}
-
 
 function getAccountByToken(token) {
   const now = Math.floor(Date.now() / 1000);
@@ -399,31 +324,14 @@ async function sendVerificationEmail(email, username, verifyToken) {
 
 // ─── OAuth Helpers ────────────────────────────────────────────────────────────
 
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'n.i.farhan44@gmail.com').trim().toLowerCase();
-
 function oauthCreateOrFind(oauthProvider, oauthId, email, displayName) {
   // Check existing OAuth account
   const existing = db.prepare('SELECT * FROM accounts WHERE oauth_provider = ? AND oauth_id = ?').get(oauthProvider, oauthId);
   if (existing) {
-    // Auto-grant admin if this is the admin email
-    if ((email || '').toLowerCase() === ADMIN_EMAIL && !existing.is_admin) {
-      db.prepare('UPDATE accounts SET is_admin = 1 WHERE id = ?').run(existing.id);
-    }
     const token = uuidv4();
     const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
     db.prepare('INSERT INTO auth_tokens (token, account_id, expires_at) VALUES (?, ?, ?)').run(token, existing.id, expiresAt);
     return { token, username: existing.username, isNew: false };
-  }
-
-  // Link Google login to an existing email/password account if emails match.
-  const byEmail = email ? db.prepare('SELECT * FROM accounts WHERE lower(email) = lower(?)').get(email) : null;
-  if (byEmail) {
-    db.prepare('UPDATE accounts SET oauth_provider = ?, oauth_id = ?, email_verified = 1, is_admin = CASE WHEN lower(email) = ? THEN 1 ELSE is_admin END WHERE id = ?')
-      .run(oauthProvider, oauthId, ADMIN_EMAIL, byEmail.id);
-    const token = uuidv4();
-    const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
-    db.prepare('INSERT INTO auth_tokens (token, account_id, expires_at) VALUES (?, ?, ?)').run(token, byEmail.id, expiresAt);
-    return { token, username: byEmail.username, isNew: false };
   }
 
   // Generate a clean username from display name
@@ -437,9 +345,8 @@ function oauthCreateOrFind(oauthProvider, oauthId, email, displayName) {
   }
 
   const id = uuidv4();
-  const isAdmin = (email || '').toLowerCase() === ADMIN_EMAIL ? 1 : 0;
-  db.prepare('INSERT INTO accounts (id, username, password_hash, email, email_verified, oauth_provider, oauth_id, is_admin) VALUES (?, ?, ?, ?, 1, ?, ?, ?)')
-    .run(id, username, '', email || '', oauthProvider, oauthId, isAdmin);
+  db.prepare('INSERT INTO accounts (id, username, password_hash, email, email_verified, oauth_provider, oauth_id) VALUES (?, ?, ?, ?, 1, ?, ?)')
+    .run(id, username, '', email || '', oauthProvider, oauthId);
 
   const token = uuidv4();
   const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
@@ -547,22 +454,9 @@ app.post('/api/register', authLimiter, async (req, res) => {
   if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) return res.status(400).json({ error: 'Password needs at least one uppercase letter and one number.' });
 
   const existing = db.prepare('SELECT id FROM accounts WHERE username = ?').get(u);
-  if (existing) {
-    const adj = ['cool','dear','calm','soft','true','wild','wise','brave','kind','real','dark','lost','free','lone','quiet'];
-    const num = () => Math.floor(Math.random()*900)+100;
-    const candidates = [
-      u + '_' + num(),
-      u + num(),
-      adj[Math.floor(Math.random()*adj.length)] + '_' + u,
-      u + '_' + adj[Math.floor(Math.random()*adj.length)],
-      u + '_' + num(),
-      '_' + u + num(),
-    ];
-    const suggestions = candidates.filter(s => s.length <= 20 && !db.prepare('SELECT id FROM accounts WHERE username = ?').get(s)).slice(0, 4);
-    return res.status(409).json({ error: 'Username already taken.', suggestions });
-  }
-  const emailTaken = db.prepare('SELECT id FROM accounts WHERE email = ?').get(e);
-  if (emailTaken) return res.status(409).json({ error: 'An account with this email already exists. Try signing in instead.' });
+  if (existing) return res.status(409).json({ error: 'Username taken. Try another.' });
+  const emailTaken = db.prepare('SELECT id FROM accounts WHERE email = ? AND oauth_provider IS NULL').get(e);
+  if (emailTaken) return res.status(409).json({ error: 'An account with this email already exists.' });
 
   const hash = await bcrypt.hash(password, 12);
   const id = uuidv4();
@@ -580,7 +474,8 @@ app.post('/api/login', authLimiter, async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password required.' });
 
-  const account = db.prepare('SELECT * FROM accounts WHERE username = ?').get(username.trim());
+  const loginId = username.trim();
+  const account = db.prepare('SELECT * FROM accounts WHERE username = ? OR lower(email) = lower(?)').get(loginId, loginId);
   if (!account) return res.status(401).json({ error: 'Invalid credentials.' });
   if (account.oauth_provider) return res.status(400).json({ error: `This account uses ${account.oauth_provider} login. Please sign in with ${account.oauth_provider}.` });
 
@@ -597,48 +492,50 @@ app.post('/api/login', authLimiter, async (req, res) => {
 });
 
 
-app.get('/api/service-status', (req, res) => {
-  res.json(getNightServiceStatus());
-});
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'n.i.farhan44@gmail.com').toLowerCase();
+function getRoleForEmail(email) {
+  const e = (email || '').toLowerCase();
+  if (e && e === ADMIN_EMAIL) return 'admin';
+  if (e && db.prepare('SELECT 1 FROM moderators WHERE lower(email)=?').get(e)) return 'moderator';
+  return 'passenger';
+}
+function requireRole(roles) {
+  return (req, res, next) => {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const account = token ? getAccountByToken(token) : null;
+    if (!account) return res.status(401).json({ error: 'Session expired.' });
+    const role = getRoleForEmail(account.email);
+    if (!roles.includes(role)) return res.status(403).json({ error: 'Not allowed.' });
+    req.account = account;
+    req.role = role;
+    next();
+  };
+}
+function getSetting(key, fallback) {
+  const row = db.prepare('SELECT value FROM site_settings WHERE key=?').get(key);
+  return row ? row.value : fallback;
+}
+function setSetting(key, value) {
+  db.prepare('INSERT INTO site_settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, String(value || ''));
+}
 
 app.get('/api/me', (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'No token.' });
   const account = getAccountByToken(token);
   if (!account) return res.status(401).json({ error: 'Session expired. Please sign in again.' });
-  res.json({ username: account.username, id: account.id, is_admin: account.is_admin || 0, is_moderator: account.is_moderator || 0 });
+  res.json({ username: account.username, id: account.id, email: account.email || '', role: getRoleForEmail(account.email) });
 });
 
-
-app.get('/api/app-settings', (req, res) => {
-  res.json({
-    app_name: 'Aagontuk',
-    active_layout: getActiveLayout(),
-    layouts: [
-      { id: 'radio', name: 'Underground Radio', line: 'late-night frequency for real strangers' },
-      { id: 'train', name: 'Night Train', line: 'passing strangers, saved as journeys' },
-      { id: 'confessional', name: 'Digital Confessional', line: 'dark anonymous notes from private disasters' }
-    ]
-  });
-});
-
-// Bot fallback removed: Aagontuk connects real users only.
-app.get('/api/bot-config', (req, res) => {
-  res.status(410).json({ error: 'Bot fallback is disabled. Real users only.', keys: [] });
-});
+// ─── Confession Routes ────────────────────────────────────────────────────────
 
 // Get all confessions (newest first, paginated)
 app.get('/api/confessions', (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = 20;
   const offset = (page - 1) * limit;
-  // Check if admin
-  const token2 = req.headers.authorization?.replace('Bearer ', '');
-  const acc2 = token2 ? getAccountByToken(token2) : null;
-  const isAdmin2 = acc2 && acc2.is_admin;
-  const whereStatus = isAdmin2 ? '' : "WHERE status = 'approved'";
-  const rows = db.prepare(`SELECT * FROM confessions ${whereStatus} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(limit, offset);
-  const total = db.prepare(`SELECT COUNT(*) as c FROM confessions ${whereStatus}`).get().c;
+  const rows = db.prepare(`SELECT * FROM confessions ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(limit, offset);
+  const total = db.prepare(`SELECT COUNT(*) as c FROM confessions`).get().c;
   res.json({ confessions: rows, total, page });
 });
 
@@ -650,9 +547,9 @@ app.get('/api/confessions/search', (req, res) => {
   const pattern = `%${q}%`;
   const rows = db.prepare(`
     SELECT * FROM confessions
-    WHERE (from_name LIKE ? OR to_name LIKE ?) AND status = 'approved'
+    WHERE from_name LIKE ? OR to_name LIKE ? OR content LIKE ? OR song_title LIKE ? OR song_artist LIKE ?
     ORDER BY created_at DESC LIMIT 50
-  `).all(pattern, pattern);
+  `).all(pattern, pattern, pattern, pattern, pattern);
   res.json({ confessions: rows });
 });
 
@@ -663,7 +560,7 @@ app.post('/api/confessions', confessionLimiter, (req, res) => {
   const account = getAccountByToken(token);
   if (!account) return res.status(401).json({ error: 'Session expired.' });
 
-  const { from_name, to_name, content, song_title, song_artist, song_url } = req.body;
+  const { from_name, to_name, content, song_title, song_artist, song_url, song_album, song_artwork, song_preview, song_apple_url, song_spotify_url } = req.body;
   if (!from_name || !to_name || !content) return res.status(400).json({ error: 'From, To and confession are required.' });
   if (from_name.trim().length > 60) return res.status(400).json({ error: 'From name too long.' });
   if (to_name.trim().length > 60) return res.status(400).json({ error: 'To name too long.' });
@@ -683,8 +580,8 @@ app.post('/api/confessions', confessionLimiter, (req, res) => {
   }
 
   db.prepare(`
-    INSERT INTO confessions (id, from_name, to_name, content, song_title, song_artist, song_url, status, poster_account_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+    INSERT INTO confessions (id, from_name, to_name, content, song_title, song_artist, song_url, song_album, song_artwork, song_preview, song_apple_url, song_spotify_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     sanitize(from_name.trim()),
@@ -693,12 +590,80 @@ app.post('/api/confessions', confessionLimiter, (req, res) => {
     song_title ? sanitize(song_title).slice(0, 200) : null,
     song_artist ? sanitize(song_artist).slice(0, 200) : null,
     safeSongUrl,
-    account.id
+    song_album ? sanitize(song_album).slice(0, 200) : null,
+    song_artwork ? String(song_artwork).slice(0, 512) : null,
+    song_preview ? String(song_preview).slice(0, 512) : null,
+    song_apple_url ? String(song_apple_url).slice(0, 512) : null,
+    song_spotify_url ? String(song_spotify_url).slice(0, 512) : null
   );
 
   // Broadcast new confession to all connected clients
   io.emit('new_confession', { id });
   res.json({ success: true, id });
+});
+
+
+// ─── Public Settings + Role-based Admin Routes ───────────────────────────────
+
+app.get('/api/settings', (req, res) => {
+  res.json({
+    aboutText: getSetting('aboutText', `Aagontuk Express is just a small night train on the internet.
+
+You come in, sit for a while, maybe talk to a stranger, maybe leave a confession, maybe just play a song in the background.
+
+Nothing too serious. No profile drama, no followers, no trying to look cool.
+
+Just a quiet little platform for random conversations and things people usually keep to themselves.`),
+    creatorName: getSetting('creatorName', 'Nazmul Islam Farhan'),
+    creatorBio: getSetting('creatorBio', 'Building small cinematic corners on the internet.'),
+    creatorPhoto: getSetting('creatorPhoto', '')
+  });
+});
+
+app.post('/api/admin/settings', requireRole(['admin']), (req, res) => {
+  const { aboutText, creatorName, creatorBio, creatorPhoto } = req.body || {};
+  setSetting('aboutText', String(aboutText || '').slice(0, 1200));
+  setSetting('creatorName', String(creatorName || '').slice(0, 100));
+  setSetting('creatorBio', String(creatorBio || '').slice(0, 500));
+  setSetting('creatorPhoto', String(creatorPhoto || '').slice(0, 600));
+  res.json({ success: true });
+});
+
+app.get('/api/admin/moderators', requireRole(['admin']), (req, res) => {
+  const moderators = db.prepare('SELECT email, added_at FROM moderators ORDER BY added_at DESC').all();
+  res.json({ moderators });
+});
+
+app.post('/api/admin/moderators', requireRole(['admin']), (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email required.' });
+  if (email === ADMIN_EMAIL) return res.status(400).json({ error: 'Admin is already full access.' });
+  db.prepare('INSERT OR IGNORE INTO moderators (email, added_by) VALUES (?, ?)').run(email, req.account.email || req.account.username);
+  res.json({ success: true });
+});
+
+app.delete('/api/admin/moderators/:email', requireRole(['admin']), (req, res) => {
+  const email = String(req.params.email || '').trim().toLowerCase();
+  db.prepare('DELETE FROM moderators WHERE lower(email)=?').run(email);
+  res.json({ success: true });
+});
+
+app.get('/api/admin/stats', requireRole(['admin','moderator']), (req, res) => {
+  const totalUsers = db.prepare('SELECT COUNT(*) as c FROM accounts').get().c;
+  const totalChats = db.prepare('SELECT COUNT(*) as c FROM conversations').get().c;
+  const totalMessages = db.prepare('SELECT COUNT(*) as c FROM messages').get().c;
+  const totalReports = db.prepare('SELECT COUNT(*) as c FROM reports').get().c;
+  const totalConfessions = db.prepare('SELECT COUNT(*) as c FROM confessions').get().c;
+  res.json({ totalUsers, totalChats, totalMessages, totalReports, totalConfessions, role: req.role });
+});
+
+app.get('/api/admin/reports2', requireRole(['admin','moderator']), (req, res) => {
+  const reports = db.prepare(`SELECT r.*, a.username as reporter_name, b.username as reported_name
+    FROM reports r
+    LEFT JOIN accounts a ON r.reporter_account = a.id
+    LEFT JOIN accounts b ON r.reported_account = b.id
+    ORDER BY r.created_at DESC LIMIT 60`).all();
+  res.json({ reports, role: req.role });
 });
 
 // ─── Socket.io ────────────────────────────────────────────────────────────────
@@ -731,7 +696,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('find_stranger', () => {
-    if (!getNightServiceStatus().open) { socket.emit('service_closed', getNightServiceStatus()); return; }
     if (!socket.accountId || activeChats.has(socket.id)) return;
     const existing = waitingQueue.findIndex(q => q.socketId === socket.id);
     if (existing !== -1) waitingQueue.splice(existing, 1);
@@ -791,14 +755,12 @@ io.on('connection', (socket) => {
     const p = io.sockets.sockets.get(chat.partnerId);
     if (p?.connected) p.emit('game_response', { accepted, gameType });
   });
-  const relayGameAction = (data) => {
+  socket.on('game_action', (data) => {
     const chat = activeChats.get(socket.id);
     if (!chat) return;
     const p = io.sockets.sockets.get(chat.partnerId);
     if (p?.connected) p.emit('game_action', data);
-  };
-  socket.on('game_action', relayGameAction);
-  socket.on('game_move', relayGameAction);
+  });
 
   socket.on('leave_chat', () => handleLeave(socket));
   socket.on('cancel_search', () => { const i = waitingQueue.findIndex(q => q.socketId === socket.id); if (i !== -1) waitingQueue.splice(i, 1); socket.emit('search_cancelled'); });
@@ -831,7 +793,7 @@ setInterval(() => {
 
 // ─── Admin Routes ─────────────────────────────────────────────────────────────
 
-// Legacy password admin is permanently disabled. Use the in-app admin panel tied to ADMIN_EMAIL.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'chapters-admin-2024';
 
 // Fix 2: Rate limit admin endpoints — prevents brute-forcing the admin password
 const adminLimiter = rateLimit({
@@ -842,8 +804,17 @@ const adminLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const crypto = require('crypto');
+
 function adminAuth(req, res, next) {
-  return res.status(410).json({ error: 'Legacy admin API is disabled. Use the in-app admin panel.' });
+  const pass = req.headers['x-admin-password'] || '';
+  // Constant-time comparison — prevents timing attacks on the password
+  const passBuffer = Buffer.from(pass.padEnd(ADMIN_PASSWORD.length));
+  const expectedBuffer = Buffer.from(ADMIN_PASSWORD);
+  const match = passBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(passBuffer, expectedBuffer);
+  if (!match) return res.status(401).json({ error: 'Unauthorized.' });
+  next();
 }
 
 // Stats overview
@@ -947,234 +918,8 @@ app.get('/admin/api/users', adminLimiter, adminAuth, (req, res) => {
   res.json({ users, total, page });
 });
 
-// ─── In-app Admin/Mod API ─────────────────────────────────────────────────────
-function inAppAdminAuth(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Not signed in.' });
-  const account = getAccountByToken(token);
-  if (!account || !account.is_admin) return res.status(403).json({ error: 'Admin only.' });
-  req.adminAccount = account;
-  next();
-}
-
-// Appearance settings — ADMIN ONLY
-app.get('/api/admin/settings', inAppAdminAuth, (req, res) => {
-  res.json({ active_layout: getActiveLayout(), valid_layouts: VALID_LAYOUTS });
-});
-
-app.post('/api/admin/settings/layout', inAppAdminAuth, (req, res) => {
-  const layout = (req.body.layout || '').trim().toLowerCase();
-  if (!VALID_LAYOUTS.includes(layout)) return res.status(400).json({ error: 'Invalid layout.' });
-  setSetting('active_layout', layout);
-  res.json({ success: true, active_layout: layout });
-});
-
-function inAppModAuth(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Not signed in.' });
-  const account = getAccountByToken(token);
-  if (!account || (!account.is_admin && !account.is_moderator)) return res.status(403).json({ error: 'Not authorized.' });
-  req.adminAccount = account;
-  req.isFullAdmin = !!account.is_admin;
-  next();
-}
-
-// Get pending confessions — mods + admin
-app.get('/api/admin/confessions/pending', inAppModAuth, (req, res) => {
-  const rows = db.prepare(`SELECT c.*, a.email as poster_email, a.username as poster_username
-    FROM confessions c LEFT JOIN accounts a ON a.id = c.poster_account_id
-    WHERE c.status = 'pending' ORDER BY c.created_at ASC`).all();
-  // Strip email from moderator view
-  const out = rows.map(r => {
-    if (!req.isFullAdmin) { delete r.poster_email; }
-    return r;
-  });
-  res.json({ confessions: out });
-});
-
-// Get all confessions — mods + admin
-app.get('/api/admin/confessions/all', inAppModAuth, (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = 30;
-  const offset = (page - 1) * limit;
-  const rows = db.prepare(`SELECT c.*, a.email as poster_email, a.username as poster_username
-    FROM confessions c LEFT JOIN accounts a ON a.id = c.poster_account_id
-    ORDER BY c.created_at DESC LIMIT ? OFFSET ?`).all(limit, offset);
-  const total = db.prepare(`SELECT COUNT(*) as c FROM confessions`).get().c;
-  const out = rows.map(r => { if (!req.isFullAdmin) delete r.poster_email; return r; });
-  res.json({ confessions: out, total, page });
-});
-
-// Approve confession — mods + admin
-app.post('/api/admin/confessions/:id/approve', inAppModAuth, (req, res) => {
-  db.prepare(`UPDATE confessions SET status = 'approved' WHERE id = ?`).run(req.params.id);
-  io.emit('new_confession');
-  res.json({ success: true });
-});
-
-// Reject confession — mods + admin
-app.post('/api/admin/confessions/:id/reject', inAppModAuth, (req, res) => {
-  db.prepare(`UPDATE confessions SET status = 'rejected' WHERE id = ?`).run(req.params.id);
-  res.json({ success: true });
-});
-
-// Delete confession — ADMIN ONLY
-app.delete('/api/admin/confessions/:id', inAppAdminAuth, (req, res) => {
-  db.prepare(`DELETE FROM confessions WHERE id = ?`).run(req.params.id);
-  res.json({ success: true });
-});
-
-// Get reports — mods + admin
-app.get('/api/admin/reports', inAppModAuth, (req, res) => {
-  const reports = db.prepare(`
-    SELECT r.*,
-      rep.username as reporter_name, rep.email as reporter_email,
-      rpd.username as reported_name, rpd.email as reported_email,
-      CASE WHEN b.account_id IS NOT NULL THEN 1 ELSE 0 END as is_banned
-    FROM reports r
-    LEFT JOIN accounts rep ON rep.id = r.reporter_account
-    LEFT JOIN accounts rpd ON rpd.id = r.reported_account
-    LEFT JOIN banned_accounts b ON b.account_id = r.reported_account
-    ORDER BY r.created_at DESC LIMIT 50
-  `).all();
-  const out = reports.map(r => {
-    if (!req.isFullAdmin) { delete r.reporter_email; delete r.reported_email; }
-    return r;
-  });
-  res.json({ reports: out });
-});
-
-// Ban user — mods + admin
-app.post('/api/admin/ban/:accountId', inAppModAuth, (req, res) => {
-  const acc = db.prepare(`SELECT * FROM accounts WHERE id = ?`).get(req.params.accountId);
-  if (!acc) return res.status(404).json({ error: 'User not found.' });
-  if (acc.is_admin) return res.status(400).json({ error: 'Cannot ban admin.' });
-  db.prepare(`INSERT OR IGNORE INTO banned_accounts (account_id, reason) VALUES (?, ?)`).run(req.params.accountId, 'Banned by admin');
-  db.prepare(`DELETE FROM auth_tokens WHERE account_id = ?`).run(req.params.accountId);
-  res.json({ success: true, username: acc.username });
-});
-
-// Unban user — ADMIN ONLY
-app.post('/api/admin/unban/:accountId', inAppAdminAuth, (req, res) => {
-  db.prepare(`DELETE FROM banned_accounts WHERE account_id = ?`).run(req.params.accountId);
-  res.json({ success: true });
-});
-
-// Mark report read — mods + admin
-app.post('/api/admin/reports/:id/read', inAppModAuth, (req, res) => {
-  db.prepare(`UPDATE reports SET read_at = strftime('%s','now') WHERE id = ?`).run(req.params.id);
-  res.json({ success: true });
-});
-
-// Search users by email or username — ADMIN ONLY
-app.get('/api/admin/users/search', inAppAdminAuth, (req, res) => {
-  const q = (req.query.q || '').trim();
-  if (q.length < 2) return res.json({ users: [] });
-  const pattern = '%' + q + '%';
-  const users = db.prepare(`
-    SELECT a.id, a.username, a.email, a.created_at,
-      a.is_moderator,
-      CASE WHEN b.account_id IS NOT NULL THEN 1 ELSE 0 END as is_banned
-    FROM accounts a
-    LEFT JOIN banned_accounts b ON b.account_id = a.id
-    WHERE (a.username LIKE ? OR a.email LIKE ?) AND a.is_admin = 0
-    LIMIT 10
-  `).all(pattern, pattern);
-  res.json({ users });
-});
-
-// All members paginated + real-time search — ADMIN ONLY
-app.get('/api/admin/members', inAppAdminAuth, (req, res) => {
-  const q = (req.query.q || '').trim();
-  const page = parseInt(req.query.page) || 1;
-  const limit = 25;
-  const offset = (page - 1) * limit;
-  const pattern = '%' + q + '%';
-  const where = q.length > 0 ? 'WHERE (a.username LIKE ? OR a.email LIKE ?)' : '';
-  const params = q.length > 0 ? [pattern, pattern, limit, offset] : [limit, offset];
-  const users = db.prepare(`
-    SELECT a.id, a.username, a.email, a.created_at, a.is_moderator, a.oauth_provider,
-      CASE WHEN b.account_id IS NOT NULL THEN 1 ELSE 0 END as is_banned,
-      (SELECT COUNT(*) FROM conversations WHERE account_a = a.id OR account_b = a.id) as chat_count,
-      (SELECT COUNT(*) FROM reports WHERE reported_account = a.id) as report_count
-    FROM accounts a
-    LEFT JOIN banned_accounts b ON b.account_id = a.id
-    ${where}
-    ORDER BY a.created_at DESC LIMIT ? OFFSET ?
-  `).all(...params);
-  const total = q.length > 0
-    ? db.prepare(`SELECT COUNT(*) as c FROM accounts a WHERE (a.username LIKE ? OR a.email LIKE ?)`).get(pattern, pattern).c
-    : db.prepare(`SELECT COUNT(*) as c FROM accounts`).get().c;
-  res.json({ users, total, page });
-});
-
-// Grant moderator — ADMIN ONLY
-app.post('/api/admin/mod/grant/:accountId', inAppAdminAuth, (req, res) => {
-  const acc = db.prepare(`SELECT * FROM accounts WHERE id = ?`).get(req.params.accountId);
-  if (!acc) return res.status(404).json({ error: 'User not found.' });
-  db.prepare(`UPDATE accounts SET is_moderator = 1 WHERE id = ?`).run(req.params.accountId);
-  res.json({ success: true, username: acc.username });
-});
-
-// Revoke moderator — ADMIN ONLY
-app.post('/api/admin/mod/revoke/:accountId', inAppAdminAuth, (req, res) => {
-  db.prepare(`UPDATE accounts SET is_moderator = 0 WHERE id = ?`).run(req.params.accountId);
-  res.json({ success: true });
-});
-
-// List all moderators — ADMIN ONLY
-app.get('/api/admin/moderators', inAppAdminAuth, (req, res) => {
-  const mods = db.prepare(`SELECT id, username, email, created_at FROM accounts WHERE is_moderator = 1`).all();
-  res.json({ moderators: mods });
-});
-
-// ── Ad Routes ─────────────────────────────────────────────────────────────────
-
-// Public — get current active ad (shown after login)
-app.get('/api/ad', (req, res) => {
-  const ad = db.prepare(`SELECT * FROM ads ORDER BY created_at DESC LIMIT 1`).get();
-  res.json({ ad: ad || null });
-});
-
-// Admin — upload image from device
-app.post('/api/admin/ad/upload', inAppAdminAuth, (req, res) => {
-  adUpload.single('image')(req, res, (err) => {
-    if (err) return res.status(400).json({ error: err.message || 'Upload failed.' });
-    if (!req.file) return res.status(400).json({ error: 'No file received.' });
-    const url = '/uploads/' + req.file.filename;
-    res.json({ success: true, url });
-  });
-});
-
-// Admin — post new ad (image URL + optional link)
-app.post('/api/admin/ad', inAppAdminAuth, (req, res) => {
-  const { image_url, link_url } = req.body;
-  if (!image_url) return res.status(400).json({ error: 'Image URL required.' });
-  // Allow relative paths (from device upload) or full URLs
-  if (!image_url.startsWith('/uploads/')) {
-    try { new URL(image_url); } catch { return res.status(400).json({ error: 'Invalid image URL.' }); }
-  }
-  // Only one active ad at a time — clear old ones
-  db.prepare(`DELETE FROM ads`).run();
-  const id = uuidv4();
-  db.prepare(`INSERT INTO ads (id, image_url, link_url) VALUES (?, ?, ?)`).run(id, image_url, link_url || null);
-  res.json({ success: true, id });
-});
-
-// Admin — delete current ad
-app.delete('/api/admin/ad', inAppAdminAuth, (req, res) => {
-  db.prepare(`DELETE FROM ads`).run();
-  res.json({ success: true });
-});
-
-// Legacy password-based admin promotion disabled. Admin is controlled by ADMIN_EMAIL.
-app.post('/api/admin/make-admin', (req, res) => {
-  res.status(410).json({ error: 'Disabled. Admin is assigned by ADMIN_EMAIL.' });
-});
-
-// AI layout editor and staged preview system removed.
 // Serve admin panel
-app.get('/admin', (req, res) => res.redirect('/')); // old password admin panel removed
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
 // ─── Static ───────────────────────────────────────────────────────────────────
 // Block direct access to admin.html (it's served only via the /admin route which requires auth)
@@ -1182,7 +927,6 @@ app.use((req, res, next) => {
   if (req.path.toLowerCase() === '/admin.html') return res.status(404).send('Not found.');
   next();
 });
-
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
