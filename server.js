@@ -526,10 +526,27 @@ app.post('/api/login', authLimiter, async (req, res) => {
 
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'n.i.farhan44@gmail.com').toLowerCase();
+
+// Gmail treats dots and +tags as the same mailbox. Google OAuth may return
+// n.i.farhan44@gmail.com, nifarhan44@gmail.com, or googlemail.com variants.
+// Normalize before role checks so the real admin account never misses Control Room.
+function normalizeRoleEmail(email) {
+  let e = String(email || '').trim().toLowerCase();
+  if (!e || !e.includes('@')) return e;
+  let [local, domain] = e.split('@');
+  if (domain === 'googlemail.com') domain = 'gmail.com';
+  if (domain === 'gmail.com') {
+    local = local.split('+')[0].replace(/\./g, '');
+  }
+  return `${local}@${domain}`;
+}
+const ADMIN_EMAIL_NORMALIZED = normalizeRoleEmail(ADMIN_EMAIL);
 function getRoleForEmail(email) {
-  const e = String(email || '').trim().toLowerCase();
-  if (e && e === ADMIN_EMAIL) return 'admin';
-  if (e && db.prepare('SELECT 1 FROM moderators WHERE lower(email)=?').get(e)) return 'moderator';
+  const raw = String(email || '').trim().toLowerCase();
+  const e = normalizeRoleEmail(raw);
+  if (e && e === ADMIN_EMAIL_NORMALIZED) return 'admin';
+  const mods = db.prepare('SELECT email FROM moderators').all().map(m => normalizeRoleEmail(m.email));
+  if (e && mods.includes(e)) return 'moderator';
   return 'passenger';
 }
 function getRoleForAccount(account) {
