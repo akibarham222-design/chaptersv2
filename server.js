@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -201,6 +202,15 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS radio_tracks (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    filename TEXT,
+    is_default INTEGER DEFAULT 0,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  );
 `);
 
 // Migrate existing accounts table — safe no-op if columns already exist
@@ -214,6 +224,24 @@ try { db.prepare('ALTER TABLE confessions ADD COLUMN song_spotify_url TEXT').run
 try { db.prepare('ALTER TABLE accounts ADD COLUMN email_verified INTEGER DEFAULT 0').run(); } catch {}
 try { db.prepare('ALTER TABLE accounts ADD COLUMN oauth_provider TEXT').run(); } catch {}
 try { db.prepare('ALTER TABLE accounts ADD COLUMN oauth_id TEXT').run(); } catch {}
+
+// Seed default onboard radio tracks once. Admin can remove/add tracks later from Control Room.
+const defaultRadioTracks = [
+  { id: 'default-aces', title: 'aces', url: '/music/aces.mp3' },
+  { id: 'default-escape', title: 'escape', url: '/music/escape.mp3' },
+  { id: 'default-heartheal', title: 'heartheal', url: '/music/heartheal.mp3' },
+  { id: 'default-love', title: 'love', url: '/music/love.mp3' },
+];
+try {
+  const existingTracks = db.prepare('SELECT COUNT(*) as c FROM radio_tracks').get().c;
+  if (!existingTracks) {
+    const ins = db.prepare('INSERT INTO radio_tracks (id,title,url,is_default) VALUES (?,?,?,1)');
+    defaultRadioTracks.forEach(t => ins.run(t.id, t.title, t.url));
+  }
+} catch (e) { console.error('Radio seed failed:', e.message); }
+const uploadDir = path.join(__dirname, 'public', 'uploads', 'radio');
+try { fs.mkdirSync(uploadDir, { recursive: true }); } catch {}
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -328,6 +356,11 @@ function oauthCreateOrFind(oauthProvider, oauthId, email, displayName) {
   // Check existing OAuth account
   const existing = db.prepare('SELECT * FROM accounts WHERE oauth_provider = ? AND oauth_id = ?').get(oauthProvider, oauthId);
   if (existing) {
+    // Old OAuth rows may have been created without email. Always refresh it so role detection works.
+    if (email && existing.email !== String(email).toLowerCase()) {
+      db.prepare('UPDATE accounts SET email = ?, email_verified = 1 WHERE id = ?').run(String(email).toLowerCase(), existing.id);
+      existing.email = String(email).toLowerCase();
+    }
     const token = uuidv4();
     const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
     db.prepare('INSERT INTO auth_tokens (token, account_id, expires_at) VALUES (?, ?, ?)').run(token, existing.id, expiresAt);
@@ -346,7 +379,7 @@ function oauthCreateOrFind(oauthProvider, oauthId, email, displayName) {
 
   const id = uuidv4();
   db.prepare('INSERT INTO accounts (id, username, password_hash, email, email_verified, oauth_provider, oauth_id) VALUES (?, ?, ?, ?, 1, ?, ?)')
-    .run(id, username, '', email || '', oauthProvider, oauthId);
+    .run(id, username, '', String(email || '').toLowerCase(), oauthProvider, oauthId);
 
   const token = uuidv4();
   const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60);
@@ -494,17 +527,21 @@ app.post('/api/login', authLimiter, async (req, res) => {
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'n.i.farhan44@gmail.com').toLowerCase();
 function getRoleForEmail(email) {
-  const e = (email || '').toLowerCase();
+  const e = String(email || '').trim().toLowerCase();
   if (e && e === ADMIN_EMAIL) return 'admin';
   if (e && db.prepare('SELECT 1 FROM moderators WHERE lower(email)=?').get(e)) return 'moderator';
   return 'passenger';
+}
+function getRoleForAccount(account) {
+  if (!account) return 'passenger';
+  return getRoleForEmail(account.email || account.username);
 }
 function requireRole(roles) {
   return (req, res, next) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
     const account = token ? getAccountByToken(token) : null;
     if (!account) return res.status(401).json({ error: 'Session expired.' });
-    const role = getRoleForEmail(account.email);
+    const role = getRoleForAccount(account);
     if (!roles.includes(role)) return res.status(403).json({ error: 'Not allowed.' });
     req.account = account;
     req.role = role;
@@ -524,7 +561,7 @@ app.get('/api/me', (req, res) => {
   if (!token) return res.status(401).json({ error: 'No token.' });
   const account = getAccountByToken(token);
   if (!account) return res.status(401).json({ error: 'Session expired. Please sign in again.' });
-  res.json({ username: account.username, id: account.id, email: account.email || '', role: getRoleForEmail(account.email) });
+  res.json({ username: account.username, id: account.id, email: account.email || '', role: getRoleForAccount(account) });
 });
 
 // ─── Confession Routes ────────────────────────────────────────────────────────
@@ -664,6 +701,40 @@ app.get('/api/admin/reports2', requireRole(['admin','moderator']), (req, res) =>
     LEFT JOIN accounts b ON r.reported_account = b.id
     ORDER BY r.created_at DESC LIMIT 60`).all();
   res.json({ reports, role: req.role });
+});
+
+
+// ─── Onboard Radio Tracks ─────────────────────────────────────────────────────
+
+app.get('/api/radio/tracks', (req, res) => {
+  const tracks = db.prepare('SELECT id,title,url,is_default,created_at FROM radio_tracks ORDER BY created_at ASC').all();
+  res.json({ tracks });
+});
+
+app.post('/api/admin/radio/upload', requireRole(['admin']), express.raw({ type: ['audio/mpeg','audio/mp3','audio/wav','audio/x-wav','audio/ogg','application/octet-stream'], limit: '35mb' }), (req, res) => {
+  if (!req.body || !req.body.length) return res.status(400).json({ error: 'No audio file received.' });
+  const rawName = String(req.query.filename || 'track.mp3');
+  const safeBase = rawName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'track.mp3';
+  const ext = (path.extname(safeBase).toLowerCase() || '.mp3').replace(/[^.a-z0-9]/g, '') || '.mp3';
+  const id = uuidv4();
+  const filename = `${Date.now()}-${id.slice(0,8)}${ext}`;
+  const filepath = path.join(uploadDir, filename);
+  fs.writeFileSync(filepath, req.body);
+  const title = String(req.query.title || safeBase.replace(/\.[^.]+$/, '')).replace(/[<>]/g, '').slice(0, 80) || 'Uploaded track';
+  const url = `/uploads/radio/${filename}`;
+  db.prepare('INSERT INTO radio_tracks (id,title,url,filename,is_default) VALUES (?,?,?,?,0)').run(id, title, url, filename);
+  res.json({ success: true, track: { id, title, url } });
+});
+
+app.delete('/api/admin/radio/:id', requireRole(['admin']), (req, res) => {
+  const id = String(req.params.id || '');
+  const row = db.prepare('SELECT * FROM radio_tracks WHERE id=?').get(id);
+  if (!row) return res.status(404).json({ error: 'Track not found.' });
+  db.prepare('DELETE FROM radio_tracks WHERE id=?').run(id);
+  if (row.filename) {
+    try { fs.unlinkSync(path.join(uploadDir, row.filename)); } catch {}
+  }
+  res.json({ success: true });
 });
 
 // ─── Socket.io ────────────────────────────────────────────────────────────────
