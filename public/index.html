@@ -1,126 +1,2414 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aagontuk Express</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="/socket.io/socket.io.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+
 <style>
-:root{--burn:#080604;--black:#0d0906;--tobacco:#14100b;--panel:#1d160f;--panel2:#241a12;--paper:#e8d8b6;--paper2:#cdbb97;--faint:rgba(232,216,182,.42);--line:rgba(232,216,182,.14);--brass:#b88945;--amber:#d19a4a;--green:#8d9272;--red:#7d3f35;--teal:#54766a;--shadow:0 30px 90px rgba(0,0,0,.55)}
-*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--burn);color:var(--paper);font-family:Manrope,system-ui,sans-serif;overflow-x:hidden}body:before{content:"";position:fixed;inset:0;background:url('/assets/platform-bg.svg') center/cover no-repeat;opacity:.96;z-index:-3}body:after{content:"";position:fixed;inset:0;background:radial-gradient(circle at 55% 18%,rgba(209,154,74,.13),transparent 28%),linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.72));z-index:-2;pointer-events:none}.grain{position:fixed;inset:0;opacity:.09;background-image:linear-gradient(transparent 0,rgba(255,255,255,.025) 1px,transparent 2px);background-size:100% 7px;pointer-events:none;z-index:-1}
-button,input,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}.mono{font-family:'Space Mono',monospace}.serif{font-family:Fraunces,Georgia,serif}.smallcap{font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:.13em;font-size:11px;color:var(--brass)}.screen{display:none}.screen.active{display:block}.app{min-height:100vh;display:flex;flex-direction:column}.topbar{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 38px;border-bottom:1px solid var(--line);background:rgba(8,6,4,.78);backdrop-filter:blur(18px);position:sticky;top:0;z-index:30}.brand{display:flex;align-items:baseline;gap:11px}.brand .name{font-family:Fraunces,serif;font-size:28px;font-weight:650;letter-spacing:-.04em}.brand .tag{font-family:'Space Mono';font-weight:700;font-size:11px;letter-spacing:.42em;color:var(--amber)}.nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}.pill,.navbtn{border:1px solid var(--line);background:rgba(232,216,182,.045);color:var(--paper2);border-radius:999px;padding:11px 16px;display:inline-flex;align-items:center;gap:9px}.dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 16px rgba(141,146,114,.7)}.navbtn{background:transparent}.navbtn:hover,.pill:hover{border-color:rgba(184,137,69,.4);color:var(--paper)}.danger{color:#d78b77;border-color:rgba(125,63,53,.45)}.rolebtn{display:none}.rolebtn.show{display:inline-flex}.wrap{width:min(1180px,calc(100% - 44px));margin:0 auto;padding:34px 0 92px}.hall{display:grid;grid-template-columns:1fr;gap:22px}.ticket{position:relative;background:linear-gradient(135deg,#eadbbd,#c9b07f);color:#1b1109;border-radius:16px;box-shadow:var(--shadow);overflow:hidden;border:1px solid rgba(255,232,176,.45);min-height:318px;display:grid;grid-template-columns:1fr 260px}.ticket:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 20%,rgba(255,255,255,.45),transparent 25%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");mix-blend-mode:multiply;opacity:.42}.ticket-main,.ticket-stub{position:relative;z-index:1;padding:38px}.ticket-stub{border-left:2px dashed rgba(20,16,11,.42);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.ticket h1{font-family:Fraunces,serif;font-size:54px;letter-spacing:.02em;line-height:.95;margin:0;color:#1a0e07}.ticket h2{font-family:'Space Mono';letter-spacing:.18em;font-size:14px;margin:8px 0 28px;color:#703322}.ticket-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px;margin-bottom:26px}.field{border-top:1px solid rgba(20,16,11,.24);padding-top:10px}.field label{display:block;font-family:'Space Mono';font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#6b4a28}.field b{font-weight:800;font-size:20px}.boardbtn{border:1px solid rgba(35,20,8,.38);background:linear-gradient(180deg,#253020,#192015);color:#eadbbd;border-radius:8px;padding:15px 22px;font-family:'Space Mono';letter-spacing:.07em;text-transform:uppercase;box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}.boardbtn:hover{filter:brightness(1.12)}.quiet{font-size:13px;color:rgba(20,16,11,.65);margin:14px 0 0}.platform-num{border:1px solid rgba(20,16,11,.24);border-radius:10px;padding:18px 28px;margin:18px 0}.platform-num span{display:block;font-family:'Space Mono';font-size:12px;letter-spacing:.16em}.platform-num strong{font-family:Fraunces;font-size:72px;line-height:.9}.barcode{height:70px;width:74px;background:repeating-linear-gradient(90deg,#1a0e07 0 2px,transparent 2px 6px,#1a0e07 6px 8px,transparent 8px 12px);opacity:.65}.objects{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}.object{min-height:170px;border:1px solid var(--line);background:linear-gradient(145deg,rgba(232,216,182,.075),rgba(8,6,4,.55));border-radius:16px;padding:20px;position:relative;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.28)}.object:after{content:"";position:absolute;inset:auto 18px 18px auto;width:74px;height:74px;border:1px solid rgba(184,137,69,.26);border-radius:16px;opacity:.55}.object h3{font-family:Fraunces;font-size:25px;margin:8px 0 6px;letter-spacing:-.03em}.object p{color:var(--paper2);font-size:14px;line-height:1.55;max-width:260px}.object a,.object button{color:var(--amber);background:transparent;border:0;padding:0;font-family:'Space Mono';font-size:12px;letter-spacing:.08em;text-transform:uppercase}.footerline{margin-top:22px;color:var(--faint);font-size:13px}.footerline button{background:0;border:0;color:var(--faint);padding:0;border-bottom:1px dotted var(--faint)}.radio{position:fixed;right:24px;bottom:22px;z-index:40;width:310px;border:1px solid rgba(184,137,69,.32);background:linear-gradient(160deg,rgba(20,16,11,.96),rgba(8,6,4,.92));box-shadow:0 18px 70px rgba(0,0,0,.65);border-radius:16px;padding:14px}.radio.min{width:66px;height:58px;overflow:hidden}.radioHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.radioTitle{font-family:'Space Mono';font-size:11px;text-transform:uppercase;color:var(--amber);letter-spacing:.11em}.track{font-size:13px;color:var(--paper2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.radioControls{display:flex;align-items:center;gap:8px;margin-top:12px}.iconbtn{height:34px;min-width:34px;border-radius:50%;border:1px solid var(--line);background:rgba(232,216,182,.05);color:var(--paper)}.eq{height:20px;display:flex;align-items:end;gap:3px;margin-left:auto}.eq i{display:block;width:3px;background:var(--brass);height:8px;border-radius:3px}.playing .eq i{animation:eq .9s infinite alternate}.playing .eq i:nth-child(2){animation-delay:.15s}.playing .eq i:nth-child(3){animation-delay:.3s}.playing .eq i:nth-child(4){animation-delay:.45s}@keyframes eq{from{height:5px}to{height:20px}}
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.72);backdrop-filter:blur(12px);z-index:80}.modal.show{display:flex}.panel{width:min(920px,100%);max-height:88vh;overflow:auto;border:1px solid var(--line);background:linear-gradient(145deg,rgba(20,16,11,.98),rgba(8,6,4,.98));border-radius:22px;box-shadow:var(--shadow);padding:26px}.panelHead{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:18px}.panel h2{font-family:Fraunces;font-size:34px;margin:0}.close{background:transparent;border:1px solid var(--line);color:var(--paper);border-radius:999px;width:36px;height:36px}.confGrid{display:grid;grid-template-columns:360px 1fr;gap:18px}.slip,.wallCard{background:linear-gradient(180deg,rgba(232,216,182,.07),rgba(232,216,182,.03));border:1px solid rgba(232,216,182,.14);border-radius:16px;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.24)}.input,.textarea{width:100%;border:1px solid rgba(232,216,182,.16);background:rgba(0,0,0,.2);color:var(--paper);border-radius:10px;padding:12px 13px;outline:none}.input:focus,.textarea:focus{border-color:rgba(184,137,69,.65);box-shadow:0 0 0 3px rgba(184,137,69,.1)}.textarea{resize:vertical;min-height:118px}label.form{display:block;margin:12px 0 7px;color:var(--paper2);font-size:13px}.submit{width:100%;border:0;border-radius:10px;padding:14px;background:linear-gradient(180deg,#8c3d29,#6d2d20);color:#f4dcc0;font-family:'Space Mono';text-transform:uppercase;letter-spacing:.08em;margin-top:14px}.songResults{display:grid;gap:8px;max-height:260px;overflow:auto;margin-top:10px}.songRow{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);background:rgba(0,0,0,.22);border-radius:12px;padding:8px}.songRow img,.songChip img{width:44px;height:44px;object-fit:cover;border-radius:8px}.songRow b{font-size:13px}.songRow small{color:var(--faint)}.songRow button{border:1px solid rgba(184,137,69,.35);background:rgba(184,137,69,.1);color:var(--amber);border-radius:999px;padding:7px 10px;font-size:12px}.songChip{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;border:1px solid rgba(141,146,114,.35);background:rgba(141,146,114,.1);border-radius:12px;padding:10px;margin-top:10px}.wallTools{display:flex;gap:10px;margin-bottom:12px}.wall{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-height:600px;overflow:auto;padding-right:4px}.wallCard{background:#dac69a;color:#1a0e07;border-color:rgba(0,0,0,.18);position:relative}.wallCard .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-family:'Space Mono';font-size:10px;text-transform:uppercase;color:#6d4423}.wallCard p{font-size:14px;line-height:1.6}.songlink{display:flex;gap:8px;align-items:center;border-top:1px solid rgba(0,0,0,.16);padding-top:9px;font-size:12px}.songlink a{color:#4d2b17;font-weight:800}.waiting{min-height:calc(100vh - 76px);display:flex;align-items:center}.waitGrid{display:grid;grid-template-columns:1.05fr .95fr;gap:32px;align-items:center}.waitCopy h2{font-family:Fraunces;font-size:50px;line-height:1;margin:0 0 18px}.lines{border:1px solid var(--line);background:rgba(0,0,0,.22);border-radius:16px;padding:18px;color:var(--paper2)}.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:24px 0}.step{text-align:center;font-family:'Space Mono';font-size:10px;text-transform:uppercase;color:var(--faint);position:relative}.step:before{content:"";display:block;margin:0 auto 8px;width:14px;height:14px;border-radius:50%;border:1px solid var(--line);background:var(--tobacco)}.step.on{color:var(--amber)}.step.on:before{background:var(--amber)}.chat{height:calc(100vh - 76px);display:grid;grid-template-rows:auto 1fr auto;gap:12px;padding:22px}.chatTop,.composer{border:1px solid var(--line);background:rgba(8,6,4,.64);backdrop-filter:blur(14px);border-radius:16px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}.chatPane{border:1px solid var(--line);background:linear-gradient(180deg,rgba(20,16,11,.54),rgba(0,0,0,.4));border-radius:20px;padding:20px;overflow:auto;position:relative}.chatPane:before{content:"";position:absolute;inset:18px;border:1px solid rgba(232,216,182,.06);border-radius:18px;pointer-events:none}.msg{max-width:68%;padding:12px 14px;border-radius:15px;margin:10px 0;position:relative;z-index:1;font-size:14px;line-height:1.5}.mine{margin-left:auto;background:#9a6a26;color:#fff2d1}.theirs{background:rgba(232,216,182,.08);border:1px solid var(--line)}.composer input{flex:1}.send{border:0;border-radius:12px;background:var(--green);padding:12px 16px;color:#111}.game{border:1px solid rgba(184,137,69,.35);background:rgba(184,137,69,.09);color:var(--amber);border-radius:12px;padding:12px 14px}.logsList{display:grid;gap:10px}.logItem{border:1px solid var(--line);border-radius:14px;padding:14px;background:rgba(232,216,182,.045)}.adminGrid{display:grid;grid-template-columns:220px 1fr 380px;gap:16px}.sideMenu{border:1px solid var(--line);border-radius:16px;padding:12px;background:rgba(0,0,0,.24)}.sideMenu button{display:block;width:100%;text-align:left;margin:6px 0;padding:12px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--paper2)}.sideMenu button.active,.sideMenu button:hover{border-color:rgba(184,137,69,.35);background:rgba(184,137,69,.08);color:var(--paper)}.statGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}.stat{border:1px solid var(--line);border-radius:14px;padding:12px;background:rgba(232,216,182,.045)}.stat b{display:block;font-size:22px}.listRow{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}.mini{font-size:12px;color:var(--faint)}@media(max-width:900px){.topbar{height:auto;min-height:72px;padding:16px;align-items:flex-start}.brand .name{font-size:25px}.ticket{grid-template-columns:1fr}.ticket-stub{border-left:0;border-top:2px dashed rgba(20,16,11,.42)}.ticket h1{font-size:40px}.ticket-grid,.objects,.confGrid,.waitGrid,.adminGrid,.statGrid{grid-template-columns:1fr}.wall{grid-template-columns:1fr}.radio{left:12px;right:12px;bottom:12px;width:auto}.wrap{width:min(100% - 24px,1180px);padding-bottom:120px}.chat{height:auto;min-height:calc(100vh - 76px);padding:12px}.msg{max-width:88%}.nav{gap:6px}.navbtn,.pill{padding:9px 11px;font-size:13px}}
+/* ============================================================
+   AAGONTUK EXPRESS — MAIN STYLESHEET
+   ============================================================ */
 
-.adminPane.hidden{display:none!important}.adminList{display:grid;gap:10px;margin-top:14px}.adminCard{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(0,0,0,.18)}
-/* v2 spacing + pro layout fixes */
-.wrap{width:min(1260px,calc(100vw - 72px));padding:28px 0 104px}.topbar{gap:18px}.ticket{max-width:1020px;margin:0 auto}.objects{max-width:1020px;margin:0 auto}.confGrid{grid-template-columns:minmax(330px,390px) minmax(0,1fr);align-items:start}.chat{width:min(1180px,calc(100vw - 72px));height:calc(100svh - 112px);min-height:620px;margin:24px auto 110px;padding:0;gap:14px}.chatTop,.composer{padding:14px 16px}.chatPane{padding:26px}.composer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center}.composer input{min-width:0}.smallPanel{width:min(540px,calc(100vw - 28px))}.modalActions{display:flex;gap:12px}.photoUpload{display:grid;grid-template-columns:86px 1fr;gap:14px;align-items:center}.photoUpload img{width:86px;height:86px;border-radius:18px;object-fit:cover;border:1px solid var(--line);background:rgba(0,0,0,.24)}.songMsg{display:grid;grid-template-columns:52px minmax(0,1fr);gap:11px;align-items:center}.songMsg img{width:52px;height:52px;border-radius:10px;object-fit:cover}.songMsg b{display:block}.songMsg .links{margin-top:5px;display:flex;gap:10px;flex-wrap:wrap}.songMsg a{color:var(--amber);font-family:'Space Mono';font-size:11px;text-transform:uppercase;text-decoration:none}.adminGrid{grid-template-columns:220px minmax(0,1fr) minmax(310px,.85fr)}.sideMenu button{transition:.18s ease}.sideMenu button:not(.active):hover{border-color:rgba(184,137,69,.38);color:var(--paper)}
-@media(max-width:900px){.topbar{height:auto;position:relative;padding:16px 14px;align-items:flex-start;gap:14px;flex-direction:column}.brand .name{font-size:28px}.brand .tag{font-size:10px;letter-spacing:.32em}.nav{width:100%;justify-content:flex-start;gap:8px}.pill,.navbtn{padding:9px 11px;font-size:13px}.wrap{width:calc(100vw - 28px);padding:18px 0 96px}.ticket{grid-template-columns:1fr;min-height:0;border-radius:18px}.ticket-main,.ticket-stub{padding:24px}.ticket-stub{border-left:0;border-top:2px dashed rgba(20,16,11,.42);flex-direction:row;gap:18px;justify-content:space-between}.ticket h1{font-size:34px}.ticket-grid{grid-template-columns:1fr 1fr;gap:12px}.field b{font-size:16px}.platform-num strong{font-size:48px}.objects{grid-template-columns:1fr;gap:12px}.confGrid{grid-template-columns:1fr}.wall{grid-template-columns:1fr;max-height:none}.wallTools{flex-direction:column}.chat{width:calc(100vw - 24px);height:calc(100svh - 112px);min-height:560px;margin:12px auto 96px;gap:10px}.chatTop{align-items:flex-start;flex-direction:column}.chatTop>div:last-child{display:flex;gap:8px;flex-wrap:wrap}.chatPane{padding:14px;border-radius:16px}.msg{max-width:92%;font-size:13px}.composer{grid-template-columns:1fr 1fr;gap:8px}.composer input{grid-column:1/-1}.send{width:100%}.game{width:100%;padding:10px}.radio{right:10px;left:10px;bottom:10px;width:auto}.adminGrid{grid-template-columns:1fr}.sideMenu{display:grid;grid-template-columns:1fr 1fr;gap:8px}.photoUpload{grid-template-columns:70px 1fr}.photoUpload img{width:70px;height:70px}.panel{padding:18px;border-radius:18px}.panel h2{font-size:28px}}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* v3 elite refinement: tighter canvas, ticket-depth, better mobile rhythm */
-body:before{filter:saturate(.86) contrast(1.08) brightness(.86)}
-body:after{background:radial-gradient(circle at 38% 12%,rgba(184,137,69,.11),transparent 24%),radial-gradient(circle at 78% 70%,rgba(84,118,106,.08),transparent 30%),linear-gradient(180deg,rgba(8,6,4,.2),rgba(8,6,4,.78))}
-.topbar{height:72px;padding-inline:clamp(16px,3vw,42px);box-shadow:0 10px 45px rgba(0,0,0,.25)}
-.wrap{width:min(1260px,calc(100% - clamp(28px,5vw,86px)));padding-top:clamp(24px,4vw,54px)}
-.ticket{border-radius:22px;min-height:340px;box-shadow:0 35px 120px rgba(0,0,0,.62),0 0 0 1px rgba(184,137,69,.16)}
-.ticket-main{padding:clamp(28px,4vw,50px)}.ticket h1{font-size:clamp(42px,6vw,68px)}
-.objects{gap:clamp(14px,2vw,22px)}.object{border-radius:20px;min-height:182px;background:linear-gradient(145deg,rgba(232,216,182,.09),rgba(20,16,11,.72));box-shadow:0 20px 70px rgba(0,0,0,.34)}
-.panel{width:min(1080px,calc(100% - 24px));border-radius:24px}.confGrid{grid-template-columns:minmax(320px,390px) 1fr}.wall{max-height:64vh}
-.chat{padding:clamp(12px,2.2vw,30px);width:min(1280px,100%);margin:0 auto}.chatPane{border-radius:24px;padding:clamp(14px,2vw,24px)}.composer{border-radius:18px}
-.msg{max-width:min(72%,650px)}
-.adminGrid{grid-template-columns:230px 1fr 1fr;align-items:start}.sideMenu{position:sticky;top:96px}.adminPane{min-height:360px}.adminPane.hidden{display:none!important}
-.photoUpload{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:center}.photoUpload img{width:96px;height:96px;border-radius:18px;object-fit:cover;background:#0d0906;border:1px solid var(--line)}
-.trackManager{display:grid;gap:10px;margin-top:14px}.trackRow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line);background:rgba(0,0,0,.22);border-radius:14px;padding:12px}.trackRow b{font-size:14px}.trackRow small{color:var(--faint)}
-.fileBtn{position:relative;display:inline-flex;align-items:center;justify-content:center;border:1px dashed rgba(184,137,69,.45);border-radius:16px;padding:16px;background:rgba(184,137,69,.07);color:var(--paper2);min-height:58px}.fileBtn input{position:absolute;inset:0;opacity:0;cursor:pointer}.statusNote{min-height:18px;color:var(--amber);font-size:12px;margin-top:8px}
-@media(max-width:980px){.topbar{height:auto;min-height:68px;align-items:flex-start;padding-block:14px;gap:14px}.brand .name{font-size:24px}.brand .tag{font-size:10px}.nav{gap:8px}.pill,.navbtn{padding:9px 11px;font-size:13px}.wrap{width:calc(100% - 24px);padding-bottom:110px}.ticket{grid-template-columns:1fr;min-height:0}.ticket-stub{border-left:0;border-top:2px dashed rgba(20,16,11,.36);flex-direction:row;gap:16px;padding:20px}.platform-num strong{font-size:48px}.ticket-grid{grid-template-columns:1fr 1fr}.objects{grid-template-columns:1fr}.confGrid,.waitGrid,.adminGrid{grid-template-columns:1fr}.sideMenu{position:relative;top:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}.wall{grid-template-columns:1fr;max-height:none}.radio{left:12px;right:12px;bottom:12px;width:auto}.chat{height:calc(100vh - 86px);padding:10px}.chatTop{flex-wrap:wrap}.composer{grid-template-columns:1fr auto;gap:8px}.composer .navbtn{grid-column:1 / -1;justify-content:center}.msg{max-width:86%}.modal{padding:10px}.panel{max-height:92vh;padding:18px}}
-@media(max-width:560px){.ticket-grid{grid-template-columns:1fr}.ticket-main{padding:24px}.ticket h1{font-size:38px}.ticket-stub{justify-content:space-between}.brand{width:100%;justify-content:space-between}.nav{width:100%;justify-content:flex-start}.pill{order:-1}.chatPane{min-height:0}.adminGrid{gap:12px}}
+:root {
+  --bg: #05070b;
+  --bg2: #071018;
+  --surface: rgba(255,255,255,0.042);
+  --surface2: rgba(255,255,255,0.07);
+  --surface3: rgba(255,255,255,0.10);
+  --border: rgba(198,161,91,0.14);
+  --border2: rgba(198,161,91,0.07);
+  --gold: #c6a15b;
+  --gold-dim: rgba(198,161,91,0.5);
+  --ivory: #f4ead8;
+  --ivory-muted: rgba(244,234,216,0.6);
+  --ivory-faint: rgba(244,234,216,0.32);
+  --green: rgba(120,200,130,0.75);
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'Manrope', system-ui, sans-serif;
+  --radius: 2px;
+}
 
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ivory);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ============================================================
+   BACKGROUND SCENE
+   ============================================================ */
+.bg-scene {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(170deg, #050b12 0%, #05070b 55%, #060a08 100%);
+  overflow: hidden;
+}
+.bg-stars {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(244,234,216,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 10%, rgba(244,234,216,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 45%, rgba(244,234,216,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 8% 65%, rgba(244,234,216,0.18) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 55%, rgba(244,234,216,0.28) 0%, transparent 100%),
+    radial-gradient(1px 1px at 32% 75%, rgba(244,234,216,0.15) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 82%, rgba(244,234,216,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 42% 12%, rgba(244,234,216,0.22) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 30%, rgba(244,234,216,0.15) 0%, transparent 100%);
+}
+.bg-tracks {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 500px; height: 60%; opacity: 0.055;
+}
+.bg-train {
+  position: absolute; bottom: 20%; right: 8%;
+  display: flex; gap: 4px; align-items: center;
+  opacity: 0.12;
+  animation: trainSway 50s ease-in-out infinite;
+}
+.bg-train-car {
+  display: flex; gap: 3px;
+}
+.win {
+  width: 12px; height: 8px;
+  background: #f9c96b;
+  border-radius: 1px;
+  box-shadow: 0 0 6px rgba(249,201,107,0.5);
+  animation: winGlow 4s ease-in-out infinite;
+}
+.win:nth-child(2n) { animation-delay: 0.5s; }
+.win:nth-child(3n) { animation-delay: 1s; opacity: 0.7; }
+
+.bg-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 20%, rgba(5,7,11,0.75) 100%);
+}
+.bg-platform-line {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(198,161,91,0.08), transparent);
+}
+
+@keyframes trainSway {
+  0%,100% { transform: translateX(0); }
+  50% { transform: translateX(12px); }
+}
+@keyframes winGlow {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 68px;
+  display: flex; align-items: center;
+  padding: 0 32px;
+  background: rgba(5,7,11,0.82);
+  border-bottom: 1px solid var(--border2);
+  backdrop-filter: blur(20px);
+  gap: 16px;
+}
+
+.header-logo {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--ivory);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+.header-logo span { color: var(--gold); }
+
+.header-status {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: 20px;
+}
+.status-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(120,200,130,0.6);
+  animation: statusPulse 2.5s ease-in-out infinite;
+}
+.status-dot.resting { background: rgba(244,234,216,0.3); box-shadow: none; animation: none; }
+.status-dot.preparing { background: rgba(198,161,91,0.8); box-shadow: 0 0 6px rgba(198,161,91,0.4); }
+@keyframes statusPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+.status-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ivory-muted);
+}
+.passenger-count {
+  font-size: 11px;
+  color: var(--ivory-faint);
+  letter-spacing: 0.05em;
+}
+
+.header-spacer { flex: 1; }
+
+.header-nav {
+  display: flex; align-items: center; gap: 4px;
+}
+.nav-btn {
+  padding: 7px 14px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--ivory-muted);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.nav-btn:hover { color: var(--ivory); border-color: var(--border); background: var(--surface); }
+.nav-btn.gold { color: var(--gold); }
+.nav-btn.gold:hover { color: var(--ivory); background: var(--gold); border-color: var(--gold); }
+.nav-btn.sign-out { color: var(--ivory-faint); font-size: 11px; }
+
+/* ============================================================
+   MAIN CONTENT WRAPPER
+   ============================================================ */
+.main {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  padding: 68px 24px 120px;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+/* ============================================================
+   DEPARTURE BOARD
+   ============================================================ */
+.departure-board {
+  margin-top: 72px;
+  width: 100%; max-width: 560px;
+  background: rgba(8,12,18,0.88);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 48px 48px 44px;
+  position: relative;
+  backdrop-filter: blur(24px);
+  overflow: hidden;
+}
+.departure-board::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+
+.board-header {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.board-title {
+  font-family: var(--serif);
+  font-size: 42px;
+  font-weight: 300;
+  color: var(--ivory);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.board-line {
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 36px;
+  font-weight: 400;
+}
+
+.board-divider {
+  height: 1px;
+  background: var(--border2);
+  margin-bottom: 28px;
+}
+
+.board-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ivory-faint);
+  margin-bottom: 6px;
+}
+
+.board-service {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--ivory);
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.board-time {
+  font-size: 13px;
+  color: var(--ivory-muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 32px;
+}
+
+/* Flip board time display */
+.flip-display {
+  display: flex; gap: 6px; align-items: center;
+  margin-bottom: 32px;
+}
+.flip-digit {
+  width: 44px; height: 52px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--ivory);
+  letter-spacing: 0;
+  position: relative;
+  overflow: hidden;
+}
+.flip-digit::after {
+  content: '';
+  position: absolute; top: 50%; left: 0; right: 0; height: 1px;
+  background: rgba(0,0,0,0.5);
+}
+.flip-sep {
+  font-family: var(--serif);
+  font-size: 24px;
+  color: var(--gold-dim);
+  line-height: 1;
+  padding-bottom: 4px;
+}
+
+.board-cta {
+  display: flex; flex-direction: column; gap: 16px;
+  align-items: flex-start;
+}
+
+.btn-board {
+  padding: 13px 32px;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--radius);
+  color: #05070b;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.btn-board:hover { opacity: 0.87; }
+.btn-board:active { transform: scale(0.98); }
+.btn-board:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.board-tagline {
+  font-family: var(--serif);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ivory-faint);
+  line-height: 1.5;
+}
+
+/* Countdown display */
+.countdown-block {
+  display: none;
+  flex-direction: column; gap: 8px;
+}
+.countdown-block.show { display: flex; }
+.countdown-label {
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ivory-faint);
+}
+.countdown-time {
+  font-family: var(--serif);
+  font-size: 32px; font-weight: 300;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+.countdown-sub { font-size: 12px; color: var(--ivory-faint); }
+
+/* ============================================================
+   FEATURE CARDS
+   ============================================================ */
+.feature-grid {
+  margin-top: 48px;
+  width: 100%; max-width: 920px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.feature-card {
+  background: rgba(8,12,18,0.75);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 28px 26px;
+  cursor: pointer;
+  transition: border-color 0.22s, background 0.22s, transform 0.18s;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+.feature-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: var(--gold-dim);
+  transform: scaleX(0);
+  transition: transform 0.3s;
+}
+.feature-card:hover {
+  border-color: var(--border);
+  background: rgba(10,15,22,0.9);
+  transform: translateY(-2px);
+}
+.feature-card:hover::before { transform: scaleX(1); }
+
+.card-compartment {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+.card-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--ivory);
+  margin-bottom: 10px;
+  letter-spacing: 0.01em;
+}
+.card-desc {
+  font-size: 13px;
+  color: var(--ivory-faint);
+  line-height: 1.65;
+  font-weight: 300;
+}
+.card-icon {
+  position: absolute;
+  bottom: 22px; right: 22px;
+  font-size: 18px;
+  opacity: 0.2;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer {
+  position: fixed; bottom: 0; left: 0;
+  z-index: 50;
+  padding: 16px 24px;
+}
+.about-link {
+  font-size: 12px;
+  color: var(--ivory-faint);
+  background: none; border: none;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  transition: color 0.2s;
+  text-decoration: none;
+  padding: 0;
+}
+.about-link:hover { color: var(--ivory-muted); }
+
+/* ============================================================
+   MUSIC PLAYER
+   ============================================================ */
+.music-player {
+  position: fixed;
+  bottom: 16px; right: 16px;
+  z-index: 200;
+  background: rgba(8,12,20,0.95);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 14px 16px;
+  min-width: 230px;
+  backdrop-filter: blur(24px);
+  transition: transform 0.3s;
+}
+.music-player.minimized { transform: translateY(calc(100% - 42px)); }
+
+.player-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.player-label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  font-weight: 500;
+}
+.player-minimize {
+  background: none; border: none;
+  color: var(--ivory-faint);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px;
+  transition: color 0.2s;
+}
+.player-minimize:hover { color: var(--ivory-muted); }
+
+.player-track {
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--ivory);
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-track-artist { font-size: 11px; color: var(--ivory-faint); margin-top: 1px; }
+
+.player-controls {
+  display: flex; align-items: center; gap: 8px;
+}
+.player-btn {
+  background: none; border: none;
+  color: var(--ivory-muted);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.18s;
+  font-size: 16px;
+  line-height: 1;
+  display: flex; align-items: center;
+}
+.player-btn:hover { color: var(--ivory); }
+.player-btn.play {
+  width: 32px; height: 32px;
+  background: var(--gold);
+  color: #05070b;
+  border-radius: 50%;
+  font-size: 12px;
+  justify-content: center;
+  transition: opacity 0.18s;
+}
+.player-btn.play:hover { opacity: 0.85; }
+
+.player-volume {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  margin-left: 4px;
+}
+.player-volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+}
+
+/* ============================================================
+   MODALS — BASE
+   ============================================================ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(5,7,11,0.85);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: rgba(8,12,20,0.98);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  width: 100%; max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 40px 36px;
+  position: relative;
+  transform: translateY(12px);
+  transition: transform 0.25s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: none; border: none;
+  color: var(--ivory-faint);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 4px;
+  transition: color 0.18s;
+}
+.modal-close:hover { color: var(--ivory-muted); }
+
+.modal-title {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--ivory);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+.modal-subtitle {
+  font-size: 12px;
+  color: var(--ivory-faint);
+  margin-bottom: 28px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.modal-divider {
+  height: 1px;
+  background: var(--border2);
+  margin: 24px 0;
+}
+
+/* ============================================================
+   CONFESSIONS MODAL
+   ============================================================ */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ivory-faint);
+  margin-bottom: 6px; font-weight: 500;
+}
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--ivory);
+  font-family: var(--sans);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus, .form-textarea:focus { border-color: rgba(198,161,91,0.35); }
+.form-input::placeholder, .form-textarea::placeholder { color: var(--ivory-faint); }
+.form-textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+
+/* Song picker */
+.song-picker-wrapper { position: relative; }
+.song-results {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 10;
+  background: rgba(10,15,22,0.98);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 2px 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+}
+.song-results.show { display: block; }
+.song-result-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  transition: background 0.15s;
+}
+.song-result-item:hover { background: var(--surface2); }
+.song-result-info { flex: 1; min-width: 0; }
+.song-result-title {
+  font-size: 13px; color: var(--ivory);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.song-result-artist {
+  font-size: 11px; color: var(--ivory-faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.song-spotify-link {
+  font-size: 10px; letter-spacing: 0.06em;
+  color: var(--gold-dim);
+  white-space: nowrap;
+}
+
+.song-attached {
+  display: none;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  align-items: center; gap: 12px;
+}
+.song-attached.show { display: flex; }
+.song-attached-info { flex: 1; }
+.song-attached-title { font-size: 13px; color: var(--ivory); }
+.song-attached-artist { font-size: 11px; color: var(--ivory-faint); }
+.song-attached-actions { display: flex; align-items: center; gap: 10px; }
+.song-open-spotify {
+  font-size: 11px; color: var(--gold-dim);
+  cursor: pointer; background: none; border: none;
+  font-family: var(--sans);
+  transition: color 0.18s;
+}
+.song-open-spotify:hover { color: var(--gold); }
+.song-clear {
+  font-size: 16px; color: var(--ivory-faint);
+  cursor: pointer; background: none; border: none;
+  line-height: 1;
+  transition: color 0.18s;
+}
+.song-clear:hover { color: var(--ivory-muted); }
+
+.submit-btn {
+  width: 100%;
+  padding: 12px 20px;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--radius);
+  color: #05070b;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 8px;
+}
+.submit-btn:hover { opacity: 0.87; }
+
+/* Confession feed */
+.confession-feed { margin-top: 28px; }
+.confession-card {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border2);
+}
+.confession-card:last-child { border-bottom: none; }
+.confession-route {
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--gold-dim); margin-bottom: 8px;
+}
+.confession-message {
+  font-family: var(--serif);
+  font-size: 17px; font-weight: 300;
+  color: var(--ivory);
+  line-height: 1.55;
+  margin-bottom: 12px;
+  font-style: italic;
+}
+.confession-song {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  width: fit-content;
+}
+.confession-song-title { font-size: 12px; color: var(--ivory-muted); }
+.confession-song-artist { font-size: 11px; color: var(--ivory-faint); }
+.confession-song-open {
+  font-size: 10px; color: var(--gold-dim);
+  cursor: pointer; background: none; border: none;
+  font-family: var(--sans); letter-spacing: 0.06em;
+  margin-left: 4px;
+  transition: color 0.18s;
+}
+.confession-song-open:hover { color: var(--gold); }
+.empty-state {
+  text-align: center; padding: 40px 0;
+  color: var(--ivory-faint);
+  font-family: var(--serif);
+  font-size: 16px;
+  font-style: italic;
+}
+
+/* ============================================================
+   JOURNEY LOGS MODAL
+   ============================================================ */
+.log-item {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border2);
+}
+.log-item:last-child { border-bottom: none; }
+.log-date {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ivory-faint); margin-bottom: 6px;
+}
+.log-excerpt {
+  font-family: var(--serif);
+  font-size: 16px; font-weight: 300;
+  color: var(--ivory-muted);
+  line-height: 1.5;
+  font-style: italic;
+}
+.log-actions { display: flex; gap: 10px; margin-top: 10px; }
+.log-btn {
+  font-size: 11px; color: var(--ivory-faint);
+  background: none; border: none;
+  cursor: pointer; font-family: var(--sans);
+  letter-spacing: 0.06em;
+  transition: color 0.18s;
+  padding: 0;
+}
+.log-btn:hover { color: var(--ivory-muted); }
+.log-btn.danger:hover { color: #e07070; }
+
+/* ============================================================
+   ABOUT MODAL
+   ============================================================ */
+.about-text {
+  font-family: var(--serif);
+  font-size: 17px; font-weight: 300;
+  color: var(--ivory-muted);
+  line-height: 1.7;
+  font-style: italic;
+  margin-bottom: 28px;
+}
+.creator-card {
+  display: flex; gap: 16px; align-items: flex-start;
+}
+.creator-photo {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.creator-info {}
+.creator-label {
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ivory-faint); margin-bottom: 4px;
+}
+.creator-name {
+  font-family: var(--serif);
+  font-size: 18px; font-weight: 400;
+  color: var(--ivory); margin-bottom: 4px;
+}
+.creator-bio {
+  font-size: 13px; color: var(--ivory-faint);
+  line-height: 1.6;
+}
+
+/* ============================================================
+   BOARDING PASS SCREEN
+   ============================================================ */
+#screen-boarding {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(5,7,11,0.97);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+#screen-boarding.show { display: flex; }
+
+.boarding-pass {
+  width: 100%; max-width: 460px;
+  background: rgba(8,12,20,0.98);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 40px 36px;
+  position: relative;
+  overflow: hidden;
+}
+.boarding-pass::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* Animated rail line */
+.boarding-rail {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  overflow: hidden;
+}
+.boarding-rail-inner {
+  height: 100%;
+  width: 60px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  animation: railSlide 2s linear infinite;
+}
+@keyframes railSlide {
+  0% { transform: translateX(-60px); margin-left: 0; }
+  100% { transform: translateX(460px); }
+}
+
+/* Window lights animation */
+.boarding-windows {
+  display: flex; gap: 6px; margin-bottom: 32px;
+}
+.boarding-window {
+  width: 16px; height: 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.boarding-window-inner {
+  position: absolute; inset: 2px;
+  background: #f9c76b;
+  border-radius: 1px;
+  opacity: 0;
+  animation: windowLight 1.8s ease-in-out infinite;
+}
+.boarding-window:nth-child(1) .boarding-window-inner { animation-delay: 0s; }
+.boarding-window:nth-child(2) .boarding-window-inner { animation-delay: 0.3s; }
+.boarding-window:nth-child(3) .boarding-window-inner { animation-delay: 0.6s; }
+.boarding-window:nth-child(4) .boarding-window-inner { animation-delay: 0.9s; }
+.boarding-window:nth-child(5) .boarding-window-inner { animation-delay: 1.2s; }
+@keyframes windowLight {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.75; }
+}
+
+.bp-label {
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--gold-dim); margin-bottom: 4px;
+}
+.bp-title {
+  font-family: var(--serif);
+  font-size: 30px; font-weight: 300;
+  color: var(--ivory);
+  margin-bottom: 28px;
+  letter-spacing: 0.01em;
+}
+
+.bp-fields {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 20px; margin-bottom: 28px;
+}
+.bp-field {}
+.bp-field-label {
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ivory-faint); margin-bottom: 4px;
+}
+.bp-field-value {
+  font-size: 14px; color: var(--ivory);
+  letter-spacing: 0.02em;
+}
+
+.bp-status {
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+}
+.bp-status-label {
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ivory-faint); margin-bottom: 4px;
+}
+.bp-status-value {
+  font-size: 14px; color: var(--ivory-muted);
+}
+
+.bp-rotating-text {
+  font-family: var(--serif);
+  font-size: 14px; font-style: italic;
+  color: var(--ivory-faint);
+  min-height: 22px;
+  margin-bottom: 28px;
+  transition: opacity 0.4s;
+}
+
+.btn-cancel {
+  padding: 11px 28px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--ivory-muted);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.btn-cancel:hover { border-color: rgba(198,161,91,0.3); color: var(--ivory); }
+
+/* ============================================================
+   CHAT ROOM
+   ============================================================ */
+#screen-chat {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+}
+#screen-chat.show { display: flex; }
+
+.chat-header {
+  height: 60px;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  background: rgba(5,7,11,0.92);
+  border-bottom: 1px solid var(--border2);
+  gap: 12px;
+  flex-shrink: 0;
+  backdrop-filter: blur(16px);
+}
+.chat-header-title {
+  font-family: var(--serif);
+  font-size: 17px; font-weight: 400;
+  color: var(--ivory);
+  flex: 1;
+}
+.chat-header-sub {
+  font-size: 11px; color: var(--ivory-faint);
+}
+.chat-btn {
+  padding: 7px 16px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--ivory-muted);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.chat-btn:hover { border-color: rgba(198,161,91,0.3); color: var(--ivory); }
+.chat-btn.danger:hover { border-color: rgba(200,80,80,0.4); color: #e07070; }
+.chat-btn.gold {
+  border-color: var(--border);
+  color: var(--gold-dim);
+  font-size: 11px;
+}
+.chat-btn.gold:hover { border-color: var(--gold); color: var(--gold); }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.chat-msg {
+  display: flex;
+  max-width: 70%;
+}
+.chat-msg.mine { align-self: flex-end; flex-direction: row-reverse; }
+.chat-msg.theirs { align-self: flex-start; }
+
+.chat-bubble {
+  padding: 12px 16px;
+  border-radius: 2px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ivory);
+  max-width: 100%;
+}
+.chat-msg.mine .chat-bubble {
+  background: rgba(198,161,91,0.12);
+  border: 1px solid rgba(198,161,91,0.18);
+}
+.chat-msg.theirs .chat-bubble {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+}
+
+.chat-input-area {
+  padding: 16px 24px;
+  background: rgba(5,7,11,0.9);
+  border-top: 1px solid var(--border2);
+  display: flex; gap: 12px; align-items: flex-end;
+  flex-shrink: 0;
+  backdrop-filter: blur(16px);
+}
+.chat-textarea {
+  flex: 1;
+  padding: 11px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--ivory);
+  font-family: var(--sans);
+  font-size: 14px;
+  outline: none;
+  resize: none;
+  line-height: 1.5;
+  max-height: 120px;
+  transition: border-color 0.2s;
+}
+.chat-textarea:focus { border-color: rgba(198,161,91,0.3); }
+.chat-textarea::placeholder { color: var(--ivory-faint); }
+.chat-send {
+  padding: 11px 22px;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--radius);
+  color: #05070b;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: opacity 0.18s;
+  flex-shrink: 0;
+}
+.chat-send:hover { opacity: 0.87; }
+
+/* Chat notification for match */
+.chat-system-msg {
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ivory-faint);
+  padding: 8px 0;
+}
+
+/* ============================================================
+   TABLE GAMES PANEL (inside chat)
+   ============================================================ */
+.game-panel {
+  position: absolute; inset: 60px 0 0 0;
+  background: rgba(5,7,11,0.98);
+  z-index: 10;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 32px;
+}
+.game-panel.show { display: flex; }
+
+.game-title {
+  font-family: var(--serif);
+  font-size: 26px; font-weight: 400;
+  color: var(--ivory);
+}
+.game-subtitle { font-size: 13px; color: var(--ivory-faint); }
+.game-choices {
+  display: flex; gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.game-choice-btn {
+  padding: 14px 28px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--ivory);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.game-choice-btn:hover { background: var(--surface3); border-color: rgba(198,161,91,0.3); }
+.game-back {
+  font-size: 12px; color: var(--ivory-faint);
+  background: none; border: none;
+  cursor: pointer; font-family: var(--sans);
+  transition: color 0.18s;
+}
+.game-back:hover { color: var(--ivory-muted); }
+
+/* Tictactoe */
+.ttt-board {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 4px; max-width: 240px; width: 100%;
+}
+.ttt-cell {
+  aspect-ratio: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif);
+  font-size: 32px; font-weight: 300;
+  color: var(--ivory);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ttt-cell:hover:not(.taken) { background: var(--surface3); }
+.ttt-cell.taken { cursor: default; }
+.ttt-status { font-size: 14px; color: var(--ivory-muted); text-align: center; }
+
+/* ============================================================
+   ADMIN PANEL
+   ============================================================ */
+#screen-admin {
+  position: fixed; inset: 0; z-index: 600;
+  background: var(--bg);
+  display: none;
+  overflow-y: auto;
+}
+#screen-admin.show { display: block; }
+
+.admin-header {
+  height: 64px;
+  display: flex; align-items: center;
+  padding: 0 32px;
+  background: rgba(5,7,11,0.95);
+  border-bottom: 1px solid var(--border2);
+  gap: 16px;
+}
+.admin-title {
+  font-family: var(--serif);
+  font-size: 18px; font-weight: 400;
+  color: var(--ivory); flex: 1;
+}
+.admin-close {
+  padding: 7px 16px;
+  background: none; border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--ivory-muted);
+  font-family: var(--sans); font-size: 12px;
+  cursor: pointer; transition: all 0.18s;
+}
+.admin-close:hover { border-color: rgba(198,161,91,0.3); color: var(--ivory); }
+
+.admin-body {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  display: grid; gap: 28px;
+}
+
+.admin-section {
+  background: rgba(8,12,20,0.85);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+.admin-section-title {
+  font-family: var(--serif);
+  font-size: 18px; font-weight: 400;
+  color: var(--ivory);
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border2);
+}
+.admin-save-btn {
+  padding: 10px 24px;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--radius);
+  color: #05070b;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: opacity 0.18s;
+  margin-top: 16px;
+}
+.admin-save-btn:hover { opacity: 0.87; }
+
+.report-row {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border2);
+  display: flex; align-items: flex-start; gap: 16px;
+}
+.report-row:last-child { border-bottom: none; }
+.report-info { flex: 1; }
+.report-reason { font-size: 13px; color: var(--ivory); margin-bottom: 3px; }
+.report-meta { font-size: 11px; color: var(--ivory-faint); }
+.report-actions { display: flex; gap: 8px; }
+.report-action-btn {
+  padding: 5px 14px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--ivory-faint);
+  font-family: var(--sans);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.report-action-btn:hover { border-color: rgba(198,161,91,0.3); color: var(--ivory); }
+.report-action-btn.danger:hover { border-color: rgba(200,80,80,0.35); color: #e07070; }
+
+/* Ad toggle */
+.ad-slot {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  color: var(--ivory-faint);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border2);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { font-size: 13px; color: var(--ivory-muted); }
+.toggle-switch {
+  position: relative; width: 40px; height: 22px;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  left: 3px; top: 3px;
+  background: var(--ivory-faint);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: rgba(198,161,91,0.2); border-color: rgba(198,161,91,0.4); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); background: var(--gold); }
+
+/* ============================================================
+   REPORT MODAL
+   ============================================================ */
+.report-reasons { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.report-reason-btn {
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--ivory-muted);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s;
+}
+.report-reason-btn:hover { border-color: var(--border); color: var(--ivory); }
+.report-reason-btn.selected { border-color: rgba(198,161,91,0.4); color: var(--ivory); background: var(--surface2); }
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+.text-gold { color: var(--gold); }
+.text-muted { color: var(--ivory-muted); }
+.text-faint { color: var(--ivory-faint); }
+.serif { font-family: var(--serif); }
+.hidden { display: none !important; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .feature-grid { grid-template-columns: 1fr 1fr; max-width: 600px; }
+}
+@media (max-width: 600px) {
+  .header { padding: 0 16px; height: 60px; }
+  .header-logo { font-size: 17px; }
+  .header-status { display: none; }
+  .nav-btn { padding: 6px 10px; font-size: 11px; }
+  .departure-board { padding: 32px 24px 28px; margin-top: 52px; }
+  .board-title { font-size: 32px; }
+  .feature-grid { grid-template-columns: 1fr; max-width: 100%; }
+  .modal { padding: 28px 20px; }
+  .form-row { grid-template-columns: 1fr; }
+  .music-player { min-width: 200px; right: 12px; bottom: 12px; }
+  .bp-fields { grid-template-columns: 1fr; }
+  .chat-msg { max-width: 88%; }
+  .admin-body { padding: 24px 16px; }
+  .flip-digit { width: 36px; height: 44px; font-size: 22px; }
+}
 </style>
 </head>
-<body><div class="grain"></div>
-<div class="app">
-<header class="topbar">
-  <div class="brand"><div class="name">Aagontuk</div><div class="tag">EXPRESS</div></div>
-  <div class="nav">
-    <div class="pill"><span class="dot" id="statusDot"></span><span id="stateLabel">Boarding Now</span></div>
-    <div class="pill">◌ <span id="onlineCount">1</span> passengers</div>
-    <button class="navbtn" data-open="home">Departure Hall</button>
-    <button class="navbtn" data-open="audio">Audio</button>
-    <button class="navbtn" data-open="confessions">Confessions</button>
-    <button class="navbtn" data-open="logs">Logs</button>
-    <button class="navbtn rolebtn" id="adminOpen" data-open="admin">Control Room</button>
-    <button class="navbtn danger" id="signOut">Sign out</button>
+<body>
+
+<!-- ── BACKGROUND ── -->
+<div class="bg-scene">
+  <div class="bg-stars"></div>
+  <svg class="bg-tracks" viewBox="0 0 500 400" preserveAspectRatio="none" style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:400px;height:55%;opacity:0.055;">
+    <line x1="232" y1="400" x2="200" y2="0" stroke="#f4ead8" stroke-width="1.5"/>
+    <line x1="268" y1="400" x2="300" y2="0" stroke="#f4ead8" stroke-width="1.5"/>
+    <line x1="202" y1="370" x2="298" y2="370" stroke="#f4ead8" stroke-width="1.8"/>
+    <line x1="204" y1="338" x2="296" y2="338" stroke="#f4ead8" stroke-width="1.6"/>
+    <line x1="206" y1="306" x2="294" y2="306" stroke="#f4ead8" stroke-width="1.4"/>
+    <line x1="208" y1="274" x2="292" y2="274" stroke="#f4ead8" stroke-width="1.2"/>
+    <line x1="210" y1="242" x2="290" y2="242" stroke="#f4ead8" stroke-width="1.0"/>
+    <line x1="212" y1="210" x2="288" y2="210" stroke="#f4ead8" stroke-width="0.8"/>
+    <line x1="214" y1="178" x2="286" y2="178" stroke="#f4ead8" stroke-width="0.6"/>
+    <line x1="216" y1="146" x2="284" y2="146" stroke="#f4ead8" stroke-width="0.4"/>
+    <line x1="218" y1="114" x2="282" y2="114" stroke="#f4ead8" stroke-width="0.3"/>
+  </svg>
+  <div class="bg-train">
+    <div class="bg-train-car">
+      <div class="win"></div><div class="win"></div><div class="win"></div><div class="win"></div>
+    </div>
+    <div class="bg-train-car" style="margin-left:8px;">
+      <div class="win"></div><div class="win"></div><div class="win"></div>
+    </div>
   </div>
-</header>
-
-<main id="home" class="screen active"><div class="wrap hall">
-  <section class="ticket">
-    <div class="ticket-main">
-      <div class="smallcap">Kamalapur night line</div>
-      <h1>Aagontuk Express</h1><h2>BOARDING PASS</h2>
-      <div class="ticket-grid"><div class="field"><label>Route</label><b>Stranger Conversation</b></div><div class="field"><label>Platform</label><b>7</b></div><div class="field"><label>Seat</label><b id="seatState">Pending</b></div><div class="field"><label>Window</label><b>19:00 — 05:00</b></div></div>
-      <button id="boardBtn" class="boardbtn">Board Stranger</button><p class="quiet" id="boardHint">A seat beside the window is kept empty until someone arrives.</p>
-    </div><div class="ticket-stub"><div class="smallcap">PX-07</div><div class="barcode"></div><div class="platform-num"><span>PLATFORM</span><strong>7</strong></div><div class="smallcap">Keep this stub</div></div>
-  </section>
-  <section class="objects">
-    <div class="object"><div class="smallcap">Compartment 01</div><h3>Station Confessions</h3><p>Leave something from one heart to another, with a song attached.</p><button data-open="confessions">Enter Wall →</button></div>
-    <div class="object"><div class="smallcap">Compartment 02</div><h3>Onboard Audio</h3><p>Four quiet tracks for the ride. Play once and let it sit in the background.</p><button data-open="audio">Open Radio →</button></div>
-    <div class="object"><div class="smallcap">Compartment 03</div><h3>Journey Logs</h3><p>Keep the chapters that felt worth saving after a quiet ride.</p><button data-open="logs">View Logs →</button></div>
-  </section>
-  <div class="footerline"><button id="aboutOpen">About Aagontuk</button></div>
-</div></main>
-
-<main id="waiting" class="screen"><div class="wrap waiting"><div class="waitGrid"><section class="ticket"><div class="ticket-main"><h1>Aagontuk Express</h1><h2>BOARDING PASS</h2><div class="ticket-grid"><div class="field"><label>Route</label><b>Stranger Conversation</b></div><div class="field"><label>Platform</label><b>7</b></div><div class="field"><label>Passenger</label><b>Anonymous</b></div><div class="field"><label>Status</label><b>Waiting</b></div></div></div><div class="ticket-stub"><div class="platform-num"><span>PLATFORM</span><strong>7</strong></div><div class="smallcap">Seat pending</div></div></section><section class="waitCopy"><h2>Waiting for another passenger to board.</h2><div class="lines" id="waitLine">The carriage is quiet.</div><div class="timeline"><div class="step on">Waiting</div><div class="step">Matching</div><div class="step">Boarding</div><div class="step">In Conversation</div></div><button id="cancelBoard" class="submit">Cancel Boarding</button></section></div></div></main>
-
-<main id="chat" class="screen"><div class="chat"><div class="chatTop"><div><span class="smallcap">Carriage 07</span> <span class="dot"></span> <span id="chatTitle">Passenger connected</span></div><div><button id="endChat" class="navbtn danger">End Chat</button><button id="reportBtn" class="navbtn">Report</button></div></div><div id="chatPane" class="chatPane"></div><div class="composer"><input id="msgInput" class="input" placeholder="Say something quietly..."/><button id="chatSongBtn" class="game">Send song</button><button id="gameBtn" class="game">Play a round</button><button id="sendBtn" class="send">➜</button></div></div></main>
-
-<main id="confessions" class="screen"><div class="wrap"><div class="panelHead"><div><div class="smallcap">Station Confessions</div><h2 class="serif" style="font-size:42px;margin:4px 0">Small things people left on the platform.</h2></div></div><div class="confGrid"><section class="slip"><div class="smallcap">Station Confession Slip</div><label class="form">From</label><input id="cfFrom" class="input" placeholder="Who are you?" maxlength="60"><label class="form">To</label><input id="cfTo" class="input" placeholder="Who is this for?" maxlength="60"><label class="form">Message</label><textarea id="cfMsg" class="textarea" maxlength="500" placeholder="Write what you could not say directly."></textarea><label class="form">Attach a song</label><input id="songSearch" class="input" placeholder="Search a song or artist"><div id="songResults" class="songResults"></div><div id="selectedSong"></div><button id="leaveConfession" class="submit">Leave on the platform</button><div class="mini" id="cfNotice"></div></section><section><div class="wallTools"><input id="wallSearch" class="input" placeholder="Search a name, song, artist, or line"><button id="refreshWall" class="navbtn">Refresh</button></div><div id="confessionWall" class="wall"></div></section></div></div></main>
-
-<main id="logs" class="screen"><div class="wrap"><div class="smallcap">Chapter Ledger</div><h2 class="serif" style="font-size:42px;margin:4px 0 18px">Journey Logs</h2><div id="logsList" class="logsList"><div class="logItem">No chapters kept yet. Some rides are meant to pass quietly.</div></div></div></main>
-
-<main id="admin" class="screen"><div class="wrap"><div class="smallcap">Control Room</div><h2 class="serif" style="font-size:42px;margin:4px 0 18px">Railway control for Aagontuk.</h2><div id="statGrid" class="statGrid"></div><div class="adminGrid"><aside class="sideMenu"><button class="active" data-admin-tab="moderators">Moderators</button><button data-admin-tab="reports">Reports</button><button data-admin-tab="confessions">Confessions</button><button data-admin-tab="ads">Ads</button><button data-admin-tab="radio">Onboard Radio</button><button data-admin-tab="creator">Creator Profile</button><button data-admin-tab="settings">Settings</button></aside><section class="slip adminPane" data-admin-pane="moderators"><div class="smallcap">Moderator management</div><label class="form">Grant access to trusted moderator</label><input id="modEmail" class="input" placeholder="Enter moderator email"><button id="grantMod" class="submit">Grant Moderator Access</button><div id="modList" style="margin-top:14px"></div></section><section class="slip adminPane hidden" data-admin-pane="radio"><div class="smallcap">Onboard Radio</div><p class="mini">Upload, remove, and control the background radio tracks. Upload from device, no URL needed.</p><label class="form">Upload track from device</label><label class="fileBtn">Drop a song here or click to choose<input id="radioUpload" type="file" accept="audio/*"></label><div id="radioUploadNote" class="statusNote"></div><div class="trackManager" id="radioTrackList"></div></section><section class="slip adminPane" data-admin-pane="creator"><div class="smallcap">Creator Profile</div><label class="form">Creator photo</label><div class="photoUpload"><img id="creatorPreview" alt="Creator preview"><div><input id="creatorPhotoFile" type="file" accept="image/*" class="input"><input id="creatorPhoto" type="hidden"><div class="mini">Upload directly from device. The image is compressed before saving.</div></div></div><label class="form">Creator name</label><input id="creatorName" class="input"><label class="form">Creator bio</label><textarea id="creatorBio" class="textarea"></textarea><label class="form">About text</label><textarea id="aboutText" class="textarea"></textarea><button id="saveSettings" class="submit">Save Changes</button><div id="adminNotice" class="mini"></div></section><section class="slip adminPane hidden" data-admin-pane="reports"><div class="smallcap">Reports</div><div id="adminReports" class="adminList">Open reports will appear here.</div></section><section class="slip adminPane hidden" data-admin-pane="confessions"><div class="smallcap">Confessions Review</div><div id="adminConfessions" class="adminList">Latest public slips will appear here.</div></section><section class="slip adminPane hidden" data-admin-pane="ads"><div class="smallcap">Ads</div><p class="mini">Ad slots are preserved for future placement. No public layout changes until you activate them.</p><button class="navbtn" id="previewAds">Preview ad slots</button></section><section class="slip adminPane hidden" data-admin-pane="settings"><div class="smallcap">Settings</div><p class="mini">Platform status, confessions, chat, audio, role detection, and public wall are active.</p><button class="navbtn" id="reloadAdmin">Reload Control Room</button></section></div></div></main>
+  <div class="bg-vignette"></div>
+  <div class="bg-platform-line"></div>
 </div>
 
-<div id="aboutModal" class="modal"><div class="panel"><div class="panelHead"><div><div class="smallcap">A small note</div><h2>About Aagontuk</h2></div><button class="close" data-close="aboutModal">×</button></div><p id="aboutCopy" style="white-space:pre-line;color:var(--paper2);line-height:1.8"></p><div class="slip" style="display:flex;gap:14px;align-items:center"><img id="creatorImg" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;background:#201811;border:1px solid var(--line)"><div><div class="smallcap">Created by</div><h3 id="creatorNameView" class="serif" style="margin:3px 0;font-size:24px"></h3><div id="creatorBioView" style="color:var(--paper2)"></div></div></div></div></div>
+<!-- ── HEADER ── -->
+<header class="header">
+  <div class="header-logo">Aagontuk <span>Express</span></div>
+  <div class="header-status">
+    <div class="status-dot" id="statusDot"></div>
+    <div class="status-label" id="statusLabel">—</div>
+  </div>
+  <div class="passenger-count" id="passengerCount" style="margin-left:8px;"></div>
+  <div class="header-spacer"></div>
+  <nav class="header-nav">
+    <button class="nav-btn gold" onclick="openMusic()">♪ Audio</button>
+    <button class="nav-btn" onclick="openConfessions()">Confessions</button>
+    <button class="nav-btn" onclick="openLogs()">Logs</button>
+    <button class="nav-btn" id="adminBtn" style="display:none" onclick="openAdmin()">Control Room</button>
+    <button class="nav-btn sign-out" onclick="signOut()">Sign out</button>
+  </nav>
+</header>
 
-<div id="radio" class="radio"><div class="radioHead"><div><div class="radioTitle">Onboard Radio</div><div id="radioTrack" class="track">aces</div></div><button id="minRadio" class="iconbtn">⌃</button></div><div class="radioControls"><button id="playAudio" class="iconbtn">▶</button><button id="nextAudio" class="iconbtn">⏭</button><input id="volAudio" type="range" min="0" max="1" step="0.01" value="0.55" style="width:90px"><div class="eq"><i></i><i></i><i></i><i></i></div></div><audio id="audioEl" preload="none"></audio></div>
+<!-- ── MAIN ── -->
+<main class="main">
 
+  <!-- DEPARTURE BOARD -->
+  <div class="departure-board" id="mainBoard">
+    <div class="board-header">Platform · Kamalapur Night Line</div>
+    <div class="board-title">Aagontuk<br>Express</div>
+    <div class="board-line">Kamalapur Night Line</div>
+    <div class="board-divider"></div>
+    <div class="board-label">Next Departure</div>
+    <div class="board-service">Stranger Conversation</div>
+
+    <!-- Current time flip display -->
+    <div class="flip-display" id="flipDisplay">
+      <div class="flip-digit" id="fh1">0</div>
+      <div class="flip-digit" id="fh2">0</div>
+      <div class="flip-sep">:</div>
+      <div class="flip-digit" id="fm1">0</div>
+      <div class="flip-digit" id="fm2">0</div>
+    </div>
+
+    <!-- Open hours note -->
+    <div class="board-time">19:00 — 05:00 · Bangladesh Time</div>
+
+    <!-- CTA area -->
+    <div class="board-cta" id="boardCta">
+      <button class="btn-board" id="btnBoard" onclick="startBoarding()">Board Stranger</button>
+      <div class="board-tagline">A seat beside the window is kept empty until someone arrives.</div>
+    </div>
+
+    <!-- Countdown (when closed) -->
+    <div class="countdown-block" id="countdownBlock">
+      <div class="countdown-label">Opens in</div>
+      <div class="countdown-time" id="countdownTime">—</div>
+      <div class="countdown-sub">The platform is resting.</div>
+    </div>
+  </div>
+
+  <!-- FEATURE CARDS -->
+  <div class="feature-grid">
+    <div class="feature-card" onclick="openConfessions()">
+      <div class="card-compartment">Compartment 01</div>
+      <div class="card-title">Station Confessions</div>
+      <div class="card-desc">Leave something from one heart to another, with a song attached.</div>
+      <div class="card-icon">✉</div>
+    </div>
+    <div class="feature-card" onclick="openMusic()">
+      <div class="card-compartment">Compartment 02</div>
+      <div class="card-title">Onboard Audio</div>
+      <div class="card-desc">Four quiet tracks for the ride. Play in the background while the platform stays open.</div>
+      <div class="card-icon">♪</div>
+    </div>
+    <div class="feature-card" onclick="openLogs()">
+      <div class="card-compartment">Compartment 03</div>
+      <div class="card-title">Journey Logs</div>
+      <div class="card-desc">Keep the chapters that felt worth saving.</div>
+      <div class="card-icon">◇</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <button class="about-link" onclick="openAbout()">About Aagontuk</button>
+</footer>
+
+<!-- ============================================================
+     MUSIC PLAYER
+     ============================================================ -->
+<div class="music-player" id="musicPlayer">
+  <div class="player-header">
+    <span class="player-label">Onboard Audio</span>
+    <button class="player-minimize" id="playerMinBtn" onclick="togglePlayer()" title="Minimize">−</button>
+  </div>
+  <div class="player-track" id="playerTrackName">Aces</div>
+  <div class="player-track-artist" id="playerTrackArtist">Quiet Tracks</div>
+  <div class="player-controls">
+    <button class="player-btn" onclick="prevTrack()" title="Previous">◁</button>
+    <button class="player-btn play" id="playerPlayBtn" onclick="togglePlay()" title="Play">▶</button>
+    <button class="player-btn" onclick="nextTrack()" title="Next">▷</button>
+    <input type="range" class="player-volume" id="playerVol" min="0" max="1" step="0.05" value="0.6" oninput="setVolume(this.value)" title="Volume">
+  </div>
+</div>
+<audio id="audioEl"></audio>
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- CONFESSIONS MODAL -->
+<div class="modal-overlay" id="modalConfessions">
+  <div class="modal" style="max-width:600px;">
+    <button class="modal-close" onclick="closeModal('modalConfessions')">✕</button>
+    <div class="modal-title">Station Confessions</div>
+    <div class="modal-subtitle">Leave something from one heart to another</div>
+
+    <!-- Form -->
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">From</label>
+        <input class="form-input" id="confFrom" placeholder="A wanderer">
+      </div>
+      <div class="form-group">
+        <label class="form-label">To</label>
+        <input class="form-input" id="confTo" placeholder="Someone somewhere">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Message</label>
+      <textarea class="form-textarea" id="confMsg" placeholder="Say what you couldn't say out loud."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Choose a Song</label>
+      <div class="song-picker-wrapper">
+        <input class="form-input" id="songSearch" placeholder="Search a song or artist…" oninput="searchSongs(this.value)" autocomplete="off">
+        <div class="song-results" id="songResults"></div>
+      </div>
+      <div class="song-attached" id="songAttached">
+        <div class="song-attached-info">
+          <div class="song-attached-title" id="attachedTitle"></div>
+          <div class="song-attached-artist" id="attachedArtist"></div>
+        </div>
+        <div class="song-attached-actions">
+          <button class="song-open-spotify" id="attachedSpotify" onclick="openSpotify()" title="Open on Spotify">Open on Spotify</button>
+          <button class="song-clear" onclick="clearSong()" title="Remove">✕</button>
+        </div>
+      </div>
+    </div>
+    <button class="submit-btn" onclick="submitConfession()">Leave Confession</button>
+
+    <div class="modal-divider"></div>
+
+    <!-- Feed -->
+    <div class="confession-feed" id="confessionFeed"></div>
+  </div>
+</div>
+
+<!-- JOURNEY LOGS MODAL -->
+<div class="modal-overlay" id="modalLogs">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalLogs')">✕</button>
+    <div class="modal-title">Journey Logs</div>
+    <div class="modal-subtitle">Chapters worth saving</div>
+    <div id="logsFeed"></div>
+  </div>
+</div>
+
+<!-- ABOUT MODAL -->
+<div class="modal-overlay" id="modalAbout">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modalAbout')">✕</button>
+    <div class="modal-title">About Aagontuk</div>
+    <div class="modal-divider"></div>
+    <p class="about-text" id="aboutText">Aagontuk Express is just a small night train on the internet. You come in, sit for a while, maybe talk to a stranger, maybe leave a confession, maybe just play a song in the background. Nothing too serious. No profile drama, no followers, no trying to look cool. Just a quiet little platform for random conversations and things people usually keep to themselves.</p>
+    <div class="modal-divider"></div>
+    <div class="creator-card">
+      <img class="creator-photo" id="creatorPhoto" src="" alt="">
+      <div class="creator-info">
+        <div class="creator-label">Created by</div>
+        <div class="creator-name" id="creatorName">Creator</div>
+        <div class="creator-bio" id="creatorBio">Building quiet corners of the internet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT MODAL -->
+<div class="modal-overlay" id="modalReport">
+  <div class="modal" style="max-width:400px;">
+    <button class="modal-close" onclick="closeModal('modalReport')">✕</button>
+    <div class="modal-title">Report</div>
+    <div class="modal-subtitle">What is the issue?</div>
+    <div class="report-reasons" id="reportReasons">
+      <button class="report-reason-btn" onclick="selectReport(this,'Inappropriate language')">Inappropriate language</button>
+      <button class="report-reason-btn" onclick="selectReport(this,'Harassment')">Harassment</button>
+      <button class="report-reason-btn" onclick="selectReport(this,'Spam or advertising')">Spam or advertising</button>
+      <button class="report-reason-btn" onclick="selectReport(this,'Other')">Other</button>
+    </div>
+    <button class="submit-btn" onclick="submitReport()">Submit Report</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     BOARDING PASS SCREEN
+     ============================================================ -->
+<div id="screen-boarding">
+  <div class="boarding-pass">
+    <div class="boarding-windows">
+      <div class="boarding-window"><div class="boarding-window-inner"></div></div>
+      <div class="boarding-window"><div class="boarding-window-inner"></div></div>
+      <div class="boarding-window"><div class="boarding-window-inner"></div></div>
+      <div class="boarding-window"><div class="boarding-window-inner"></div></div>
+      <div class="boarding-window"><div class="boarding-window-inner"></div></div>
+    </div>
+    <div class="bp-label">Aagontuk Express</div>
+    <div class="bp-title">Boarding Pass</div>
+    <div class="bp-fields">
+      <div class="bp-field">
+        <div class="bp-field-label">Route</div>
+        <div class="bp-field-value">Stranger Conversation</div>
+      </div>
+      <div class="bp-field">
+        <div class="bp-field-label">Platform</div>
+        <div class="bp-field-value">7</div>
+      </div>
+      <div class="bp-field">
+        <div class="bp-field-label">Seat</div>
+        <div class="bp-field-value" id="bpSeat">Pending</div>
+      </div>
+      <div class="bp-field">
+        <div class="bp-field-label">Passenger</div>
+        <div class="bp-field-value">Anonymous</div>
+      </div>
+    </div>
+    <div class="bp-status">
+      <div class="bp-status-label">Status</div>
+      <div class="bp-status-value" id="bpStatus">Waiting for another passenger</div>
+    </div>
+    <div class="bp-rotating-text" id="bpRotating">The carriage is quiet.</div>
+    <button class="btn-cancel" onclick="cancelBoarding()">Cancel Boarding</button>
+    <div class="boarding-rail"><div class="boarding-rail-inner"></div></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CHAT SCREEN
+     ============================================================ -->
+<div id="screen-chat">
+  <div class="chat-header">
+    <div>
+      <div class="chat-header-title">Aagontuk Express · Carriage</div>
+      <div class="chat-header-sub">Anonymous · Platform 7</div>
+    </div>
+    <button class="chat-btn gold" onclick="toggleGame()">Play a round</button>
+    <button class="chat-btn" onclick="openModal('modalReport')">Report</button>
+    <button class="chat-btn danger" onclick="endChat()">End Journey</button>
+
+    <!-- Game panel (overlay inside chat) -->
+    <div class="game-panel" id="gamePanel" style="position:absolute;inset:60px 0 0 0;">
+      <div id="gameSelector">
+        <div class="game-title">Table Games</div>
+        <div class="game-subtitle" style="margin-bottom:24px;">Choose a game to play with your co-passenger.</div>
+        <div class="game-choices">
+          <button class="game-choice-btn" onclick="startTTT()">Tic-Tac-Toe</button>
+          <button class="game-choice-btn" onclick="startRPS()">Rock Paper Scissors</button>
+        </div>
+        <button class="game-back" style="margin-top:20px;" onclick="toggleGame()">Back to chat</button>
+      </div>
+      <!-- Tic Tac Toe -->
+      <div id="gameTTT" style="display:none;flex-direction:column;align-items:center;gap:16px;">
+        <div class="game-title">Tic-Tac-Toe</div>
+        <div class="ttt-board" id="tttBoard"></div>
+        <div class="ttt-status" id="tttStatus">Your turn (X)</div>
+        <div style="display:flex;gap:12px;">
+          <button class="game-choice-btn" onclick="resetTTT()">New Game</button>
+          <button class="game-back" onclick="backToGameSelector()">Other Games</button>
+        </div>
+      </div>
+      <!-- Rock Paper Scissors -->
+      <div id="gameRPS" style="display:none;flex-direction:column;align-items:center;gap:16px;">
+        <div class="game-title">Rock Paper Scissors</div>
+        <div class="game-choices" id="rpsChoices">
+          <button class="game-choice-btn" onclick="playRPS('rock')">🪨 Rock</button>
+          <button class="game-choice-btn" onclick="playRPS('paper')">📄 Paper</button>
+          <button class="game-choice-btn" onclick="playRPS('scissors')">✂️ Scissors</button>
+        </div>
+        <div class="ttt-status" id="rpsResult"></div>
+        <button class="game-back" onclick="backToGameSelector()">Other Games</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-messages" id="chatMessages"></div>
+
+  <div class="chat-input-area">
+    <textarea class="chat-textarea" id="chatInput" placeholder="Write something…" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+    <button class="chat-send" onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     ADMIN SCREEN
+     ============================================================ -->
+<div id="screen-admin">
+  <div class="admin-header">
+    <div class="admin-title">Admin Control Room</div>
+    <button class="admin-close" onclick="closeAdmin()">← Back to Platform</button>
+  </div>
+  <div class="admin-body">
+
+    <!-- Reports -->
+    <div class="admin-section">
+      <div class="admin-section-title">Reports</div>
+      <div id="adminReports">
+        <div class="report-row">
+          <div class="report-info">
+            <div class="report-reason">Inappropriate language</div>
+            <div class="report-meta">Session #1042 · May 12 · 23:14</div>
+          </div>
+          <div class="report-actions">
+            <button class="report-action-btn">Dismiss</button>
+            <button class="report-action-btn danger">Ban User</button>
+          </div>
+        </div>
+        <div class="report-row">
+          <div class="report-info">
+            <div class="report-reason">Spam or advertising</div>
+            <div class="report-meta">Session #1039 · May 11 · 20:02</div>
+          </div>
+          <div class="report-actions">
+            <button class="report-action-btn">Dismiss</button>
+            <button class="report-action-btn danger">Ban User</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ads -->
+    <div class="admin-section">
+      <div class="admin-section-title">Ads</div>
+      <div class="toggle-row">
+        <span class="toggle-label">Enable ads on homepage</span>
+        <label class="toggle-switch"><input type="checkbox" id="adHome"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Enable ads in confession feed</span>
+        <label class="toggle-switch"><input type="checkbox" id="adConf"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="ad-slot" style="margin-top:16px;">Ad slot preview — 728×90</div>
+    </div>
+
+    <!-- Creator Profile -->
+    <div class="admin-section">
+      <div class="admin-section-title">Creator Profile</div>
+      <div class="form-group">
+        <label class="form-label">Creator Photo URL</label>
+        <input class="form-input" id="adminPhoto" placeholder="https://…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Creator Name</label>
+        <input class="form-input" id="adminName" placeholder="Your name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Creator Bio</label>
+        <input class="form-input" id="adminBio" placeholder="Short bio">
+      </div>
+      <div class="form-group">
+        <label class="form-label">About Text</label>
+        <textarea class="form-textarea" id="adminAboutText" style="min-height:120px;">Aagontuk Express is just a small night train on the internet. You come in, sit for a while, maybe talk to a stranger, maybe leave a confession, maybe just play a song in the background. Nothing too serious. No profile drama, no followers, no trying to look cool. Just a quiet little platform for random conversations and things people usually keep to themselves.</textarea>
+      </div>
+      <button class="admin-save-btn" onclick="saveSettings()">Save Changes</button>
+    </div>
+
+    <!-- Moderators -->
+    <div class="admin-section">
+      <div class="admin-section-title">Moderators</div>
+      <div class="form-group">
+        <label class="form-label">Add Moderator Email</label>
+        <div style="display:flex;gap:10px;">
+          <input class="form-input" id="modEmail" placeholder="email@example.com" style="flex:1;">
+          <button class="admin-save-btn" style="margin-top:0;white-space:nowrap;" onclick="addModerator()">Add</button>
+        </div>
+      </div>
+      <div id="modList" style="margin-top:8px;color:var(--ivory-faint);font-size:13px;">No moderators added.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
 <script>
-const token=localStorage.getItem('token'); if(!token) location.href='/auth.html';
-const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s); let me=null, socket=null, selectedSong=null, audioIndex=0, history=[];
-let tracks=[{id:'default-aces',title:'aces',src:'/music/aces.mp3'},{id:'default-escape',title:'escape',src:'/music/escape.mp3'},{id:'default-heartheal',title:'heartheal',src:'/music/heartheal.mp3'},{id:'default-love',title:'love',src:'/music/love.mp3'}];
-function show(id){$$('.screen').forEach(x=>x.classList.remove('active')); $('#'+id).classList.add('active'); if(id==='confessions') loadConfessions(); if(id==='admin') loadAdmin(); if(id==='logs') renderLogs();}
-$$('[data-open]').forEach(b=>b.onclick=()=>show(b.dataset.open)); $$('[data-admin-tab]').forEach(b=>b.onclick=()=>openAdminTab(b.dataset.adminTab)); function openAdminTab(tab){$$('[data-admin-tab]').forEach(x=>x.classList.toggle('active',x.dataset.adminTab===tab)); $$('[data-admin-pane]').forEach(x=>x.classList.toggle('hidden',x.dataset.adminPane!==tab)); if(tab==='reports') loadReports(); if(tab==='confessions') loadAdminConfessions(); if(tab==='radio') loadRadioTracks();} $('#signOut').onclick=()=>{localStorage.removeItem('token'); location.href='/auth.html'};
-async function api(url,opts={}){opts.headers={...(opts.headers||{}),'Content-Type':'application/json',Authorization:'Bearer '+token}; const r=await fetch(url,opts); if(!r.ok) throw new Error((await r.json().catch(()=>({error:r.statusText}))).error||r.statusText); return r.json();}
-function bdState(){const now=new Date();const bd=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Dhaka'}));const h=bd.getHours()+bd.getMinutes()/60;if(h>=19||h<5)return ['Boarding Now',true]; if(h>=17)return ['Preparing to Board',false]; return ['Platform Resting',false];}
-function refreshState(){const [label,open]=bdState(); $('#stateLabel').textContent=label; $('#statusDot').style.background=open?'var(--green)':'var(--amber)'; $('#boardBtn').disabled=!open; $('#seatState').textContent=open?'Pending':'Closed'; $('#boardHint').textContent=open?'A seat beside the window is kept empty until someone arrives.':(label==='Preparing to Board'?'Lanterns are warming. Boarding begins at 19:00.':'The platform is resting. Boarding opens at 19:00.');}
-setInterval(refreshState,60000); refreshState();
-async function init(){try{me=await api('/api/me'); if(me.role==='admin'||me.role==='moderator') $('#adminOpen').classList.add('show'); socket=io(); bindSocket(); loadSettings(); loadRadioTracks();}catch(e){localStorage.removeItem('token'); location.href='/auth.html'}}
-function bindSocket(){socket.emit('auth',{token}); socket.on('online_count',n=>$('#onlineCount').textContent=Math.max(1,n)); socket.on('waiting',()=>show('waiting')); socket.on('search_cancelled',()=>show('home')); socket.on('matched',d=>{show('chat'); $('#chatTitle').textContent='Passenger connected · Chapter '+(d.chapter||''); addSystem('Seat confirmed. Passenger boarded. Opening carriage.');}); socket.on('message',m=>addMsg(m.content,false)); socket.on('message_sent',m=>addMsg(m.content,true)); socket.on('stranger_left',()=>addSystem('The other passenger left the carriage.')); socket.on('history',h=>{history=h||[];renderLogs()}); socket.on('report_result',r=>alert(r.success?'Report sent.':'Report failed.')); socket.on('game_invite',()=>{ $('#gameInviteModal').classList.add('show'); addSystem('A table game invite arrived.'); }); socket.on('game_response',r=>addSystem(r.accepted?'Passenger accepted the table game.':'Passenger skipped the table game.')); socket.on('new_confession',()=>loadConfessions());}
-$('#boardBtn').onclick=()=>{const [,open]=bdState(); if(!open)return; socket.emit('find_stranger'); show('waiting')}; $('#cancelBoard').onclick=()=>socket.emit('cancel_search'); $('#sendBtn').onclick=sendMsg; $('#msgInput').onkeydown=e=>{if(e.key==='Enter')sendMsg()}; function sendMsg(){const v=$('#msgInput').value.trim(); if(!v)return; socket.emit('message',{content:v}); $('#msgInput').value=''} function addMsg(t,mine){const d=document.createElement('div');d.className='msg '+(mine?'mine':'theirs');renderMessageContent(d,t); $('#chatPane').appendChild(d); $('#chatPane').scrollTop=999999} function addSystem(t){const d=document.createElement('div');d.className='mini';d.style.textAlign='center';d.style.margin='12px';d.textContent=t; $('#chatPane').appendChild(d)} $('#endChat').onclick=()=>{socket.emit('leave_chat');show('home')}; $('#reportBtn').onclick=()=>{const reason=prompt('Reason for report?')||'No reason given'; socket.emit('report',{reason})}; $('#gameBtn').onclick=()=>{socket.emit('game_invite',{gameType:'table'}); addSystem('Table game invitation sent. Waiting for passenger.');}; $('#acceptGame').onclick=()=>{socket.emit('game_response',{accepted:true,gameType:'table'}); $('#gameInviteModal').classList.remove('show'); addSystem('You accepted the table game.');}; $('#declineGame').onclick=()=>{socket.emit('game_response',{accepted:false,gameType:'table'}); $('#gameInviteModal').classList.remove('show'); addSystem('You skipped the table game.');}; $('#chatSongBtn').onclick=()=>{$('#chatSongModal').classList.add('show'); $('#chatSongSearch').focus()};
-let searchTimer; $('#songSearch').oninput=e=>{clearTimeout(searchTimer); searchTimer=setTimeout(()=>searchSongs(e.target.value),350)}; let chatSongTimer; $('#chatSongSearch').oninput=e=>{clearTimeout(chatSongTimer); chatSongTimer=setTimeout(()=>searchChatSongs(e.target.value),350)};
-async function searchSongs(q){const box=$('#songResults'); if(!q.trim()){box.innerHTML='';return} box.innerHTML='<div class="mini">Searching the directory...</div>'; try{const r=await fetch('https://itunes.apple.com/search?'+new URLSearchParams({term:q,media:'music',entity:'song',limit:'10'})); const d=await r.json(); box.innerHTML=(d.results||[]).map((t,i)=>`<div class="songRow"><img src="${t.artworkUrl100||''}"><div><b>${esc(t.trackName)}</b><br><small>${esc(t.artistName)} · ${esc(t.collectionName||'')}</small></div><button data-i="${i}">Attach</button></div>`).join('')||'<div class="mini">No songs found.</div>'; $$('.songRow button').forEach(btn=>btn.onclick=()=>selectSong(d.results[+btn.dataset.i]));}catch(e){box.innerHTML='<div class="mini">Song search failed. Check iTunes CSP.</div>'}}
-function selectSong(t){selectedSong={title:t.trackName,artist:t.artistName,album:t.collectionName||'',artwork:t.artworkUrl100||'',preview:t.previewUrl||'',apple:t.trackViewUrl||'',spotify:'https://open.spotify.com/search/'+encodeURIComponent(t.trackName+' '+t.artistName)}; $('#selectedSong').innerHTML=`<div class="songChip"><img src="${selectedSong.artwork}"><div><b>${esc(selectedSong.title)}</b><br><small>${esc(selectedSong.artist)}</small></div><button class="iconbtn" onclick="selectedSong=null;document.querySelector('#selectedSong').innerHTML=''">×</button></div>`; $('#songResults').innerHTML=''; $('#songSearch').value=''}
-async function searchChatSongs(q){const box=$('#chatSongResults'); if(!q.trim()){box.innerHTML='';return} box.innerHTML='<div class="mini">Searching the directory...</div>'; try{const r=await fetch('https://itunes.apple.com/search?'+new URLSearchParams({term:q,media:'music',entity:'song',limit:'10'})); const d=await r.json(); box.innerHTML=(d.results||[]).map((t,i)=>`<div class="songRow"><img src="${t.artworkUrl100||''}"><div><b>${esc(t.trackName)}</b><br><small>${esc(t.artistName)} · ${esc(t.collectionName||'')}</small></div><button data-i="${i}">Send</button></div>`).join('')||'<div class="mini">No songs found.</div>'; $$('#chatSongResults .songRow button').forEach(btn=>btn.onclick=()=>sendChatSong(d.results[+btn.dataset.i]));}catch(e){box.innerHTML='<div class="mini">Song search failed.</div>'}}
-function sendChatSong(t){const song={type:'song',title:t.trackName,artist:t.artistName,album:t.collectionName||'',artwork:t.artworkUrl100||'',preview:t.previewUrl||'',apple:t.trackViewUrl||'',spotify:'https://open.spotify.com/search/'+encodeURIComponent(t.trackName+' '+t.artistName)}; socket.emit('message',{content:'[SONG]'+JSON.stringify(song)}); $('#chatSongModal').classList.remove('show'); $('#chatSongSearch').value=''; $('#chatSongResults').innerHTML=''}
-function renderMessageContent(el,t){if(String(t).startsWith('[SONG]')){try{const x=JSON.parse(String(t).slice(6));el.innerHTML=`<div class="songMsg"><img src="${esc(x.artwork||'')}"><div><b>${esc(x.title||'Song')}</b><small>${esc(x.artist||'')}</small><div class="links">${x.spotify?`<a target="_blank" href="${esc(x.spotify)}">Spotify</a>`:''}${x.apple?`<a target="_blank" href="${esc(x.apple)}">Apple Music</a>`:''}</div></div></div>`;return}catch(e){}} el.textContent=t}
+/* ── SONG LIBRARY ── */
+const SONGS = [
+  {title:"Keno Ei Nirjan Dweepey",artist:"Mita Hossain",spotify:"https://open.spotify.com/search/Keno%20Ei%20Nirjan%20Dweepey"},
+  {title:"Ekla Ghor",artist:"Shironamhin",spotify:"https://open.spotify.com/search/Ekla%20Ghor%20Shironamhin"},
+  {title:"Bohemian Rhapsody",artist:"Queen",spotify:"https://open.spotify.com/track/4u7EnebtmKWzUH433cf5Qv"},
+  {title:"Bheegi Bheegi",artist:"Gangajal",spotify:"https://open.spotify.com/search/Bheegi%20Bheegi%20Gangajal"},
+  {title:"Tumi Robe Nirobe",artist:"Rabindra Sangeet",spotify:"https://open.spotify.com/search/Tumi%20Robe%20Nirobe"},
+  {title:"Let Her Go",artist:"Passenger",spotify:"https://open.spotify.com/track/3ZnFJYRk5SsyMiEkGFgSBF"},
+  {title:"Nude",artist:"Radiohead",spotify:"https://open.spotify.com/search/Nude%20Radiohead"},
+  {title:"Boshonto Eshe Geche",artist:"Subir Nandi",spotify:"https://open.spotify.com/search/Boshonto%20Eshe%20Geche"},
+  {title:"Nostalgia",artist:"Hasan S. Iqbal",spotify:"https://open.spotify.com/search/Nostalgia%20Hasan%20Iqbal"},
+  {title:"Night Changes",artist:"One Direction",spotify:"https://open.spotify.com/track/0sdIAkGPBDlkGHOkIHVsVR"},
+  {title:"Ami Shundor Hobo Bole",artist:"Momtaz",spotify:"https://open.spotify.com/search/Ami%20Shundor%20Hobo"},
+  {title:"Patha Hara",artist:"Arnob",spotify:"https://open.spotify.com/search/Patha%20Hara%20Arnob"},
+  {title:"Skinny Love",artist:"Bon Iver",spotify:"https://open.spotify.com/track/1muHONgwNFCuPl7cFLrZZJ"},
+  {title:"Holud Pakhi",artist:"Artcell",spotify:"https://open.spotify.com/search/Holud%20Pakhi%20Artcell"},
+  {title:"Fix You",artist:"Coldplay",spotify:"https://open.spotify.com/track/7LVHVU3tWfcxj5aiPFEW4Q"},
+  {title:"Kothay Hariye Gele",artist:"Minar",spotify:"https://open.spotify.com/search/Kothay%20Hariye%20Gele%20Minar"},
+  {title:"Lonely",artist:"Akon",spotify:"https://open.spotify.com/search/Lonely%20Akon"},
+  {title:"Priyotoma",artist:"Imran",spotify:"https://open.spotify.com/search/Priyotoma%20Imran"},
+  {title:"Shada Shada Kala Kala",artist:"Hawa",spotify:"https://open.spotify.com/search/Shada%20Shada%20Kala%20Kala"},
+  {title:"Obak Bhalobasha",artist:"Fuad",spotify:"https://open.spotify.com/search/Obak%20Bhalobasha%20Fuad"},
+];
 
-$('#leaveConfession').onclick=async()=>{try{const body={from_name:$('#cfFrom').value.trim(),to_name:$('#cfTo').value.trim(),content:$('#cfMsg').value.trim()}; if(selectedSong){Object.assign(body,{song_title:selectedSong.title,song_artist:selectedSong.artist,song_url:selectedSong.spotify,song_album:selectedSong.album,song_artwork:selectedSong.artwork,song_preview:selectedSong.preview,song_apple_url:selectedSong.apple,song_spotify_url:selectedSong.spotify})} await api('/api/confessions',{method:'POST',body:JSON.stringify(body)}); $('#cfNotice').textContent='Left on the platform.'; $('#cfMsg').value=''; selectedSong=null; $('#selectedSong').innerHTML=''; loadConfessions();}catch(e){$('#cfNotice').textContent=e.message}}
-$('#wallSearch').oninput=()=>loadConfessions($('#wallSearch').value); $('#refreshWall').onclick=()=>loadConfessions($('#wallSearch').value);
-async function loadConfessions(q=''){try{const data=await api(q?'/api/confessions/search?q='+encodeURIComponent(q):'/api/confessions'); renderConfessions(data.confessions||[])}catch(e){$('#confessionWall').innerHTML='<div class="mini">Could not load confessions.</div>'}}
-function renderConfessions(rows){$('#confessionWall').innerHTML=rows.map(r=>{const spotify=r.song_spotify_url||r.song_url||''; const apple=r.song_apple_url||''; return `<article class="wallCard"><div class="meta"><div>FROM:<br><b>${esc(r.from_name)}</b></div><div>TO:<br><b>${esc(r.to_name)}</b></div></div><p>${esc(r.content)}</p>${r.song_title?`<div class="songlink">♫ <b>${esc(r.song_title)} — ${esc(r.song_artist||'')}</b></div><div class="songlink">${spotify?`<a target="_blank" href="${spotify}">Open Spotify</a>`:''}${apple?`<a target="_blank" href="${apple}">Apple Music</a>`:''}</div>`:''}<div class="mini" style="color:#6b4a28;margin-top:8px">No. ${String(r.id||'').slice(0,6)} · ${timeAgo(r.created_at)}</div></article>`}).join('')||'<div class="mini">No slips found. Maybe it has not been left on the platform yet.</div>'}
-function renderLogs(){if(!history||!history.length){$('#logsList').innerHTML='<div class="logItem">No chapters kept yet. Some rides are meant to pass quietly.</div>';return} $('#logsList').innerHTML=history.map((h,i)=>`<div class="logItem"><div class="smallcap">Chapter ${i+1}</div><b>${esc(h.myName||'You')} / ${esc(h.theirName||'Passenger')}</b><div class="mini">${new Date(h.startedAt).toLocaleString()}</div><p>${esc(h.preview||'No preview')}</p></div>`).join('')}
-const audio=$('#audioEl'); function setTrack(){if(!tracks.length){$('#radioTrack').textContent='No tracks'; audio.removeAttribute('src'); return} audio.src=tracks[audioIndex%tracks.length].src; $('#radioTrack').textContent=tracks[audioIndex%tracks.length].title} setTrack(); async function loadRadioTracks(){try{const r=await fetch('/api/radio/tracks'); const d=await r.json(); if(d.tracks&&d.tracks.length){tracks=d.tracks.map(t=>({id:t.id,title:t.title,src:t.url,is_default:t.is_default})); audioIndex=Math.min(audioIndex,tracks.length-1); setTrack()} renderRadioAdmin();}catch(e){renderRadioAdmin()}} $('#playAudio').onclick=async()=>{try{if(audio.paused){await audio.play(); $('#playAudio').textContent='Ⅱ'; $('#radio').classList.add('playing')}else{audio.pause(); $('#playAudio').textContent='▶'; $('#radio').classList.remove('playing')}}catch(e){alert('Music file not found or blocked. Admin can re-upload tracks in Control Room.')}}; $('#nextAudio').onclick=()=>{if(!tracks.length)return; audioIndex=(audioIndex+1)%tracks.length; setTrack(); audio.play().catch(()=>{});}; $('#volAudio').oninput=e=>audio.volume=e.target.value; audio.volume=.55; $('#minRadio').onclick=()=>$('#radio').classList.toggle('min');
-async function loadSettings(){const s=await fetch('/api/settings').then(r=>r.json()).catch(()=>({})); $('#aboutCopy').textContent=s.aboutText||''; $('#creatorNameView').textContent=s.creatorName||'Nazmul Islam Farhan'; $('#creatorBioView').textContent=s.creatorBio||''; if(s.creatorPhoto){ $('#creatorImg').src=s.creatorPhoto; if($('#creatorPreview')) $('#creatorPreview').src=s.creatorPhoto; } else if($('#creatorPreview')) $('#creatorPreview').src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%2314100b'/%3E%3Ctext x='60' y='66' text-anchor='middle' fill='%23b88945' font-size='22' font-family='serif'%3EAE%3C/text%3E%3C/svg%3E"; ['creatorPhoto','creatorName','creatorBio','aboutText'].forEach(id=>{if($('#'+id)) $('#'+id).value=s[id]||''})}
-document.addEventListener('click',e=>{const about=e.target.closest('#aboutOpen'); if(about){e.preventDefault(); $('#aboutModal').classList.add('show')}}); $$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('show')); document.addEventListener('keydown',e=>{if(e.key==='Escape') $$('.modal.show').forEach(m=>m.classList.remove('show'))});
-async function loadReports(){try{const r=await api('/api/admin/reports2'); $('#adminReports').innerHTML=(r.reports||[]).map(x=>`<div class="adminCard"><b>${esc(x.reported_name||'Passenger')}</b><div class="mini">Reported by ${esc(x.reporter_name||'Passenger')} · ${timeAgo(x.created_at)}</div><p>${esc(x.reason||'No reason given')}</p></div>`).join('')||'<div class="mini">No reports yet.</div>'}catch(e){$('#adminReports').innerHTML='<div class="mini">Reports unavailable.</div>'}} async function loadAdminConfessions(){try{const r=await api('/api/confessions'); $('#adminConfessions').innerHTML=(r.confessions||[]).slice(0,12).map(x=>`<div class="adminCard"><b>${esc(x.from_name)} → ${esc(x.to_name)}</b><p>${esc(x.content)}</p><div class="mini">${esc(x.song_title||'No song')}</div></div>`).join('')||'<div class="mini">No confessions yet.</div>'}catch(e){$('#adminConfessions').innerHTML='<div class="mini">Confessions unavailable.</div>'}} async function loadAdmin(){if(!me||!['admin','moderator'].includes(me.role))return; try{const st=await api('/api/admin/stats'); $('#statGrid').innerHTML=Object.entries(st).filter(([k])=>k!=='role').map(([k,v])=>`<div class="stat"><span class="mini">${k}</span><b>${v}</b></div>`).join(''); if(me.role==='admin'){const mods=await api('/api/admin/moderators'); $('#modList').innerHTML=mods.moderators.map(m=>`<div class="listRow"><span>${esc(m.email)}</span><button class="iconbtn" data-email="${esc(m.email)}">×</button></div>`).join('')||'<div class="mini">No moderators yet.</div>'; $$('#modList button').forEach(b=>b.onclick=async()=>{await fetch('/api/admin/moderators/'+encodeURIComponent(b.dataset.email),{method:'DELETE',headers:{Authorization:'Bearer '+token}});loadAdmin()})}}catch(e){$('#statGrid').innerHTML='<div class="mini">Control Room unavailable.</div>'}}
+/* ── AUDIO TRACKS ── */
+const TRACKS = [
+  {name:"Aces", artist:"Onboard", src:"music/aces.mp3"},
+  {name:"Escape", artist:"Onboard", src:"music/escape.mp3"},
+  {name:"Heartheal", artist:"Onboard", src:"music/heartheal.mp3"},
+  {name:"Love", artist:"Onboard", src:"music/love.mp3"},
+];
 
-function renderRadioAdmin(){const box=$('#radioTrackList'); if(!box)return; box.innerHTML=(tracks||[]).map(t=>`<div class="trackRow"><div><b>${esc(t.title)}</b><br><small>${esc(t.src)}${t.is_default?' · default':''}</small></div>${me&&me.role==='admin'?`<button class="iconbtn" data-del-track="${esc(t.id)}">×</button>`:''}</div>`).join('')||'<div class="mini">No tracks. Upload one from device.</div>'; $$('[data-del-track]').forEach(b=>b.onclick=async()=>{if(!confirm('Remove this track from Onboard Radio?'))return; try{await fetch('/api/admin/radio/'+encodeURIComponent(b.dataset.delTrack),{method:'DELETE',headers:{Authorization:'Bearer '+token}}); await loadRadioTracks();}catch(e){alert('Could not delete track.')}})}
-if($('#radioUpload')) $('#radioUpload').onchange=async e=>{const file=e.target.files?.[0]; if(!file)return; const note=$('#radioUploadNote'); note.textContent='Uploading track...'; try{const title=file.name.replace(/\.[^.]+$/,''); const res=await fetch('/api/admin/radio/upload?'+new URLSearchParams({filename:file.name,title}),{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file}); const data=await res.json(); if(!res.ok) throw new Error(data.error||'Upload failed'); note.textContent='Uploaded.'; e.target.value=''; await loadRadioTracks();}catch(err){note.textContent=err.message||'Upload failed.'}}
-$('#grantMod').onclick=async()=>{try{await api('/api/admin/moderators',{method:'POST',body:JSON.stringify({email:$('#modEmail').value})}); $('#modEmail').value=''; loadAdmin();}catch(e){alert(e.message)}}; if($('#creatorPhotoFile')) $('#creatorPhotoFile').onchange=async e=>{const file=e.target.files?.[0]; if(!file)return; const data=await resizeImage(file,420,0.82); $('#creatorPhoto').value=data; $('#creatorPreview').src=data; $('#creatorImg').src=data;}; function resizeImage(file,max=420,q=.82){return new Promise((resolve,reject)=>{const img=new Image(); const fr=new FileReader(); fr.onload=()=>{img.onload=()=>{const scale=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(img.width*scale)); c.height=Math.max(1,Math.round(img.height*scale)); c.getContext('2d').drawImage(img,0,0,c.width,c.height); resolve(c.toDataURL('image/jpeg',q));}; img.onerror=reject; img.src=fr.result}; fr.onerror=reject; fr.readAsDataURL(file);});} if($('#reloadAdmin')) $('#reloadAdmin').onclick=()=>loadAdmin(); if($('#previewAds')) $('#previewAds').onclick=()=>alert('Ad slots are reserved but not public yet.'); $('#saveSettings').onclick=async()=>{try{await api('/api/admin/settings',{method:'POST',body:JSON.stringify({creatorPhoto:$('#creatorPhoto').value,creatorName:$('#creatorName').value,creatorBio:$('#creatorBio').value,aboutText:$('#aboutText').value})}); $('#adminNotice').textContent='Saved.'; loadSettings();}catch(e){$('#adminNotice').textContent=e.message}}
-function esc(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))} function timeAgo(sec){if(!sec)return'';const d=Math.max(1,Math.floor(Date.now()/1000-sec));if(d<60)return d+'s ago';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago'}
-init();
+/* ── STATE ── */
+let currentTrack = 0;
+let playerMinimized = false;
+let isPlaying = false;
+let selectedSong = null;
+let selectedReport = null;
+let chatActive = false;
+let boardingTimer = null;
+let matchTimer = null;
+let gamePanelOpen = false;
+let tttBoard = Array(9).fill(null);
+let tttTurn = 'X';
+let tttOver = false;
+
+const audioEl = document.getElementById('audioEl');
+audioEl.volume = 0.6;
+
+/* ── TIME / STATUS ── */
+function getBDTime() {
+  const now = new Date();
+  // BD is UTC+6
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + 6 * 3600000);
+}
+
+function getPlatformStatus() {
+  const bd = getBDTime();
+  const h = bd.getHours(), m = bd.getMinutes();
+  const mins = h * 60 + m;
+  if (mins >= 19 * 60 || mins < 5 * 60) return 'boarding';
+  if (mins >= 17 * 60) return 'preparing';
+  return 'resting';
+}
+
+function minsUntilBoarding() {
+  const bd = getBDTime();
+  const h = bd.getHours(), m = bd.getMinutes();
+  const mins = h * 60 + m;
+  // opens at 19:00
+  if (mins < 17 * 60) {
+    return (17 * 60) - mins; // until 17:00 (preparing)
+  }
+  return (19 * 60) - mins; // until 19:00 (boarding)
+}
+
+function formatCountdown(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function updateHeader() {
+  const bd = getBDTime();
+  const h = bd.getHours(), m = bd.getMinutes();
+  const hStr = String(h).padStart(2,'0');
+  const mStr = String(m).padStart(2,'0');
+  document.getElementById('fh1').textContent = hStr[0];
+  document.getElementById('fh2').textContent = hStr[1];
+  document.getElementById('fm1').textContent = mStr[0];
+  document.getElementById('fm2').textContent = mStr[1];
+
+  const status = getPlatformStatus();
+  const dot = document.getElementById('statusDot');
+  const label = document.getElementById('statusLabel');
+
+  if (status === 'boarding') {
+    dot.className = 'status-dot';
+    label.textContent = 'Boarding Now';
+    document.getElementById('btnBoard').disabled = false;
+    document.getElementById('boardCta').style.display = 'flex';
+    document.getElementById('countdownBlock').classList.remove('show');
+  } else if (status === 'preparing') {
+    dot.className = 'status-dot preparing';
+    label.textContent = 'Preparing to Board';
+    document.getElementById('btnBoard').disabled = true;
+    document.getElementById('boardCta').style.display = 'flex';
+    document.getElementById('countdownBlock').classList.remove('show');
+  } else {
+    dot.className = 'status-dot resting';
+    label.textContent = 'Platform Resting';
+    document.getElementById('boardCta').style.display = 'none';
+    const countdown = document.getElementById('countdownBlock');
+    countdown.classList.add('show');
+    document.getElementById('countdownTime').textContent = formatCountdown(minsUntilBoarding());
+  }
+
+  // Simulated passenger count
+  const baseCount = status === 'boarding' ? 12 : 0;
+  document.getElementById('passengerCount').textContent = status === 'boarding' ? `${baseCount + Math.floor(Math.random()*3)} on platform` : '';
+}
+
+setInterval(updateHeader, 1000);
+updateHeader();
+
+/* ── MUSIC PLAYER ── */
+function loadTrack(idx) {
+  const t = TRACKS[idx];
+  audioEl.src = t.src;
+  document.getElementById('playerTrackName').textContent = t.name;
+  document.getElementById('playerTrackArtist').textContent = t.artist;
+}
+
+function togglePlay() {
+  if (isPlaying) {
+    audioEl.pause();
+    isPlaying = false;
+    document.getElementById('playerPlayBtn').textContent = '▶';
+  } else {
+    if (!audioEl.src || audioEl.src === location.href) loadTrack(currentTrack);
+    audioEl.play().catch(() => {});
+    isPlaying = true;
+    document.getElementById('playerPlayBtn').textContent = '⏸';
+  }
+}
+
+function nextTrack() {
+  currentTrack = (currentTrack + 1) % TRACKS.length;
+  loadTrack(currentTrack);
+  if (isPlaying) audioEl.play().catch(() => {});
+}
+
+function prevTrack() {
+  currentTrack = (currentTrack - 1 + TRACKS.length) % TRACKS.length;
+  loadTrack(currentTrack);
+  if (isPlaying) audioEl.play().catch(() => {});
+}
+
+function setVolume(v) { audioEl.volume = v; }
+
+audioEl.addEventListener('ended', nextTrack);
+
+function togglePlayer() {
+  playerMinimized = !playerMinimized;
+  document.getElementById('musicPlayer').classList.toggle('minimized', playerMinimized);
+  document.getElementById('playerMinBtn').textContent = playerMinimized ? '+' : '−';
+}
+
+function openMusic() {
+  // Scroll or highlight player
+  document.getElementById('musicPlayer').style.transition = 'box-shadow 0.3s';
+  document.getElementById('musicPlayer').style.boxShadow = '0 0 0 1px var(--gold)';
+  setTimeout(() => { document.getElementById('musicPlayer').style.boxShadow = ''; }, 1200);
+  if (playerMinimized) togglePlayer();
+}
+
+loadTrack(0);
+
+/* ── MODALS ── */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target === ov) closeModal(ov.id); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(ov => closeModal(ov.id));
+  }
+});
+
+/* ── CONFESSIONS ── */
+function openConfessions() {
+  openModal('modalConfessions');
+  renderConfessions();
+}
+
+let confessions = JSON.parse(localStorage.getItem('aagontuk_confessions') || '[]');
+
+function renderConfessions() {
+  const feed = document.getElementById('confessionFeed');
+  if (confessions.length === 0) {
+    feed.innerHTML = '<div class="empty-state">No confessions yet. Be the first to leave one.</div>';
+    return;
+  }
+  feed.innerHTML = confessions.slice().reverse().map(c => `
+    <div class="confession-card">
+      <div class="confession-route">${escHtml(c.from)} → ${escHtml(c.to)}</div>
+      <div class="confession-message">${escHtml(c.message)}</div>
+      ${c.song ? `
+        <div class="confession-song">
+          <div>
+            <div class="confession-song-title">♪ ${escHtml(c.song.title)}</div>
+            <div class="confession-song-artist">${escHtml(c.song.artist)}</div>
+          </div>
+          <button class="confession-song-open" onclick="window.open('${c.song.spotify}','_blank')">Spotify</button>
+        </div>` : ''}
+    </div>
+  `).join('');
+}
+
+function searchSongs(q) {
+  const box = document.getElementById('songResults');
+  if (!q.trim()) { box.classList.remove('show'); return; }
+  const results = SONGS.filter(s =>
+    s.title.toLowerCase().includes(q.toLowerCase()) ||
+    s.artist.toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 8);
+  if (!results.length) { box.innerHTML = '<div class="song-result-item"><div class="song-result-info"><div class="song-result-title" style="color:var(--ivory-faint);font-style:italic;">No results found</div></div></div>'; box.classList.add('show'); return; }
+  box.innerHTML = results.map((s, i) => `
+    <div class="song-result-item" onclick="attachSong(${i + SONGS.indexOf(s)})">
+      <div class="song-result-info">
+        <div class="song-result-title">${escHtml(s.title)}</div>
+        <div class="song-result-artist">${escHtml(s.artist)}</div>
+      </div>
+      <span class="song-spotify-link">Spotify</span>
+    </div>
+  `).join('');
+  box.classList.add('show');
+}
+
+function attachSong(idx) {
+  selectedSong = SONGS[idx] || null;
+  if (!selectedSong) return;
+  document.getElementById('attachedTitle').textContent = selectedSong.title;
+  document.getElementById('attachedArtist').textContent = selectedSong.artist;
+  document.getElementById('songAttached').classList.add('show');
+  document.getElementById('songResults').classList.remove('show');
+  document.getElementById('songSearch').value = '';
+}
+
+function clearSong() {
+  selectedSong = null;
+  document.getElementById('songAttached').classList.remove('show');
+}
+
+function openSpotify() {
+  if (selectedSong && selectedSong.spotify) window.open(selectedSong.spotify, '_blank');
+}
+
+function submitConfession() {
+  const from = document.getElementById('confFrom').value.trim();
+  const to = document.getElementById('confTo').value.trim();
+  const msg = document.getElementById('confMsg').value.trim();
+  if (!from || !to || !msg) { alert('Please fill in From, To, and Message.'); return; }
+  const c = { from, to, message: msg, song: selectedSong, date: new Date().toISOString() };
+  confessions.push(c);
+  localStorage.setItem('aagontuk_confessions', JSON.stringify(confessions));
+  document.getElementById('confFrom').value = '';
+  document.getElementById('confTo').value = '';
+  document.getElementById('confMsg').value = '';
+  clearSong();
+  renderConfessions();
+  // POST to backend if available
+  fetch('/api/confessions', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(c) }).catch(() => {});
+}
+
+/* ── JOURNEY LOGS ── */
+function openLogs() {
+  openModal('modalLogs');
+  renderLogs();
+}
+
+let logs = JSON.parse(localStorage.getItem('aagontuk_logs') || '[]');
+
+function renderLogs() {
+  const feed = document.getElementById('logsFeed');
+  if (logs.length === 0) {
+    feed.innerHTML = '<div class="empty-state">No logs yet. A chapter is saved at the end of each journey.</div>';
+    return;
+  }
+  feed.innerHTML = logs.slice().reverse().map((l, i) => `
+    <div class="log-item">
+      <div class="log-date">${new Date(l.date).toLocaleDateString('en-BD',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="log-excerpt">${escHtml(l.excerpt || 'A quiet conversation. No messages saved.')}</div>
+      <div class="log-actions">
+        <button class="log-btn danger" onclick="deleteLog(${logs.length - 1 - i})">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteLog(idx) {
+  logs.splice(idx, 1);
+  localStorage.setItem('aagontuk_logs', JSON.stringify(logs));
+  renderLogs();
+}
+
+function saveLog(excerpt) {
+  logs.push({ date: new Date().toISOString(), excerpt });
+  localStorage.setItem('aagontuk_logs', JSON.stringify(logs));
+}
+
+/* ── ABOUT ── */
+function openAbout() {
+  // load settings
+  fetch('/api/settings').then(r => r.json()).then(s => {
+    if (s.aboutText) document.getElementById('aboutText').textContent = s.aboutText;
+    if (s.creatorName) document.getElementById('creatorName').textContent = s.creatorName;
+    if (s.creatorBio) document.getElementById('creatorBio').textContent = s.creatorBio;
+    if (s.creatorPhoto) { const img = document.getElementById('creatorPhoto'); img.src = s.creatorPhoto; img.style.display = 'block'; }
+  }).catch(() => {});
+  openModal('modalAbout');
+}
+
+/* ── BOARDING ── */
+const boardingLines = [
+  'The carriage is quiet.',
+  'A seat has been kept beside the window.',
+  'Footsteps echo somewhere down the platform.',
+  'The next stranger may board any moment.',
+  'The departure board is turning.',
+  'A whistle somewhere in the distance.',
+];
+let boardingLineIdx = 0;
+let boardingLineTimer;
+
+function startBoarding() {
+  const status = getPlatformStatus();
+  if (status !== 'boarding') return;
+  document.getElementById('screen-boarding').classList.add('show');
+  document.getElementById('bpSeat').textContent = 'Pending';
+  document.getElementById('bpStatus').textContent = 'Waiting for another passenger';
+  boardingLineIdx = 0;
+  updateBoardingLine();
+  boardingLineTimer = setInterval(() => {
+    boardingLineIdx = (boardingLineIdx + 1) % boardingLines.length;
+    const el = document.getElementById('bpRotating');
+    el.style.opacity = 0;
+    setTimeout(() => { el.textContent = boardingLines[boardingLineIdx]; el.style.opacity = 1; }, 400);
+  }, 3500);
+  // Simulate match after 4-8 seconds
+  const wait = 4000 + Math.random() * 4000;
+  matchTimer = setTimeout(confirmMatch, wait);
+}
+
+function updateBoardingLine() {
+  document.getElementById('bpRotating').textContent = boardingLines[boardingLineIdx];
+}
+
+function cancelBoarding() {
+  clearInterval(boardingLineTimer);
+  clearTimeout(matchTimer);
+  document.getElementById('screen-boarding').classList.remove('show');
+}
+
+function confirmMatch() {
+  clearInterval(boardingLineTimer);
+  document.getElementById('bpSeat').textContent = '7A';
+  document.getElementById('bpStatus').textContent = 'Passenger boarded. Opening carriage.';
+  document.getElementById('bpRotating').textContent = 'Seat confirmed.';
+  setTimeout(() => {
+    document.getElementById('screen-boarding').classList.remove('show');
+    openChat();
+  }, 1800);
+}
+
+/* ── CHAT ── */
+let chatMessages = [];
+
+function openChat() {
+  chatActive = true;
+  chatMessages = [];
+  document.getElementById('chatMessages').innerHTML = '';
+  addSystemMsg('A stranger has joined the carriage. The journey begins.');
+  document.getElementById('screen-chat').classList.add('show');
+}
+
+function endChat() {
+  chatActive = false;
+  // Save log
+  const msgs = chatMessages.map(m => m.text).join(' … ');
+  const excerpt = msgs.length > 120 ? msgs.slice(0, 120) + '…' : (msgs || null);
+  saveLog(excerpt);
+  document.getElementById('screen-chat').classList.remove('show');
+  document.getElementById('gamePanel').classList.remove('show');
+  gamePanelOpen = false;
+}
+
+function addSystemMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'chat-system-msg';
+  el.textContent = text;
+  document.getElementById('chatMessages').appendChild(el);
+  scrollChat();
+}
+
+function addChatMsg(text, mine) {
+  chatMessages.push({ text, mine });
+  const wrap = document.createElement('div');
+  wrap.className = `chat-msg ${mine ? 'mine' : 'theirs'}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble';
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  document.getElementById('chatMessages').appendChild(wrap);
+  scrollChat();
+}
+
+function scrollChat() {
+  const c = document.getElementById('chatMessages');
+  c.scrollTop = c.scrollHeight;
+}
+
+function sendMessage() {
+  const ta = document.getElementById('chatInput');
+  const text = ta.value.trim();
+  if (!text) return;
+  addChatMsg(text, true);
+  ta.value = '';
+  ta.style.height = 'auto';
+  // Simulate stranger response (demo)
+  setTimeout(() => {
+    const responses = [
+      'I know what you mean.',
+      'Yeah… it feels like that sometimes.',
+      'Interesting. Tell me more.',
+      'I was thinking the same thing earlier.',
+      'Hmm.',
+      'I\'ve never told anyone this but…',
+      'Do you come here often?',
+      'The night feels different from a train window.',
+    ];
+    addChatMsg(responses[Math.floor(Math.random() * responses.length)], false);
+  }, 1200 + Math.random() * 1400);
+}
+
+/* ── GAME ── */
+function toggleGame() {
+  gamePanelOpen = !gamePanelOpen;
+  const panel = document.getElementById('gamePanel');
+  panel.classList.toggle('show', gamePanelOpen);
+  document.getElementById('gameSelector').style.display = gamePanelOpen ? 'block' : 'none';
+  document.getElementById('gameTTT').style.display = 'none';
+  document.getElementById('gameRPS').style.display = 'none';
+}
+
+function startTTT() {
+  document.getElementById('gameSelector').style.display = 'none';
+  document.getElementById('gameTTT').style.display = 'flex';
+  resetTTT();
+}
+
+function backToGameSelector() {
+  document.getElementById('gameTTT').style.display = 'none';
+  document.getElementById('gameRPS').style.display = 'none';
+  document.getElementById('gameSelector').style.display = 'block';
+}
+
+function resetTTT() {
+  tttBoard = Array(9).fill(null);
+  tttTurn = 'X';
+  tttOver = false;
+  renderTTT();
+  document.getElementById('tttStatus').textContent = 'Your turn (X)';
+}
+
+function renderTTT() {
+  const board = document.getElementById('tttBoard');
+  board.innerHTML = tttBoard.map((cell, i) => `
+    <div class="ttt-cell ${cell ? 'taken' : ''}" onclick="tttClick(${i})">${cell || ''}</div>
+  `).join('');
+}
+
+function tttClick(i) {
+  if (tttOver || tttBoard[i]) return;
+  tttBoard[i] = tttTurn;
+  const winner = checkTTT();
+  if (winner) {
+    renderTTT();
+    document.getElementById('tttStatus').textContent = winner === 'draw' ? "It's a draw." : `${winner} wins!`;
+    tttOver = true;
+    return;
+  }
+  tttTurn = tttTurn === 'X' ? 'O' : 'X';
+  renderTTT();
+  document.getElementById('tttStatus').textContent = `${tttTurn}'s turn`;
+  // AI move
+  if (tttTurn === 'O' && !tttOver) {
+    setTimeout(() => {
+      const empties = tttBoard.map((v,i) => v === null ? i : null).filter(v => v !== null);
+      if (empties.length) {
+        tttBoard[empties[Math.floor(Math.random()*empties.length)]] = 'O';
+        const w2 = checkTTT();
+        if (w2) {
+          renderTTT();
+          document.getElementById('tttStatus').textContent = w2 === 'draw' ? "It's a draw." : `${w2} wins!`;
+          tttOver = true;
+        } else {
+          tttTurn = 'X';
+          renderTTT();
+          document.getElementById('tttStatus').textContent = 'Your turn (X)';
+        }
+      }
+    }, 500);
+  }
+}
+
+function checkTTT() {
+  const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for (const [a,b,c] of wins) {
+    if (tttBoard[a] && tttBoard[a] === tttBoard[b] && tttBoard[a] === tttBoard[c]) return tttBoard[a];
+  }
+  if (tttBoard.every(v => v)) return 'draw';
+  return null;
+}
+
+function startRPS() {
+  document.getElementById('gameSelector').style.display = 'none';
+  document.getElementById('gameRPS').style.display = 'flex';
+  document.getElementById('rpsResult').textContent = 'Choose your move.';
+}
+
+function playRPS(choice) {
+  const opts = ['rock','paper','scissors'];
+  const ai = opts[Math.floor(Math.random() * 3)];
+  const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+  let result;
+  if (choice === ai) result = "Draw!";
+  else if (beats[choice] === ai) result = `You win! ${choice} beats ${ai}.`;
+  else result = `Stranger wins. ${ai} beats ${choice}.`;
+  document.getElementById('rpsResult').textContent = result;
+}
+
+/* ── REPORT ── */
+function selectReport(btn, reason) {
+  document.querySelectorAll('.report-reason-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedReport = reason;
+}
+
+function submitReport() {
+  if (!selectedReport) { alert('Please select a reason.'); return; }
+  fetch('/api/reports', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ reason: selectedReport, session: Date.now() }) }).catch(() => {});
+  closeModal('modalReport');
+  alert('Report submitted. Thank you.');
+  selectedReport = null;
+  document.querySelectorAll('.report-reason-btn').forEach(b => b.classList.remove('selected'));
+}
+
+/* ── ADMIN ── */
+function openAdmin() {
+  document.getElementById('screen-admin').classList.add('show');
+  loadAdminSettings();
+}
+function closeAdmin() {
+  document.getElementById('screen-admin').classList.remove('show');
+}
+
+function loadAdminSettings() {
+  fetch('/api/settings').then(r => r.json()).then(s => {
+    if (s.creatorPhoto) document.getElementById('adminPhoto').value = s.creatorPhoto;
+    if (s.creatorName) document.getElementById('adminName').value = s.creatorName;
+    if (s.creatorBio) document.getElementById('adminBio').value = s.creatorBio;
+    if (s.aboutText) document.getElementById('adminAboutText').value = s.aboutText;
+  }).catch(() => {});
+}
+
+function saveSettings() {
+  const settings = {
+    creatorPhoto: document.getElementById('adminPhoto').value.trim(),
+    creatorName: document.getElementById('adminName').value.trim(),
+    creatorBio: document.getElementById('adminBio').value.trim(),
+    aboutText: document.getElementById('adminAboutText').value.trim(),
+  };
+  fetch('/api/admin/settings', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(settings)
+  }).then(r => r.json()).then(() => alert('Settings saved.')).catch(() => {
+    localStorage.setItem('aagontuk_settings', JSON.stringify(settings));
+    alert('Settings saved locally.');
+  });
+}
+
+let mods = [];
+function addModerator() {
+  const email = document.getElementById('modEmail').value.trim();
+  if (!email) return;
+  mods.push(email);
+  document.getElementById('modList').innerHTML = mods.map(e => `<div style="padding:6px 0;border-bottom:1px solid var(--border2);color:var(--ivory-muted);">${e}</div>`).join('');
+  document.getElementById('modEmail').value = '';
+}
+
+/* ── SIGN OUT ── */
+function signOut() {
+  fetch('/api/auth/logout', { method:'POST' }).catch(() => {});
+  window.location.href = 'auth.html';
+}
+
+/* ── UTILITY ── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── INIT ── */
+// Check admin status
+fetch('/api/me').then(r => r.json()).then(u => {
+  if (u && u.isAdmin) document.getElementById('adminBtn').style.display = 'inline-flex';
+}).catch(() => {
+  // Demo: show admin button for testing
+  // document.getElementById('adminBtn').style.display = 'inline-flex';
+});
+
+// Load settings for About
+fetch('/api/settings').then(r => r.json()).then(s => {
+  if (s.creatorPhoto) { document.getElementById('creatorPhoto').src = s.creatorPhoto; }
+  if (s.creatorName) document.getElementById('creatorName').textContent = s.creatorName;
+  if (s.creatorBio) document.getElementById('creatorBio').textContent = s.creatorBio;
+  if (s.aboutText) document.getElementById('aboutText').textContent = s.aboutText;
+}).catch(() => {
+  // Use localStorage fallback
+  const s = JSON.parse(localStorage.getItem('aagontuk_settings') || '{}');
+  if (s.creatorPhoto) document.getElementById('creatorPhoto').src = s.creatorPhoto;
+  if (s.creatorName) document.getElementById('creatorName').textContent = s.creatorName;
+  if (s.creatorBio) document.getElementById('creatorBio').textContent = s.creatorBio;
+  if (s.aboutText) document.getElementById('aboutText').textContent = s.aboutText;
+});
 </script>
-</body></html>
+</body>
+</html>
