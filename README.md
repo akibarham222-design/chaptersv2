@@ -1,13 +1,8 @@
-# Aagontuk Express — flat one-service upgraded build
+# Aagontuk Express — Final Flat Render Build
 
-Single Render Web Service build. No frontend/backend split.
+Single Render Web Service build. No separate frontend/backend service.
 
-## Structure
-- `server.js`
-- `public/` built React frontend
-- `routes/`, `models/`, `middleware/`, `socket/`, `config/`
-
-## Render settings
+## Render
 Root Directory: empty
 Build Command:
 rm -f package-lock.json && npm install --omit=dev --no-audit --no-fund --legacy-peer-deps --registry=https://registry.npmjs.org
@@ -15,18 +10,9 @@ rm -f package-lock.json && npm install --omit=dev --no-audit --no-fund --legacy-
 Start Command:
 node server.js
 
-## Environment
-MONGO_URI=...
-JWT_SECRET=...
-NODE_ENV=production
-FRONTEND_URL=https://aagontuk.onrender.com
-GOOGLE_CALLBACK_URL=https://aagontuk.onrender.com/api/auth/google/callback
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-
-## Changes
-- Cleaner lighter layout cards.
-- About page has Creator Carriage.
-- Creator section editable from Control Room.
-- Admin song/image uploads show live percentage progress.
-- Chat games now have a close button that clears game overlay without ending conversation.
+## Fixes in this version
+- Creator bio preserves line breaks.
+- Song upload limit raised to 250MB and returns exact backend error.
+- Layout made cleaner, lighter, and less text-heavy.
+- About remains the main explanation page.
+- Same URL serves frontend, API, uploads, and socket.

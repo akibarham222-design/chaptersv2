@@ -33,10 +33,10 @@ const imageStorage = multer.diskStorage({
 });
 
 const songFilter = (req, file, cb) => {
-  const allowedTypes = /mp3|wav|ogg|aac|m4a|flac/;
-  const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mime = allowedTypes.test(file.mimetype.replace('audio/', ''));
-  if (ext || file.mimetype.startsWith('audio/')) {
+  const allowedTypes = /mp3|mpeg|wav|wave|ogg|aac|m4a|mp4|flac|x-m4a|octet-stream/;
+  const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase().replace('.', ''));
+  const mime = allowedTypes.test((file.mimetype || '').toLowerCase().replace('audio/', '').replace('video/', ''));
+  if (ext || mime || (file.mimetype || '').startsWith('audio/')) {
     cb(null, true);
   } else {
     cb(new Error('Only audio files are permitted on this train.'));
@@ -54,7 +54,7 @@ const imageFilter = (req, file, cb) => {
 const uploadSong = multer({
   storage: songStorage,
   fileFilter: songFilter,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+  limits: { fileSize: 250 * 1024 * 1024 } // 250MB
 });
 
 const uploadImage = multer({
