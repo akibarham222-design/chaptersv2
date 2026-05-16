@@ -152,6 +152,14 @@ module.exports = function initChatSocket(io) {
       if (partnerId) io.to(partnerId).emit('game_declined', { message: 'Your fellow passenger declined the game.' });
     });
 
+    // Close game overlay without ending chat
+    socket.on('game_close', ({ sessionId }) => {
+      if (sessionId) gameStates.delete(sessionId);
+      const partnerId = activePairs.get(socket.id);
+      socket.emit('game_closed');
+      if (partnerId) io.to(partnerId).emit('game_closed');
+    });
+
     // Tictactoe move
     socket.on('ttt_move', ({ index, sessionId }) => {
       const state = gameStates.get(sessionId);

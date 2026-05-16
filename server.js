@@ -27,7 +27,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || true,
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -35,15 +35,16 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || true,
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(passport.initialize());
 
-// Static file serving for uploads
+// Static file serving for uploads and built frontend
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Passport config
 require('./config/passport')(passport);
@@ -66,15 +67,10 @@ app.get('/api/health', (req, res) => {
 // Initialize socket
 initChatSocket(io);
 
-
-// Serve bundled frontend from /public on the same Render web service.
-const frontendDistPath = path.join(__dirname, 'public');
-app.use(express.static(frontendDistPath));
-
-// React Router fallback. Keep this after all /api and /uploads routes.
+// React fallback for one-service Render deploy
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
-  res.sendFile(path.join(frontendDistPath, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Error handler

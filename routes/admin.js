@@ -6,13 +6,42 @@ const Report = require('../models/Report');
 const Song = require('../models/Song');
 const Notice = require('../models/Notice');
 const JourneyLog = require('../models/JourneyLog');
+const CreatorProfile = require('../models/CreatorProfile');
 const { protect, adminOnly } = require('../middleware/auth');
 const { uploadImage } = require('../middleware/upload');
 const path = require('path');
 const fs = require('fs');
 
-// All admin routes require protect + adminOnly
+// Public creator profile for About page
+router.get('/creator-public', async (req, res) => {
+  try {
+    let profile = await CreatorProfile.findOne().sort({ updatedAt: -1 });
+    if (!profile) profile = await CreatorProfile.create({});
+    res.json({ profile });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to load creator carriage.' });
+  }
+});
+
+// All routes below require protect + adminOnly
 router.use(protect, adminOnly);
+
+router.put('/creator', async (req, res) => {
+  try {
+    const allowed = ['name', 'title', 'bio', 'image', 'link'];
+    const payload = {};
+    for (const key of allowed) if (req.body[key] !== undefined) payload[key] = req.body[key];
+    payload.updatedAt = new Date();
+    let profile = await CreatorProfile.findOne().sort({ updatedAt: -1 });
+    if (!profile) profile = await CreatorProfile.create(payload);
+    else profile = await CreatorProfile.findByIdAndUpdate(profile._id, payload, { new: true });
+    res.json({ message: 'Creator carriage updated.', profile });
+  } catch (err) {
+    res.status(500).json({ message: 'Creator update failed.' });
+  }
+});
+
+
 
 // @GET /api/admin/stats - Dashboard stats
 router.get('/stats', async (req, res) => {

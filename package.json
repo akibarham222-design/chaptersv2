@@ -1,7 +1,7 @@
 {
-  "name": "aagontuk-express-one-service-flat",
+  "name": "aagontuk-express-backend",
   "version": "1.0.0",
-  "description": "Aagontuk Express - single Render web service build",
+  "description": "Aagontuk Express - Anonymous Night Train Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

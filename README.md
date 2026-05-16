@@ -1,43 +1,32 @@
-# Aagontuk Express — One Service Flat Render Build
+# Aagontuk Express — flat one-service upgraded build
 
-This package has no frontend/backend split. It is meant to run as one Render Web Service.
+Single Render Web Service build. No frontend/backend split.
 
 ## Structure
-
-```
-server.js
-package.json
-public/          # built React frontend
-config/
-models/
-middleware/
-routes/
-socket/
-uploads/
-```
+- `server.js`
+- `public/` built React frontend
+- `routes/`, `models/`, `middleware/`, `socket/`, `config/`
 
 ## Render settings
-
 Root Directory: empty
-
 Build Command:
-```bash
 rm -f package-lock.json && npm install --omit=dev --no-audit --no-fund --legacy-peer-deps --registry=https://registry.npmjs.org
-```
 
 Start Command:
-```bash
 node server.js
-```
 
-## Required environment variables
-
-```env
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_secret
+## Environment
+MONGO_URI=...
+JWT_SECRET=...
 NODE_ENV=production
 FRONTEND_URL=https://aagontuk.onrender.com
 GOOGLE_CALLBACK_URL=https://aagontuk.onrender.com/api/auth/google/callback
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-```
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+## Changes
+- Cleaner lighter layout cards.
+- About page has Creator Carriage.
+- Creator section editable from Control Room.
+- Admin song/image uploads show live percentage progress.
+- Chat games now have a close button that clears game overlay without ending conversation.
