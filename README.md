@@ -16,3 +16,10 @@ node server.js
 - Layout made cleaner, lighter, and less text-heavy.
 - About remains the main explanation page.
 - Same URL serves frontend, API, uploads, and socket.
+
+
+## Moonline UI build
+- Replaced Night Service copy with Moonline language.
+- Reduced explanatory text outside About.
+- Added premium terminal-style visual polish via bundled CSS.
+- Kept flat one-service Render deployment.
