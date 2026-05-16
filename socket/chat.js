@@ -119,6 +119,7 @@ module.exports = function initChatSocket(io) {
 
       if (game === 'tictactoe') {
         const state = {
+          game,
           board: Array(9).fill(null),
           turn: 'X',
           players: { X: partnerId, O: socket.id },
@@ -128,21 +129,42 @@ module.exports = function initChatSocket(io) {
         gameStates.set(sessionId, state);
         io.to(partnerId).emit('game_started', { game, sessionId, symbol: 'X', state });
         socket.emit('game_started', { game, sessionId, symbol: 'O', state });
-      } else if (game === 'wordguess') {
-        const words = ['JOURNEY', 'STATION', 'PLATFORM', 'SIGNAL', 'COMPARTMENT', 'DEPARTURE', 'ARRIVAL', 'TICKET', 'PASSENGER', 'EXPRESS'];
-        const word = words[Math.floor(Math.random() * words.length)];
+      } else if (game === 'connect4') {
         const state = {
-          word,
-          guessed: [],
-          wrongGuesses: [],
-          maxWrong: 6,
-          gameOver: false,
+          game,
+          board: Array(42).fill(null),
+          turn: 'R',
+          players: { R: partnerId, Y: socket.id },
           winner: null,
-          guesser: socket.id
+          gameOver: false
         };
         gameStates.set(sessionId, state);
-        io.to(partnerId).emit('game_started', { game, sessionId, role: 'setter', word, state: { ...state, word: '?' } });
-        socket.emit('game_started', { game, sessionId, role: 'guesser', state });
+        io.to(partnerId).emit('game_started', { game, sessionId, symbol: 'R', state });
+        socket.emit('game_started', { game, sessionId, symbol: 'Y', state });
+      } else if (game === 'fourline') {
+        const state = {
+          game,
+          board: Array(49).fill(null),
+          turn: 'X',
+          players: { X: partnerId, O: socket.id },
+          winner: null,
+          gameOver: false
+        };
+        gameStates.set(sessionId, state);
+        io.to(partnerId).emit('game_started', { game, sessionId, symbol: 'X', state });
+        socket.emit('game_started', { game, sessionId, symbol: 'O', state });
+      } else if (game === 'rps') {
+        const state = {
+          game,
+          choices: { A: null, B: null },
+          players: { A: partnerId, B: socket.id },
+          winner: null,
+          result: null,
+          gameOver: false
+        };
+        gameStates.set(sessionId, state);
+        io.to(partnerId).emit('game_started', { game, sessionId, symbol: 'A', state });
+        socket.emit('game_started', { game, sessionId, symbol: 'B', state });
       }
     });
 
@@ -176,6 +198,68 @@ module.exports = function initChatSocket(io) {
       const partnerId = activePairs.get(socket.id);
       socket.emit('ttt_update', state);
       if (partnerId) io.to(partnerId).emit('ttt_update', state);
+      if (state.gameOver) autoCloseGame(sessionId, socket.id);
+    });
+
+
+    // Connect Four move
+    socket.on('connect4_move', ({ col, sessionId }) => {
+      const state = gameStates.get(sessionId);
+      if (!state || state.game !== 'connect4' || state.gameOver) return;
+      const symbol = state.players.R === socket.id ? 'R' : 'Y';
+      if (state.turn !== symbol || col < 0 || col > 6) return;
+      let row = -1;
+      for (let r = 5; r >= 0; r--) {
+        const idx = r * 7 + col;
+        if (!state.board[idx]) { row = r; state.board[idx] = symbol; break; }
+      }
+      if (row === -1) return;
+      const winner = checkGridWinner(state.board, 6, 7, 4);
+      const isDraw = !winner && state.board.every(Boolean);
+      if (winner) { state.winner = winner; state.gameOver = true; }
+      if (isDraw) { state.winner = 'draw'; state.gameOver = true; }
+      state.turn = symbol === 'R' ? 'Y' : 'R';
+      gameStates.set(sessionId, state);
+      emitGameUpdate(socket, sessionId, 'connect4_update', state);
+      if (state.gameOver) autoCloseGame(sessionId, socket.id);
+    });
+
+    // Four Line move
+    socket.on('fourline_move', ({ index, sessionId }) => {
+      const state = gameStates.get(sessionId);
+      if (!state || state.game !== 'fourline' || state.gameOver) return;
+      const symbol = state.players.X === socket.id ? 'X' : 'O';
+      if (state.turn !== symbol || index < 0 || index > 48 || state.board[index]) return;
+      state.board[index] = symbol;
+      const winner = checkGridWinner(state.board, 7, 7, 4);
+      const isDraw = !winner && state.board.every(Boolean);
+      if (winner) { state.winner = winner; state.gameOver = true; }
+      if (isDraw) { state.winner = 'draw'; state.gameOver = true; }
+      state.turn = symbol === 'X' ? 'O' : 'X';
+      gameStates.set(sessionId, state);
+      emitGameUpdate(socket, sessionId, 'fourline_update', state);
+      if (state.gameOver) autoCloseGame(sessionId, socket.id);
+    });
+
+    // Rock Paper Scissors pick
+    socket.on('rps_pick', ({ choice, sessionId }) => {
+      const state = gameStates.get(sessionId);
+      if (!state || state.game !== 'rps' || state.gameOver) return;
+      if (!['rock', 'paper', 'scissors'].includes(choice)) return;
+      const symbol = state.players.A === socket.id ? 'A' : 'B';
+      if (state.choices[symbol]) return;
+      state.choices[symbol] = choice;
+      const a = state.choices.A, b = state.choices.B;
+      if (a && b) {
+        const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+        state.gameOver = true;
+        if (a === b) state.winner = 'draw';
+        else state.winner = beats[a] === b ? 'A' : 'B';
+        state.result = `${a} vs ${b}`;
+      }
+      gameStates.set(sessionId, state);
+      emitGameUpdate(socket, sessionId, 'rps_update', state);
+      if (state.gameOver) autoCloseGame(sessionId, socket.id);
     });
 
     // Word guess move
@@ -215,6 +299,41 @@ module.exports = function initChatSocket(io) {
       activePairs.delete(socketId);
     }
   });
+
+
+  function emitGameUpdate(socket, sessionId, event, state) {
+    const partnerId = activePairs.get(socket.id);
+    socket.emit(event, state);
+    if (partnerId) io.to(partnerId).emit(event, state);
+  }
+
+  function autoCloseGame(sessionId, socketId) {
+    const partnerId = activePairs.get(socketId);
+    setTimeout(() => {
+      gameStates.delete(sessionId);
+      io.to(socketId).emit('game_closed');
+      if (partnerId) io.to(partnerId).emit('game_closed');
+    }, 2200);
+  }
+
+  function checkGridWinner(board, rows, cols, need) {
+    const directions = [[0,1],[1,0],[1,1],[1,-1]];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const first = board[r * cols + c];
+        if (!first) continue;
+        for (const [dr, dc] of directions) {
+          let ok = true;
+          for (let step = 1; step < need; step++) {
+            const nr = r + dr * step, nc = c + dc * step;
+            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols || board[nr * cols + nc] !== first) { ok = false; break; }
+          }
+          if (ok) return first;
+        }
+      }
+    }
+    return null;
+  }
 
   function checkTTTWinner(board) {
     const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
