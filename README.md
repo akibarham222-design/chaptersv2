@@ -1,17 +1,14 @@
-# Aagontuk Express — Terminal Noir Flat Build
+# Aagontuk Express — Flat One-Service Build
 
-One Render Web Service build. No frontend/backend split.
+Single Render Web Service build.
 
-Render settings:
-- Root Directory: empty
-- Build Command: `rm -f package-lock.json && npm install --omit=dev --no-audit --no-fund --legacy-peer-deps --registry=https://registry.npmjs.org`
-- Start Command: `node server.js`
+## Game update
+- Chat now has 4 games: Tic-Tac-Toe, Connect Four, Four Line, Rock Paper Scissors.
+- Word Guess removed from chat invites.
+- Games auto-close after completion and conversation stays alive.
+- Chat margins/padding tightened for a cleaner compartment feel.
 
-Required env:
-- MONGO_URI
-- JWT_SECRET
-- NODE_ENV=production
-- FRONTEND_URL=https://aagontuk.onrender.com
-- GOOGLE_CALLBACK_URL=https://aagontuk.onrender.com/api/auth/google/callback
-- GOOGLE_CLIENT_ID
-- GOOGLE_CLIENT_SECRET
+## Render
+Root Directory: empty
+Build Command: rm -f package-lock.json && npm install --omit=dev --no-audit --no-fund --legacy-peer-deps --registry=https://registry.npmjs.org
+Start Command: node server.js

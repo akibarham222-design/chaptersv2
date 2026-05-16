@@ -15,30 +15,3 @@ body:before{opacity:.55!important}
 .compartment-divider{opacity:.55!important}
 .font-display{letter-spacing:-.02em}
 p.font-body{max-width:52rem}
-
-
-/* Moonline premium terminal polish */
-:root{--ae-bg:#05050a;--ae-panel:#0b0d17;--ae-line:rgba(255,255,255,.09);--ae-amber:#f2b84b;--ae-green:#20c46b;--ae-cream:#f4efe3;}
-body{background:
- radial-gradient(circle at 18% 12%, rgba(245,158,11,.10), transparent 30%),
- radial-gradient(circle at 78% 18%, rgba(32,196,107,.055), transparent 24%),
- linear-gradient(180deg,#05050a 0%,#080914 55%,#05050a 100%)!important;color:var(--ae-cream);}
-body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:
- linear-gradient(115deg,transparent 0 47%,rgba(245,158,11,.025) 48%,transparent 50% 100%),
- repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 72px);opacity:.8;}
-#root{position:relative;z-index:1}.bg-night-950{background:transparent!important}.bg-night-900,.bg-night-800{background-color:rgba(10,12,21,.86)!important}
-.glass,.glass-clean,.glass-amber{border-radius:24px!important;background:linear-gradient(180deg,rgba(15,17,31,.68),rgba(7,8,15,.56))!important;border:1px solid rgba(255,255,255,.09)!important;box-shadow:0 22px 70px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.045)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;}
-.glass-amber{border-color:rgba(242,184,75,.24)!important;background:linear-gradient(180deg,rgba(25,20,27,.72),rgba(8,9,15,.60))!important;}
-.btn-board{border-radius:999px!important;background:linear-gradient(135deg,#f5d98a 0%,#f2b84b 42%,#d88911 100%)!important;color:#05050a!important;box-shadow:0 12px 34px rgba(245,158,11,.20)!important;letter-spacing:.12em!important;text-transform:uppercase!important;}
-.btn-board:hover{transform:translateY(-2px);box-shadow:0 18px 48px rgba(245,158,11,.32)!important;filter:saturate(1.04)}
-.btn-ghost{border-radius:999px!important;background:rgba(255,255,255,.035)!important;border-color:rgba(255,255,255,.13)!important;color:#d7d3c8!important;}
-.btn-ghost:hover{background:rgba(245,158,11,.08)!important;border-color:rgba(242,184,75,.45)!important;color:#f2b84b!important;transform:translateY(-1px)}
-.input-dark{border-radius:16px!important;background:rgba(7,8,15,.78)!important;border-color:rgba(255,255,255,.10)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;}
-.input-dark:focus{border-color:rgba(242,184,75,.50)!important;box-shadow:0 0 0 3px rgba(242,184,75,.08)!important;}
-.chat-bubble-me,.chat-me{border-radius:20px 20px 6px 20px!important;background:linear-gradient(135deg,rgba(245,158,11,.20),rgba(245,158,11,.10))!important;border:1px solid rgba(245,158,11,.22)!important;}
-.chat-bubble-stranger,.chat-stranger{border-radius:20px 20px 20px 6px!important;background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.10)!important;}
-.compartment-divider{opacity:.55}.font-display{letter-spacing:-.025em}.text-amber-glow{color:#f2b84b!important;text-shadow:0 0 28px rgba(242,184,75,.28)!important}
-/* make page sections breathe like a terminal board */
-section.max-w-5xl .grid>div,.max-w-4xl .grid>div,.max-w-3xl .grid>button{transition:transform .2s ease,border-color .2s ease,background .2s ease;}
-section.max-w-5xl .grid>div:hover,.max-w-4xl .grid>div:hover,.max-w-3xl .grid>button:hover{transform:translateY(-3px)}
-@media (max-width:640px){.glass,.glass-clean,.glass-amber{border-radius:18px!important}.font-display.text-5xl,.font-display.text-6xl{font-size:2.7rem!important}.btn-board,.btn-ghost{padding-left:1rem!important;padding-right:1rem!important}}
