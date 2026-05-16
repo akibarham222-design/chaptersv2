@@ -1,11 +1,10 @@
 {
-  "name": "aagontuk-express-backend",
+  "name": "aagontuk-express-one-service-flat",
   "version": "1.0.0",
-  "description": "Aagontuk Express - Anonymous Night Train Backend",
+  "description": "Aagontuk Express - single Render web service build",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -20,8 +19,5 @@
     "passport-google-oauth20": "^2.0.0",
     "socket.io": "^4.7.2",
     "uuid": "^9.0.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
   }
 }

@@ -1,65 +1,43 @@
-# Aagontuk Express — Final Fixed Build
+# Aagontuk Express — One Service Flat Render Build
 
-This package contains the repaired full-stack build.
+This package has no frontend/backend split. It is meant to run as one Render Web Service.
 
-## What was fixed
+## Structure
 
-- Corrected frontend Vite structure: `index.html`, `src/pages`, `src/components`, `src/context`, `src/utils`.
-- Added missing pages: `Admin`, `Moderator`, `JourneyLogs`, `About`, `NotFound`.
-- Corrected backend structure: `config`, `models`, `middleware`, `routes`, `socket`.
-- Preserved the working original theme, chat, confession, music, login, and game code.
-- Fixed admin frontend access route by adding a real Control Room page.
-- Added direct device upload controls for songs and images in Admin.
-- Fixed uploaded music playback for separate frontend/backend Render deployments.
-- Added moderator panel for reports and confession approval.
-- Improved stranger report payload with partner socket ID.
-- Verified frontend production build successfully.
-- Verified backend JavaScript syntax successfully.
-
-## Frontend commands
-
-```bash
-cd frontend
-npm install
-npm run dev
-npm run build
+```
+server.js
+package.json
+public/          # built React frontend
+config/
+models/
+middleware/
+routes/
+socket/
+uploads/
 ```
 
-## Backend commands
+## Render settings
 
+Root Directory: empty
+
+Build Command:
 ```bash
-cd backend
-npm install
-npm start
+rm -f package-lock.json && npm install --omit=dev --no-audit --no-fund --legacy-peer-deps --registry=https://registry.npmjs.org
 ```
 
-## Required backend `.env`
+Start Command:
+```bash
+node server.js
+```
+
+## Required environment variables
 
 ```env
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=make_this_long_and_private
-FRONTEND_URL=http://localhost:5173
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_secret
+NODE_ENV=production
+FRONTEND_URL=https://aagontuk.onrender.com
+GOOGLE_CALLBACK_URL=https://aagontuk.onrender.com/api/auth/google/callback
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
 ```
-
-## Required frontend `.env`
-
-```env
-VITE_API_URL=http://localhost:5000/api
-VITE_SOCKET_URL=http://localhost:5000
-```
-
-For Render, replace localhost URLs with deployed frontend/backend URLs.
-
-## Admin account
-
-The admin email is hardcoded as:
-
-```txt
-n.i.farhan44@gmail.com
-```
-
-Logging in with this email through Google or password login will force admin role on the backend.
